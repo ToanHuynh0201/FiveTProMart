@@ -6,6 +6,7 @@ import {
 	Routes,
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import { ROUTES } from "./constants";
 function App() {
 	return (
@@ -16,10 +17,14 @@ function App() {
 					element={<LoginPage />}
 				/>
 				<Route
+					path={ROUTES.HOME}
+					element={<HomePage />}
+				/>
+				<Route
 					path="/"
 					element={
 						<Navigate
-							to={ROUTES.HOME}
+							to={ROUTES.LOGIN}
 							replace
 						/>
 					}
@@ -28,7 +33,7 @@ function App() {
 					path="*"
 					element={
 						<Navigate
-							to={ROUTES.HOME}
+							to={ROUTES.LOGIN}
 							replace
 						/>
 					}

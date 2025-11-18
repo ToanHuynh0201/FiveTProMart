@@ -1,13 +1,41 @@
-import './App.css'
-import { Button, HStack } from '@chakra-ui/react'
-
+import "./App.css";
+import {
+	Navigate,
+	Route,
+	BrowserRouter as Router,
+	Routes,
+} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import { ROUTES } from "./constants";
 function App() {
-
-  return (
-    <HStack spacing="24px" justify="center" align="center" height="100vh">
-      <Button>Click me</Button>
-    </HStack>
-  )
+	return (
+		<Router>
+			<Routes>
+				<Route
+					path={ROUTES.LOGIN}
+					element={<LoginPage />}
+				/>
+				<Route
+					path="/"
+					element={
+						<Navigate
+							to={ROUTES.HOME}
+							replace
+						/>
+					}
+				/>
+				<Route
+					path="*"
+					element={
+						<Navigate
+							to={ROUTES.HOME}
+							replace
+						/>
+					}
+				/>
+			</Routes>
+		</Router>
+	);
 }
 
-export default App
+export default App;

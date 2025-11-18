@@ -26,13 +26,7 @@ export const AUTH_CONFIG = {
 // Route Paths
 export const ROUTES = {
     LOGIN: "/login",
-    RECIPE: "/recipe",
     HOME: "/home",
-    MENU_SUGGESTION: "/menu-suggestion",
-    AI_MEAL_SUGGESTION: "/ai-meal-suggestion",
-    IMAGE_RECOGNITION: "/image-recognition",
-    MY_RECIPES: "/my-recipes",
-    PROFILE: "/profile",
     ROOT: "/",
 };
 

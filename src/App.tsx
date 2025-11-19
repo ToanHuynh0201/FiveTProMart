@@ -7,7 +7,9 @@ import {
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
+import DashboardPage from "./pages/DashboardPage";
 import { ROUTES } from "./constants";
+
 function App() {
 	return (
 		<Router>
@@ -19,6 +21,10 @@ function App() {
 				<Route
 					path={ROUTES.HOME}
 					element={<HomePage />}
+				/>
+				<Route
+					path={ROUTES.DASHBOARD}
+					element={<DashboardPage />}
 				/>
 				<Route
 					path="/"

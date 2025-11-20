@@ -1,7 +1,7 @@
 import { Box, Heading, Text, Container, VStack } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 
-function DashboardPage() {
+const DashboardPage = () => {
 	return (
 		<MainLayout>
 			<Container
@@ -42,6 +42,6 @@ function DashboardPage() {
 			</Container>
 		</MainLayout>
 	);
-}
+};
 
 export default DashboardPage;

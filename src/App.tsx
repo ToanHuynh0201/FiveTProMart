@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/DashboardPage";
 import { ROUTES } from "./constants";
+import StaffPage from "./pages/StaffPage";
 
 function App() {
 	return (
@@ -25,6 +26,10 @@ function App() {
 				<Route
 					path={ROUTES.DASHBOARD}
 					element={<DashboardPage />}
+				/>
+				<Route
+					path={ROUTES.STAFF}
+					element={<StaffPage />}
 				/>
 				<Route
 					path="/"

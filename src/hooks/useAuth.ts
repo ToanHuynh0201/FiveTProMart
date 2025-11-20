@@ -13,7 +13,7 @@ export function useAuth() {
 			id: "1",
 			name: "Nguyễn Văn A",
 			email: "nguyenvana@5tmart.com",
-			role: "manager",
+			role: "Quản lí",
 		},
 		isAuthenticated: true,
 	});

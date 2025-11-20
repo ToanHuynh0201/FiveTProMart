@@ -2,10 +2,6 @@ import type { NavItem } from "@/types/layout";
 
 export const navItems: NavItem[] = [
 	{
-		label: "Quản lí",
-		path: "/dashboard",
-	},
-	{
 		label: "Nhân sự",
 		path: "/staff",
 	},

@@ -1,4 +1,5 @@
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Image, Text } from "@chakra-ui/react";
+import logoImg from "@/assets/logo/image.png";
 
 export function SidebarLogo() {
 	return (
@@ -8,17 +9,20 @@ export function SidebarLogo() {
 			pt={4}
 			pb={2}
 			px={4}>
-			{/* Logo Image placeholder - replace with actual logo */}
+			{/* Logo Image */}
 			<Box
 				w="64px"
 				h="53px"
-				bg="white"
-				borderRadius="md"
 				mb={2}
 				position="relative"
 				overflow="hidden">
-				{/* Add your logo image here */}
-				{/* <Image src="/logo.png" alt="5T Mart Logo" /> */}
+				<Image
+					src={logoImg}
+					alt="5T Mart Logo"
+					w="100%"
+					h="100%"
+					objectFit="contain"
+				/>
 			</Box>
 
 			{/* Brand Name */}

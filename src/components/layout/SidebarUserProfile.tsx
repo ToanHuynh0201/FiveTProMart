@@ -55,12 +55,6 @@ export function SidebarUserProfile({ user }: SidebarUserProfileProps) {
 							noOfLines={1}>
 							{user.role}
 						</Text>
-						<Box
-							w="60px"
-							h="6px"
-							bg="#BBD6FF"
-							mt={1}
-						/>
 					</Box>
 				)}
 			</Box>

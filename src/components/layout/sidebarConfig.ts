@@ -6,6 +6,10 @@ export const navItems: NavItem[] = [
 		path: "/staff",
 	},
 	{
+		label: "Ca làm",
+		path: "/schedule",
+	},
+	{
 		label: "Bán hàng",
 		path: "/sales",
 	},

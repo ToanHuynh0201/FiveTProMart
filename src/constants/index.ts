@@ -31,6 +31,7 @@ export const ROUTES = {
 	ROOT: "/",
 	DASHBOARD: "/dashboard",
 	STAFF: "/staff",
+	SCHEDULE: "/schedule",
 	SALES: "/sales",
 	INVENTORY: "/inventory",
 	FINANCE: "/finance",

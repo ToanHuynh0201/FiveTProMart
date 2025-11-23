@@ -10,6 +10,7 @@ import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/DashboardPage";
 import { ROUTES } from "./constants";
 import StaffPage from "./pages/StaffPage";
+import SchedulePage from "./pages/SchedulePage";
 
 function App() {
 	return (
@@ -30,6 +31,10 @@ function App() {
 				<Route
 					path={ROUTES.STAFF}
 					element={<StaffPage />}
+				/>
+				<Route
+					path={ROUTES.SCHEDULE}
+					element={<SchedulePage />}
 				/>
 				<Route
 					path="/"

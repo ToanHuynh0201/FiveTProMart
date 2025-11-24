@@ -25,7 +25,7 @@ export default function LoginPage() {
 		console.log({ username, password });
 
 		// Navigate to home page
-		navigate(ROUTES.DASHBOARD);
+		navigate(ROUTES.STAFF);
 		setIsLoading(false);
 	};
 

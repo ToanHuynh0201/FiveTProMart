@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import { ROUTES } from "./constants";
 import StaffPage from "./pages/StaffPage";
 import SchedulePage from "./pages/SchedulePage";
+import SalesPage from "./pages/SalesPage";
 
 function App() {
 	return (
@@ -35,6 +36,10 @@ function App() {
 				<Route
 					path={ROUTES.SCHEDULE}
 					element={<SchedulePage />}
+				/>
+				<Route
+					path={ROUTES.SALES}
+					element={<SalesPage />}
 				/>
 				<Route
 					path="/"

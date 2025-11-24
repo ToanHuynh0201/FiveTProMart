@@ -1,21 +1,27 @@
 import { Box, Flex, Image, Text } from "@chakra-ui/react";
 import logoImg from "@/assets/logo/image.png";
 
-export function SidebarLogo() {
+interface SidebarLogoProps {
+	isCollapsed: boolean;
+}
+
+export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
 	return (
 		<Flex
 			direction="column"
 			align="center"
 			pt={4}
 			pb={2}
-			px={4}>
+			px={4}
+			position="relative">
 			{/* Logo Image */}
 			<Box
-				w="64px"
-				h="53px"
-				mb={2}
+				w={isCollapsed ? "40px" : "64px"}
+				h={isCollapsed ? "33px" : "53px"}
+				mb={isCollapsed ? 0 : 2}
 				position="relative"
-				overflow="hidden">
+				overflow="hidden"
+				transition="all 0.3s">
 				<Image
 					src={logoImg}
 					alt="5T Mart Logo"
@@ -26,14 +32,19 @@ export function SidebarLogo() {
 			</Box>
 
 			{/* Brand Name */}
-			<Text
-				color="white"
-				fontSize="17px"
-				fontWeight="900"
-				fontFamily="Kimberley, serif"
-				lineHeight="1.21">
-				5T Mart
-			</Text>
+			{!isCollapsed && (
+				<Text
+					color="white"
+					fontSize="17px"
+					fontWeight="900"
+					fontFamily="Kimberley, serif"
+					lineHeight="1.21"
+					whiteSpace="nowrap"
+					opacity={isCollapsed ? 0 : 1}
+					transition="opacity 0.2s">
+					5T Mart
+				</Text>
+			)}
 		</Flex>
 	);
 }

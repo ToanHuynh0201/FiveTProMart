@@ -1,76 +1,96 @@
-import { Flex, IconButton, Tooltip } from "@chakra-ui/react";
-import { BellIcon, CalendarIcon, ChatIcon } from "@chakra-ui/icons";
+import { Flex, IconButton, Tooltip, Text } from "@chakra-ui/react";
 import { SmallCloseIcon } from "@chakra-ui/icons";
 
 interface SidebarHeaderProps {
 	onLogout: () => void;
+	isCollapsed: boolean;
 }
 
-export function SidebarHeader({ onLogout }: SidebarHeaderProps) {
+export function SidebarHeader({ onLogout, isCollapsed }: SidebarHeaderProps) {
+	if (isCollapsed) {
+		return (
+			<Flex
+				justify="center"
+				align="center"
+				px={2}
+				py={3}
+				borderColor="rgba(187, 214, 255, 0.2)">
+				<Tooltip
+					label="Đăng xuất"
+					placement="right"
+					hasArrow>
+					<IconButton
+						aria-label="Logout"
+						icon={<SmallCloseIcon boxSize={5} />}
+						size="md"
+						variant="solid"
+						bg="rgba(255, 99, 71, 0.2)"
+						color="white"
+						borderRadius="lg"
+						border="1px solid"
+						borderColor="rgba(255, 99, 71, 0.4)"
+						_hover={{
+							bg: "rgba(255, 99, 71, 0.4)",
+							borderColor: "rgba(255, 99, 71, 0.6)",
+							transform: "scale(1.1)",
+							shadow: "0 0 15px rgba(255, 99, 71, 0.5)",
+						}}
+						_active={{
+							transform: "scale(0.95)",
+							bg: "rgba(255, 99, 71, 0.5)",
+						}}
+						transition="all 0.2s"
+						onClick={onLogout}
+					/>
+				</Tooltip>
+			</Flex>
+		);
+	}
+
 	return (
 		<Flex
-			justify="flex-end"
-			align="center"
+			direction="column"
 			gap={2}
 			px={4}
-			py={2}
-			borderBottom="1px solid"
+			py={3}
 			borderColor="rgba(187, 214, 255, 0.2)">
-			{/* Notification Bell */}
 			<Tooltip
-				label="Thông báo"
-				placement="bottom">
-				<IconButton
-					aria-label="Notifications"
-					icon={<BellIcon boxSize={5} />}
-					size="sm"
-					variant="ghost"
+				label="Đăng xuất khỏi hệ thống"
+				placement="right"
+				hasArrow>
+				<Flex
+					as="button"
+					align="center"
+					justify="center"
+					gap={2}
+					w="full"
+					py={2}
+					px={3}
+					bg="rgba(255, 99, 71, 0.2)"
 					color="white"
-					_hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
-				/>
-			</Tooltip>
-
-			{/* Calendar */}
-			<Tooltip
-				label="Lịch"
-				placement="bottom">
-				<IconButton
-					aria-label="Calendar"
-					icon={<CalendarIcon boxSize={5} />}
-					size="sm"
-					variant="ghost"
-					color="white"
-					_hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
-				/>
-			</Tooltip>
-
-			{/* Chat */}
-			<Tooltip
-				label="Tin nhắn"
-				placement="bottom">
-				<IconButton
-					aria-label="Messages"
-					icon={<ChatIcon boxSize={5} />}
-					size="sm"
-					variant="ghost"
-					color="white"
-					_hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
-				/>
-			</Tooltip>
-
-			{/* Logout */}
-			<Tooltip
-				label="Đăng xuất"
-				placement="bottom">
-				<IconButton
-					aria-label="Logout"
-					icon={<SmallCloseIcon boxSize={6} />}
-					size="sm"
-					variant="ghost"
-					color="white"
-					_hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
-					onClick={onLogout}
-				/>
+					borderRadius="lg"
+					border="1px solid"
+					borderColor="rgba(255, 99, 71, 0.4)"
+					cursor="pointer"
+					_hover={{
+						bg: "rgba(255, 99, 71, 0.4)",
+						borderColor: "rgba(255, 99, 71, 0.6)",
+						transform: "translateY(-2px)",
+						shadow: "0 0 15px rgba(255, 99, 71, 0.5)",
+					}}
+					_active={{
+						transform: "translateY(0)",
+						bg: "rgba(255, 99, 71, 0.5)",
+					}}
+					transition="all 0.2s"
+					onClick={onLogout}>
+					<SmallCloseIcon boxSize={5} />
+					<Text
+						fontSize="sm"
+						fontWeight="600">
+						Đăng xuất
+					</Text>
+				</Flex>
 			</Tooltip>
 		</Flex>
 	);

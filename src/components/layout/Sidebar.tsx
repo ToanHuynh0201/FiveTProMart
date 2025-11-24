@@ -1,5 +1,7 @@
-import { Flex, VStack } from "@chakra-ui/react";
+import { useState } from "react";
+import { Flex, VStack, IconButton, Tooltip } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarItem } from "./SidebarItem";
 import { SidebarHeader } from "./SidebarHeader";
@@ -10,33 +12,84 @@ import { useAuth } from "@/hooks/useAuth";
 function Sidebar() {
 	const location = useLocation();
 	const { user, logout } = useAuth();
+	const [isCollapsed, setIsCollapsed] = useState(false);
 
 	const isActivePath = (path: string) => location.pathname === path;
 
 	return (
 		<Flex
 			direction="column"
-			w="254px"
+			w={isCollapsed ? "80px" : "254px"}
 			h="100vh"
 			bg="brand.500"
-			position="sticky"
+			position="relative"
 			top={0}
-			overflow="hidden">
+			overflow="hidden"
+			transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+			shadow="xl"
+			borderRight="1px solid"
+			borderColor="rgba(187, 214, 255, 0.1)">
 			{/* Logo Section */}
-			<SidebarLogo />
+			<SidebarLogo isCollapsed={isCollapsed} />
 
 			{/* User Profile */}
-			{user && <SidebarUserProfile user={user} />}
+			{user && (
+				<SidebarUserProfile
+					user={user}
+					isCollapsed={isCollapsed}
+				/>
+			)}
 
 			{/* Header Icons */}
-			<SidebarHeader onLogout={logout} />
+			<SidebarHeader
+				onLogout={logout}
+				isCollapsed={isCollapsed}
+			/>
+
+			{/* Toggle Button - Below Header */}
+			<Flex
+				justify={isCollapsed ? "center" : "flex-end"}
+				px={isCollapsed ? 2 : 4}
+				py={1}
+				borderColor="rgba(187, 214, 255, 0.1)">
+				<Tooltip
+					label={isCollapsed ? "Mở rộng" : "Thu gọn"}
+					placement="right"
+					hasArrow>
+					<IconButton
+						aria-label="Toggle sidebar"
+						icon={
+							isCollapsed ? (
+								<ChevronRightIcon boxSize={5} />
+							) : (
+								<ChevronLeftIcon boxSize={5} />
+							)
+						}
+						size="sm"
+						variant="ghost"
+						color="whiteAlpha.700"
+						bg="rgba(255, 255, 255, 0.08)"
+						borderRadius="md"
+						_hover={{
+							color: "white",
+							bg: "rgba(255, 255, 255, 0.15)",
+							transform: "scale(1.05)",
+						}}
+						_active={{
+							bg: "rgba(255, 255, 255, 0.2)",
+						}}
+						transition="all 0.2s ease"
+						onClick={() => setIsCollapsed(!isCollapsed)}
+					/>
+				</Tooltip>
+			</Flex>
 
 			{/* Navigation Sections */}
 			<VStack
 				flex={1}
-				spacing={0}
-				px={4}
-				py={6}
+				spacing={1}
+				px={isCollapsed ? 2 : 4}
+				py={3}
 				align="stretch"
 				overflowY="auto"
 				css={{
@@ -57,6 +110,7 @@ function Sidebar() {
 						key={item.path}
 						item={item}
 						isActive={isActivePath(item.path)}
+						isCollapsed={isCollapsed}
 					/>
 				))}
 			</VStack>

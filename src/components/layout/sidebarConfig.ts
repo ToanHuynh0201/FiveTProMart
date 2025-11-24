@@ -26,7 +26,7 @@ export const navItems: NavItem[] = [
 		icon: FiShoppingCart,
 	},
 	{
-		label: "Nhập hàng",
+		label: "Hàng hóa",
 		path: "/inventory",
 		icon: FiPackage,
 	},

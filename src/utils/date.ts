@@ -9,18 +9,18 @@
  * @returns {string} Formatted date string
  */
 export const formatDate = (date: Date | string | number, options = {}) => {
-    try {
-        const dateObj = date instanceof Date ? date : new Date(date);
-        return dateObj.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            ...options,
-        });
-    } catch (error) {
-        console.warn("Error formatting date:", error);
-        return "Invalid Date";
-    }
+	try {
+		const dateObj = date instanceof Date ? date : new Date(date);
+		return dateObj.toLocaleDateString("vi-VN", {
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			...options,
+		});
+	} catch (error) {
+		console.warn("Error formatting date:", error);
+		return "Invalid Date";
+	}
 };
 
 /**
@@ -30,17 +30,17 @@ export const formatDate = (date: Date | string | number, options = {}) => {
  * @returns {string} Formatted time string
  */
 export const formatTime = (date: Date | string | number, options = {}) => {
-    try {
-        const dateObj = date instanceof Date ? date : new Date(date);
-        return dateObj.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            ...options,
-        });
-    } catch (error) {
-        console.warn("Error formatting time:", error);
-        return "Invalid Time";
-    }
+	try {
+		const dateObj = date instanceof Date ? date : new Date(date);
+		return dateObj.toLocaleTimeString("vi-VN", {
+			hour: "2-digit",
+			minute: "2-digit",
+			...options,
+		});
+	} catch (error) {
+		console.warn("Error formatting time:", error);
+		return "Invalid Time";
+	}
 };
 
 /**
@@ -49,26 +49,26 @@ export const formatTime = (date: Date | string | number, options = {}) => {
  * @returns {string} Relative time string
  */
 export const getRelativeTime = (date: Date | string | number) => {
-    try {
-        const dateObj = date instanceof Date ? date : new Date(date);
-        const now = new Date();
-        const diffInSeconds = Math.floor(
-            (now.getTime() - dateObj.getTime()) / 1000
-        );
+	try {
+		const dateObj = date instanceof Date ? date : new Date(date);
+		const now = new Date();
+		const diffInSeconds = Math.floor(
+			(now.getTime() - dateObj.getTime()) / 1000,
+		);
 
-        if (diffInSeconds < 60) return "Just now";
-        if (diffInSeconds < 3600)
-            return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-        if (diffInSeconds < 86400)
-            return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-        if (diffInSeconds < 2592000)
-            return `${Math.floor(diffInSeconds / 86400)} days ago`;
+		if (diffInSeconds < 60) return "Just now";
+		if (diffInSeconds < 3600)
+			return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+		if (diffInSeconds < 86400)
+			return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+		if (diffInSeconds < 2592000)
+			return `${Math.floor(diffInSeconds / 86400)} days ago`;
 
-        return formatDate(dateObj);
-    } catch (error) {
-        console.warn("Error getting relative time:", error);
-        return "Unknown";
-    }
+		return formatDate(dateObj);
+	} catch (error) {
+		console.warn("Error getting relative time:", error);
+		return "Unknown";
+	}
 };
 
 /**
@@ -77,11 +77,11 @@ export const getRelativeTime = (date: Date | string | number) => {
  * @returns {boolean} Is today
  */
 export const isToday = (date: Date | string | number) => {
-    try {
-        const dateObj = date instanceof Date ? date : new Date(date);
-        const today = new Date();
-        return dateObj.toDateString() === today.toDateString();
-    } catch {
-        return false;
-    }
+	try {
+		const dateObj = date instanceof Date ? date : new Date(date);
+		const today = new Date();
+		return dateObj.toDateString() === today.toDateString();
+	} catch {
+		return false;
+	}
 };

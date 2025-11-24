@@ -5,3 +5,6 @@ export { PaymentMethodSelector } from "./PaymentMethodSelector";
 export { OrderSummary } from "./OrderSummary";
 export { OrderHeader } from "./OrderHeader";
 export { CustomerInfoInput } from "./CustomerInfoInput";
+export { default as OrderHistoryTable } from "./OrderHistoryTable";
+export { default as OrderDetailModal } from "./OrderDetailModal";
+export { default as OrderFilterBar } from "./OrderFilterBar";

@@ -14,6 +14,11 @@ import {
 	ModalFooter,
 	ModalCloseButton,
 	useDisclosure,
+	Tabs,
+	TabList,
+	TabPanels,
+	Tab,
+	TabPanel,
 } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -24,8 +29,17 @@ import {
 	OrderSummary,
 	OrderHeader,
 	CustomerInfoInput,
+	OrderHistoryTable,
+	OrderDetailModal,
+	OrderFilterBar,
 } from "../components/sales";
-import type { OrderItem, PaymentMethod, Product } from "../types/sales";
+import type {
+	OrderItem,
+	PaymentMethod,
+	Product,
+	SalesOrder,
+} from "../types/sales";
+import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { salesService } from "../services/salesService";
 
 interface Customer {
@@ -47,12 +61,69 @@ const SalesPage = () => {
 	const [createdAt] = useState(new Date());
 	const [showProductList, setShowProductList] = useState(false);
 
+	// Order history states
+	const [orders, setOrders] = useState<SalesOrder[]>([]);
+	const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
+	const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
+	const [filters, setFilters] = useState<OrderFilters>({
+		searchQuery: "",
+		status: "",
+		paymentMethod: "",
+		dateFrom: "",
+		dateTo: "",
+	});
+
+	const { isOpen, onOpen, onClose } = useDisclosure();
+	const {
+		isOpen: isDetailOpen,
+		onOpen: onDetailOpen,
+		onClose: onDetailClose,
+	} = useDisclosure();
+
 	useEffect(() => {
 		// Load all products on mount if needed
 		salesService.getAllProducts().then(() => {
 			// Products loaded successfully
 		});
+
+		// Load orders for history
+		loadOrders();
 	}, []);
+
+	useEffect(() => {
+		// Apply filters when filters change
+		applyFilters();
+	}, [filters, orders]);
+
+	const loadOrders = async () => {
+		const allOrders = await salesService.getAllOrders();
+		setOrders(allOrders);
+		setFilteredOrders(allOrders);
+	};
+
+	const applyFilters = async () => {
+		const filtered = await salesService.filterOrders(filters);
+		setFilteredOrders(filtered);
+	};
+
+	const handleFiltersChange = (newFilters: OrderFilters) => {
+		setFilters(newFilters);
+	};
+
+	const handleResetFilters = () => {
+		setFilters({
+			searchQuery: "",
+			status: "",
+			paymentMethod: "",
+			dateFrom: "",
+			dateTo: "",
+		});
+	};
+
+	const handleViewOrderDetail = (order: SalesOrder) => {
+		setSelectedOrder(order);
+		onDetailOpen();
+	};
 
 	const handleProductSelect = (product: Product) => {
 		// Check if product already exists in order
@@ -176,8 +247,6 @@ const SalesPage = () => {
 		setCustomer(confirmedCustomer);
 	};
 
-	const { isOpen, onOpen, onClose } = useDisclosure();
-
 	const handleBackToCustomerInfo = () => {
 		// Reset tất cả thông tin
 		setCustomer(null);
@@ -198,144 +267,239 @@ const SalesPage = () => {
 					borderRadius="xl"
 					boxShadow="sm"
 					mb={6}>
-					<Flex
-						align="center"
-						gap={4}
+					<Heading
+						size="lg"
+						color="#161f70"
 						mb={5}>
-						{customer && (
-							<Button
-								onClick={onOpen}
-								colorScheme="gray"
-								variant="outline"
-								size="md"
-								leftIcon={<Box as="span">←</Box>}>
-								Quay lại
-							</Button>
-						)}
-						<Heading
-							size="lg"
-							color="#161f70">
-							Lập hóa đơn
-						</Heading>
-					</Flex>
-					{customer && (
-						<OrderHeader
-							orderNumber={orderNumber}
-							customerName={customer.name}
-							createdAt={createdAt}
-						/>
-					)}
-				</Box>
+						Quản lý bán hàng
+					</Heading>
 
-				{!customer ? (
-					<CustomerInfoInput
-						onCustomerConfirmed={handleCustomerConfirmed}
-					/>
-				) : (
-					<>
-						<Grid
-							templateColumns={{ base: "1fr" }}
-							gap={6}
-							alignItems="start">
-							<VStack
-								spacing={5}
-								align="stretch">
-								<Box
-									bg="white"
-									borderRadius="xl"
-									p={6}
-									boxShadow="sm">
-									<Flex
-										gap={3}
-										align="center"
-										wrap="wrap">
-										<AddProductButton
-											onClick={handleShowProductList}
-										/>
-										<ProductSearchBar
-											onProductSelect={
-												handleProductSelect
+					<Tabs
+						colorScheme="blue"
+						variant="enclosed">
+						<TabList>
+							<Tab
+								_selected={{
+									color: "#161f70",
+									bg: "blue.50",
+									borderColor: "#161f70",
+									borderBottomColor: "white",
+								}}>
+								Lập hóa đơn
+							</Tab>
+							<Tab
+								_selected={{
+									color: "#161f70",
+									bg: "blue.50",
+									borderColor: "#161f70",
+									borderBottomColor: "white",
+								}}>
+								Lịch sử bán hàng
+							</Tab>
+						</TabList>
+
+						<TabPanels>
+							{/* Tab: Lập hóa đơn */}
+							<TabPanel px={0}>
+								<Box pt={4}>
+									{customer && (
+										<Box mb={5}>
+											<Flex
+												align="center"
+												gap={4}
+												mb={4}>
+												<Button
+													onClick={onOpen}
+													colorScheme="gray"
+													variant="outline"
+													size="md"
+													leftIcon={
+														<Box as="span">←</Box>
+													}>
+													Quay lại
+												</Button>
+											</Flex>
+											<OrderHeader
+												orderNumber={orderNumber}
+												customerName={customer.name}
+												createdAt={createdAt}
+											/>
+										</Box>
+									)}
+
+									{!customer ? (
+										<CustomerInfoInput
+											onCustomerConfirmed={
+												handleCustomerConfirmed
 											}
 										/>
-									</Flex>
-								</Box>
+									) : (
+										<>
+											<Grid
+												templateColumns={{
+													base: "1fr",
+												}}
+												gap={6}
+												alignItems="start">
+												<VStack
+													spacing={5}
+													align="stretch">
+													<Box
+														bg="white"
+														borderRadius="xl"
+														p={6}
+														boxShadow="sm">
+														<Flex
+															gap={3}
+															align="center"
+															wrap="wrap">
+															<AddProductButton
+																onClick={
+																	handleShowProductList
+																}
+															/>
+															<ProductSearchBar
+																onProductSelect={
+																	handleProductSelect
+																}
+															/>
+														</Flex>
+													</Box>
 
-								<Box
-									bg="white"
-									borderRadius="xl"
-									p={6}
-									boxShadow="sm">
-									<OrderItemsTable
-										items={orderItems}
-										onUpdateQuantity={handleUpdateQuantity}
-										onRemoveItem={handleRemoveItem}
+													<Box
+														bg="white"
+														borderRadius="xl"
+														p={6}
+														boxShadow="sm">
+														<OrderItemsTable
+															items={orderItems}
+															onUpdateQuantity={
+																handleUpdateQuantity
+															}
+															onRemoveItem={
+																handleRemoveItem
+															}
+														/>
+													</Box>
+
+													<Grid
+														templateColumns={{
+															base: "1fr",
+															md: "repeat(2, 1fr)",
+														}}
+														gap={5}>
+														<Box
+															bg="white"
+															borderRadius="xl"
+															p={6}
+															boxShadow="sm">
+															<PaymentMethodSelector
+																selected={
+																	paymentMethod
+																}
+																onSelect={
+																	setPaymentMethod
+																}
+															/>
+														</Box>
+
+														<Box
+															bg="white"
+															borderRadius="xl"
+															p={6}
+															boxShadow="sm">
+															<OrderSummary
+																total={calculateTotal()}
+																loyaltyPoints={calculateLoyaltyPoints()}
+																onPrint={
+																	handlePrint
+																}
+															/>
+														</Box>
+													</Grid>
+												</VStack>
+											</Grid>
+
+											<Modal
+												isOpen={isOpen}
+												onClose={onClose}
+												isCentered>
+												<ModalOverlay bg="blackAlpha.600" />
+												<ModalContent>
+													<ModalHeader color="#161f70">
+														Xác nhận quay lại
+													</ModalHeader>
+													<ModalCloseButton />
+													<ModalBody>
+														Bạn có chắc chắn muốn
+														quay lại? Tất cả thông
+														tin sản phẩm đã thêm và
+														phương thức thanh toán
+														sẽ bị xóa.
+													</ModalBody>
+													<ModalFooter gap={3}>
+														<Button
+															colorScheme="gray"
+															variant="ghost"
+															onClick={onClose}>
+															Hủy
+														</Button>
+														<Button
+															colorScheme="red"
+															onClick={
+																handleBackToCustomerInfo
+															}>
+															Xác nhận
+														</Button>
+													</ModalFooter>
+												</ModalContent>
+											</Modal>
+										</>
+									)}
+								</Box>
+							</TabPanel>
+
+							{/* Tab: Lịch sử bán hàng */}
+							<TabPanel px={0}>
+								<VStack
+									spacing={5}
+									align="stretch"
+									pt={4}>
+									<OrderFilterBar
+										filters={filters}
+										onFiltersChange={handleFiltersChange}
+										onReset={handleResetFilters}
 									/>
-								</Box>
-
-								<Grid
-									templateColumns={{
-										base: "1fr",
-										md: "repeat(2, 1fr)",
-									}}
-									gap={5}>
-									<Box
-										bg="white"
-										borderRadius="xl"
-										p={6}
-										boxShadow="sm">
-										<PaymentMethodSelector
-											selected={paymentMethod}
-											onSelect={setPaymentMethod}
-										/>
-									</Box>
 
 									<Box
 										bg="white"
 										borderRadius="xl"
 										p={6}
 										boxShadow="sm">
-										<OrderSummary
-											total={calculateTotal()}
-											loyaltyPoints={calculateLoyaltyPoints()}
-											onPrint={handlePrint}
+										<Heading
+											size="md"
+											mb={4}
+											color="#161f70">
+											Danh sách đơn hàng (
+											{filteredOrders.length})
+										</Heading>
+										<OrderHistoryTable
+											orders={filteredOrders}
+											onViewDetail={handleViewOrderDetail}
 										/>
 									</Box>
-								</Grid>
-							</VStack>
-						</Grid>
+								</VStack>
+							</TabPanel>
+						</TabPanels>
+					</Tabs>
+				</Box>
 
-						<Modal
-							isOpen={isOpen}
-							onClose={onClose}
-							isCentered>
-							<ModalOverlay bg="blackAlpha.600" />
-							<ModalContent>
-								<ModalHeader color="#161f70">
-									Xác nhận quay lại
-								</ModalHeader>
-								<ModalCloseButton />
-								<ModalBody>
-									Bạn có chắc chắn muốn quay lại? Tất cả thông
-									tin sản phẩm đã thêm và phương thức thanh
-									toán sẽ bị xóa.
-								</ModalBody>
-								<ModalFooter gap={3}>
-									<Button
-										colorScheme="gray"
-										variant="ghost"
-										onClick={onClose}>
-										Hủy
-									</Button>
-									<Button
-										colorScheme="red"
-										onClick={handleBackToCustomerInfo}>
-										Xác nhận
-									</Button>
-								</ModalFooter>
-							</ModalContent>
-						</Modal>
-					</>
-				)}
+				{/* Order Detail Modal */}
+				<OrderDetailModal
+					isOpen={isDetailOpen}
+					onClose={onDetailClose}
+					order={selectedOrder}
+				/>
 			</Box>
 		</MainLayout>
 	);

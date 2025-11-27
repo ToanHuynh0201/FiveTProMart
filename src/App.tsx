@@ -14,6 +14,7 @@ import SchedulePage from "./pages/SchedulePage";
 import SalesPage from "./pages/SalesPage";
 import InventoryPage from "./pages/InventoryPage";
 import PurchasePage from "./pages/PurchasePage";
+import PromotionPage from "./pages/PromotionPage";
 
 function App() {
 	return (
@@ -50,6 +51,10 @@ function App() {
 				<Route
 					path={ROUTES.PURCHASE}
 					element={<PurchasePage />}
+				/>
+				<Route
+					path={ROUTES.PROMOTIONS}
+					element={<PromotionPage />}
 				/>
 				<Route
 					path="/"

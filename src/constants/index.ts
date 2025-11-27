@@ -35,6 +35,7 @@ export const ROUTES = {
 	SALES: "/sales",
 	INVENTORY: "/inventory",
 	PURCHASE: "/purchase",
+	PROMOTIONS: "/promotions",
 	FINANCE: "/finance",
 	REPORTS: "/reports",
 	CUSTOMERS: "/customers",

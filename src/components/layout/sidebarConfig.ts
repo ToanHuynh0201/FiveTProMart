@@ -5,9 +5,9 @@ import {
 	FiShoppingCart,
 	FiPackage,
 	FiTruck,
-	FiDollarSign,
 	FiBarChart2,
 	FiUserCheck,
+	FiGift,
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
@@ -37,9 +37,9 @@ export const navItems: NavItem[] = [
 		icon: FiTruck,
 	},
 	{
-		label: "Tài chính",
-		path: "/finance",
-		icon: FiDollarSign,
+		label: "Khuyến mãi",
+		path: "/promotions",
+		icon: FiGift,
 	},
 	{
 		label: "Báo cáo",

@@ -4,3 +4,4 @@ export * from "./schedule";
 export * from "./sales";
 export * from "./inventory";
 export * from "./purchase";
+export * from "./promotion";

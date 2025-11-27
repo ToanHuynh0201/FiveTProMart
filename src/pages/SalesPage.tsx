@@ -19,6 +19,7 @@ import {
 	TabPanels,
 	Tab,
 	TabPanel,
+	useToast,
 } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -32,6 +33,7 @@ import {
 	OrderHistoryTable,
 	OrderDetailModal,
 	OrderFilterBar,
+	BatchSelectionModal,
 } from "../components/sales";
 import type {
 	OrderItem,
@@ -41,6 +43,7 @@ import type {
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { salesService } from "../services/salesService";
+import { isExpired, isExpiringSoon } from "../utils/date";
 
 interface Customer {
 	id: string;
@@ -50,6 +53,7 @@ interface Customer {
 }
 
 const SalesPage = () => {
+	const toast = useToast();
 	const [customer, setCustomer] = useState<Customer | null>(null);
 	const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 	const [paymentMethod, setPaymentMethod] = useState<
@@ -60,6 +64,8 @@ const SalesPage = () => {
 	);
 	const [createdAt] = useState(new Date());
 	const [showProductList, setShowProductList] = useState(false);
+	const [selectedProductForBatch, setSelectedProductForBatch] =
+		useState<Product | null>(null);
 
 	// Order history states
 	const [orders, setOrders] = useState<SalesOrder[]>([]);
@@ -78,6 +84,11 @@ const SalesPage = () => {
 		isOpen: isDetailOpen,
 		onOpen: onDetailOpen,
 		onClose: onDetailClose,
+	} = useDisclosure();
+	const {
+		isOpen: isBatchModalOpen,
+		onOpen: onBatchModalOpen,
+		onClose: onBatchModalClose,
 	} = useDisclosure();
 
 	useEffect(() => {
@@ -126,17 +137,86 @@ const SalesPage = () => {
 	};
 
 	const handleProductSelect = (product: Product) => {
-		// Check if product already exists in order
+		// Nếu sản phẩm có nhiều lô hàng, mở modal chọn lô
+		if (product.batches && product.batches.length > 0) {
+			setSelectedProductForBatch(product);
+			onBatchModalOpen();
+		} else {
+			// Xử lý như cũ cho sản phẩm không có lô
+			addProductToCart(product, 1);
+		}
+	};
+
+	const handleBatchSelect = (batchId: string, quantity: number) => {
+		if (!selectedProductForBatch) return;
+
+		const batch = selectedProductForBatch.batches?.find(
+			(b) => b.id === batchId,
+		);
+		if (!batch) return;
+
+		// Cảnh báo nếu lô đã hết hạn
+		if (isExpired(batch.expiryDate)) {
+			toast({
+				title: "Cảnh báo lô hàng hết hạn",
+				description: `Lô ${batch.batchNumber} đã hết hạn sử dụng. Không nên bán!`,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
+		}
+
+		// Cảnh báo nếu lô sắp hết hạn
+		if (isExpiringSoon(batch.expiryDate, 7)) {
+			toast({
+				title: "Lô hàng sắp hết hạn",
+				description: `Lô ${batch.batchNumber} sắp hết hạn. Nên ưu tiên bán lô này.`,
+				status: "warning",
+				duration: 4000,
+				isClosable: true,
+				position: "top",
+			});
+		}
+
+		addProductToCart(
+			selectedProductForBatch,
+			quantity,
+			batchId,
+			batch.batchNumber,
+		);
+		setSelectedProductForBatch(null);
+	};
+
+	const addProductToCart = (
+		product: Product,
+		quantity: number,
+		batchId?: string,
+		batchNumber?: string,
+	) => {
+		// Check if same product and batch already exists
 		const existingItem = orderItems.find(
-			(item) => item.product.id === product.id,
+			(item) =>
+				item.product.id === product.id && item.batchId === batchId,
 		);
 
 		if (existingItem) {
 			// Increase quantity
-			handleUpdateQuantity(existingItem.id, existingItem.quantity + 1);
+			handleUpdateQuantity(
+				existingItem.id,
+				existingItem.quantity + quantity,
+			);
 		} else {
 			// Add new item
-			const newItem = salesService.createOrderItem(product, 1);
+			const newItem: OrderItem = {
+				id: `item_${Date.now()}_${Math.random()}`,
+				product,
+				quantity,
+				unitPrice: product.price,
+				totalPrice: product.price * quantity,
+				batchId,
+				batchNumber,
+			};
 			setOrderItems([...orderItems, newItem]);
 		}
 	};
@@ -454,6 +534,15 @@ const SalesPage = () => {
 													</ModalFooter>
 												</ModalContent>
 											</Modal>
+
+											<BatchSelectionModal
+												isOpen={isBatchModalOpen}
+												onClose={onBatchModalClose}
+												product={
+													selectedProductForBatch
+												}
+												onConfirm={handleBatchSelect}
+											/>
 										</>
 									)}
 								</Box>

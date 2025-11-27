@@ -8,3 +8,4 @@ export { CustomerInfoInput } from "./CustomerInfoInput";
 export { default as OrderHistoryTable } from "./OrderHistoryTable";
 export { default as OrderDetailModal } from "./OrderDetailModal";
 export { default as OrderFilterBar } from "./OrderFilterBar";
+export { BatchSelectionModal } from "./BatchSelectionModal";

@@ -6,10 +6,12 @@ import {
 	InputLeftElement,
 	Text,
 	Flex,
+	Badge,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import type { Product } from "../../types/sales";
 import { salesService } from "../../services/salesService";
+import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductSearchBarProps {
 	onProductSelect: (product: Product) => void;
@@ -105,38 +107,76 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							},
 						},
 					}}>
-					{searchResults.map((product) => (
-						<Box
-							key={product.id}
-							p={3.5}
-							cursor="pointer"
-							borderBottom="1px solid"
-							borderColor="gray.100"
-							_hover={{ bg: "gray.50" }}
-							_last={{ borderBottom: "none" }}
-							onClick={() => handleSelectProduct(product)}
-							transition="all 0.2s">
-							<Text
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.800"
-								mb={1.5}>
-								{product.name}
-							</Text>
-							<Flex
-								fontSize="13px"
-								color="gray.600"
-								gap={4}
-								flexWrap="wrap">
-								<Text>Mã: {product.code}</Text>
-								<Text>
-									Giá: {product.price.toLocaleString("vi-VN")}
-									đ
-								</Text>
-								<Text>Tồn: {product.stock}</Text>
-							</Flex>
-						</Box>
-					))}
+					{searchResults.map((product) => {
+						const expiryStatus = getExpiryStatus(
+							product.expiryDate,
+						);
+						const isProductExpired = isExpired(product.expiryDate);
+
+						return (
+							<Box
+								key={product.id}
+								p={3.5}
+								cursor="pointer"
+								borderBottom="1px solid"
+								borderColor="gray.100"
+								_hover={{ bg: "gray.50" }}
+								_last={{ borderBottom: "none" }}
+								onClick={() => handleSelectProduct(product)}
+								transition="all 0.2s"
+								bg={
+									isProductExpired ? "red.50" : "transparent"
+								}>
+								<Flex
+									justify="space-between"
+									align="start"
+									mb={1.5}>
+									<Text
+										fontSize="15px"
+										fontWeight="600"
+										color="gray.800">
+										{product.name}
+									</Text>
+									{product.expiryDate && (
+										<Badge
+											colorScheme={
+												isProductExpired
+													? "red"
+													: expiryStatus.status ===
+													  "critical"
+													? "red"
+													: expiryStatus.status ===
+													  "warning"
+													? "orange"
+													: "green"
+											}
+											fontSize="10px"
+											px={1.5}
+											py={0.5}
+											borderRadius="md"
+											ml={2}
+											flexShrink={0}>
+											{isProductExpired
+												? "Hết hạn"
+												: expiryStatus.text}
+										</Badge>
+									)}
+								</Flex>
+								<Flex
+									fontSize="13px"
+									color="gray.600"
+									gap={4}
+									flexWrap="wrap">
+									<Text>Mã: {product.code}</Text>
+									<Text>
+										Giá:{" "}
+										{product.price.toLocaleString("vi-VN")}đ
+									</Text>
+									<Text>Tồn: {product.stock}</Text>
+								</Flex>
+							</Box>
+						);
+					})}
 				</Box>
 			)}
 		</Box>

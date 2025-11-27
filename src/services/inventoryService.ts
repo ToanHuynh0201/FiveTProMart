@@ -55,6 +55,30 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 300,
 		supplier: "Công ty TNHH ABC",
 		barcode: "8934567890123",
+		batches: [
+			{
+				id: "batch_p1_1",
+				productId: "p1",
+				batchNumber: "LOT001",
+				quantity: 60,
+				costPrice: 35000,
+				expiryDate: new Date("2025-12-31"),
+				importDate: new Date("2025-10-01"),
+				supplier: "Công ty TNHH ABC",
+				status: "active",
+			},
+			{
+				id: "batch_p1_2",
+				productId: "p1",
+				batchNumber: "LOT002",
+				quantity: 40,
+				costPrice: 35000,
+				expiryDate: new Date("2026-01-15"),
+				importDate: new Date("2025-11-10"),
+				supplier: "Công ty TNHH ABC",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-01-15"),
 		updatedAt: new Date("2025-11-20"),
@@ -72,6 +96,19 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 200,
 		supplier: "Công ty TNHH ABC",
 		barcode: "8934567890124",
+		batches: [
+			{
+				id: "batch_p2_1",
+				productId: "p2",
+				batchNumber: "LOT003",
+				quantity: 50,
+				costPrice: 55000,
+				expiryDate: new Date("2025-11-28"), // Sắp hết hạn
+				importDate: new Date("2025-09-15"),
+				supplier: "Công ty TNHH ABC",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-01-15"),
 		updatedAt: new Date("2025-11-20"),
@@ -88,6 +125,30 @@ let mockProducts: InventoryProduct[] = [
 		minStock: 30,
 		maxStock: 500,
 		supplier: "Nông trại XYZ",
+		batches: [
+			{
+				id: "batch_p3_1",
+				productId: "p3",
+				batchNumber: "LOT004",
+				quantity: 120,
+				costPrice: 25000,
+				expiryDate: new Date("2025-12-05"),
+				importDate: new Date("2025-11-15"),
+				supplier: "Nông trại XYZ",
+				status: "active",
+			},
+			{
+				id: "batch_p3_2",
+				productId: "p3",
+				batchNumber: "LOT005",
+				quantity: 80,
+				costPrice: 25000,
+				expiryDate: new Date("2025-12-20"),
+				importDate: new Date("2025-11-22"),
+				supplier: "Nông trại XYZ",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-02-10"),
 		updatedAt: new Date("2025-11-22"),
@@ -104,6 +165,19 @@ let mockProducts: InventoryProduct[] = [
 		minStock: 30,
 		maxStock: 400,
 		supplier: "Nông trại XYZ",
+		batches: [
+			{
+				id: "batch_p4_1",
+				productId: "p4",
+				batchNumber: "LOT006",
+				quantity: 150,
+				costPrice: 26000,
+				expiryDate: new Date("2025-12-10"),
+				importDate: new Date("2025-11-18"),
+				supplier: "Nông trại XYZ",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-02-10"),
 		updatedAt: new Date("2025-11-23"),
@@ -121,6 +195,30 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 1000,
 		supplier: "Công ty Coca Cola VN",
 		barcode: "8934567890125",
+		batches: [
+			{
+				id: "batch_p5_1",
+				productId: "p5",
+				batchNumber: "LOT007",
+				quantity: 100,
+				costPrice: 8000,
+				expiryDate: new Date("2025-11-29"), // Sắp hết hạn
+				importDate: new Date("2025-05-15"),
+				supplier: "Công ty Coca Cola VN",
+				status: "active",
+			},
+			{
+				id: "batch_p5_2",
+				productId: "p5",
+				batchNumber: "LOT008",
+				quantity: 200,
+				costPrice: 8000,
+				expiryDate: new Date("2025-12-25"),
+				importDate: new Date("2025-10-20"),
+				supplier: "Công ty Coca Cola VN",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-03-01"),
 		updatedAt: new Date("2025-11-24"),
@@ -138,6 +236,19 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 1500,
 		supplier: "Công ty Lavie",
 		barcode: "8934567890126",
+		batches: [
+			{
+				id: "batch_p6_1",
+				productId: "p6",
+				batchNumber: "LOT009",
+				quantity: 500,
+				costPrice: 3000,
+				expiryDate: new Date("2026-08-20"),
+				importDate: new Date("2025-11-01"),
+				supplier: "Công ty Lavie",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-03-01"),
 		updatedAt: new Date("2025-11-24"),
@@ -155,6 +266,19 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 800,
 		supplier: "Acecook Việt Nam",
 		barcode: "8934567890127",
+		batches: [
+			{
+				id: "batch_p7_1",
+				productId: "p7",
+				batchNumber: "LOT010",
+				quantity: 18,
+				costPrice: 2500,
+				expiryDate: new Date("2026-03-10"),
+				importDate: new Date("2025-10-15"),
+				supplier: "Acecook Việt Nam",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-04-05"),
 		updatedAt: new Date("2025-11-23"),
@@ -172,6 +296,19 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 600,
 		supplier: "Acecook Việt Nam",
 		barcode: "8934567890128",
+		batches: [
+			{
+				id: "batch_p8_1",
+				productId: "p8",
+				batchNumber: "LOT011",
+				quantity: 180,
+				costPrice: 5000,
+				expiryDate: new Date("2026-04-25"),
+				importDate: new Date("2025-10-20"),
+				supplier: "Acecook Việt Nam",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-04-05"),
 		updatedAt: new Date("2025-11-23"),
@@ -188,6 +325,7 @@ let mockProducts: InventoryProduct[] = [
 		minStock: 10,
 		maxStock: 100,
 		supplier: "Nhà cung cấp thực phẩm DEF",
+		batches: [],
 		status: "out-of-stock",
 		createdAt: new Date("2024-05-15"),
 		updatedAt: new Date("2025-11-24"),
@@ -204,6 +342,19 @@ let mockProducts: InventoryProduct[] = [
 		minStock: 15,
 		maxStock: 80,
 		supplier: "Nhà cung cấp thực phẩm DEF",
+		batches: [
+			{
+				id: "batch_p10_1",
+				productId: "p10",
+				batchNumber: "LOT012",
+				quantity: 8,
+				costPrice: 28000,
+				expiryDate: new Date("2025-11-29"),
+				importDate: new Date("2025-11-22"),
+				supplier: "Nhà cung cấp thực phẩm DEF",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-05-15"),
 		updatedAt: new Date("2025-11-24"),
@@ -221,6 +372,19 @@ let mockProducts: InventoryProduct[] = [
 		maxStock: 300,
 		supplier: "Frito-Lay",
 		barcode: "8934567890129",
+		batches: [
+			{
+				id: "batch_p11_1",
+				productId: "p11",
+				batchNumber: "LOT013",
+				quantity: 95,
+				costPrice: 18000,
+				expiryDate: new Date("2026-01-30"),
+				importDate: new Date("2025-11-01"),
+				supplier: "Frito-Lay",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-06-01"),
 		updatedAt: new Date("2025-11-22"),
@@ -237,6 +401,19 @@ let mockProducts: InventoryProduct[] = [
 		minStock: 25,
 		maxStock: 350,
 		supplier: "Nông trại XYZ",
+		batches: [
+			{
+				id: "batch_p12_1",
+				productId: "p12",
+				batchNumber: "LOT014",
+				quantity: 12,
+				costPrice: 22000,
+				expiryDate: new Date("2025-12-01"),
+				importDate: new Date("2025-11-20"),
+				supplier: "Nông trại XYZ",
+				status: "active",
+			},
+		],
 		status: "active",
 		createdAt: new Date("2024-02-20"),
 		updatedAt: new Date("2025-11-24"),
@@ -470,12 +647,39 @@ export const inventoryService = {
 			(p) => p.status === "active",
 		).length;
 
+		// Tính số lô hết hạn và sắp hết hạn
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const sevenDaysLater = new Date(today);
+		sevenDaysLater.setDate(today.getDate() + 7);
+
+		let expiredBatches = 0;
+		let expiringSoonBatches = 0;
+
+		mockProducts.forEach((product) => {
+			product.batches?.forEach((batch) => {
+				if (batch.expiryDate) {
+					const expiryDate = new Date(batch.expiryDate);
+					expiryDate.setHours(0, 0, 0, 0);
+
+					if (expiryDate < today) {
+						expiredBatches++;
+					} else if (expiryDate <= sevenDaysLater) {
+						expiringSoonBatches++;
+					}
+				}
+			});
+		});
+
 		return {
 			totalProducts,
 			totalValue,
 			lowStockProducts,
 			outOfStockProducts,
 			activeProducts,
+			expiredBatches,
+			expiringSoonBatches,
 		};
 	},
 

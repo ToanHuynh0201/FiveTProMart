@@ -15,6 +15,8 @@ import SalesPage from "./pages/SalesPage";
 import InventoryPage from "./pages/InventoryPage";
 import PurchasePage from "./pages/PurchasePage";
 import PromotionPage from "./pages/PromotionPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import CustomersPage from "./pages/CustomersPage";
 
 function App() {
 	return (
@@ -55,6 +57,14 @@ function App() {
 				<Route
 					path={ROUTES.PROMOTIONS}
 					element={<PromotionPage />}
+				/>
+				<Route
+					path={ROUTES.REPORTS}
+					element={<ReportsPage />}
+				/>
+				<Route
+					path={ROUTES.CUSTOMERS}
+					element={<CustomersPage />}
 				/>
 				<Route
 					path="/"

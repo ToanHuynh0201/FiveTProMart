@@ -1,0 +1,333 @@
+import {
+	Box,
+	Container,
+	Flex,
+	Grid,
+	Heading,
+	Text,
+	useDisclosure,
+	useToast,
+} from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import {
+	FiDollarSign,
+	FiShoppingCart,
+	FiPackage,
+	FiTrendingUp,
+	FiUsers,
+	FiCreditCard,
+} from "react-icons/fi";
+import {
+	MetricCard,
+	DateRangePicker,
+	RevenueChart,
+	OrdersChart,
+	ProductsChart,
+	CategoryChart,
+	RevenueDetailModal,
+	OrdersDetailModal,
+	ProductsDetailModal,
+} from "@/components/reports";
+import { LoadingSpinner } from "@/components/common";
+import {
+	getRevenueReport,
+	getOrdersReport,
+	getProductsReport,
+	getCategoryReport,
+	getCustomerStats,
+} from "@/services/reportService";
+import type {
+	DateRange,
+	DateRangeFilter,
+	RevenueReport,
+	OrdersReport,
+	ProductsReport,
+	CategoryReport,
+	CustomerStats,
+} from "@/types/reports";
+import MainLayout from "@/components/layout/MainLayout";
+
+export const ReportsPage: React.FC = () => {
+	const toast = useToast();
+	const [dateRange, setDateRange] = useState<DateRange>("month");
+	const [loading, setLoading] = useState(true);
+
+	// Data states
+	const [revenueData, setRevenueData] = useState<RevenueReport | null>(null);
+	const [ordersData, setOrdersData] = useState<OrdersReport | null>(null);
+	const [productsData, setProductsData] = useState<ProductsReport | null>(
+		null,
+	);
+	const [categoryData, setCategoryData] = useState<CategoryReport | null>(
+		null,
+	);
+	const [customerData, setCustomerData] = useState<CustomerStats | null>(
+		null,
+	);
+
+	// Modal states
+	const {
+		isOpen: isRevenueModalOpen,
+		onOpen: onRevenueModalOpen,
+		onClose: onRevenueModalClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isOrdersModalOpen,
+		onOpen: onOrdersModalOpen,
+		onClose: onOrdersModalClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isProductsModalOpen,
+		onOpen: onProductsModalOpen,
+		onClose: onProductsModalClose,
+	} = useDisclosure();
+
+	// Fetch data
+	const fetchData = async () => {
+		setLoading(true);
+		try {
+			const period: DateRangeFilter = {
+				type: dateRange,
+			};
+
+			const [revenue, orders, products, category, customer] =
+				await Promise.all([
+					getRevenueReport(period),
+					getOrdersReport(period),
+					getProductsReport(period),
+					getCategoryReport(period),
+					getCustomerStats(period),
+				]);
+
+			setRevenueData(revenue);
+			setOrdersData(orders);
+			setProductsData(products);
+			setCategoryData(category);
+			setCustomerData(customer);
+		} catch (error) {
+			toast({
+				title: "Lỗi tải dữ liệu",
+				description: "Không thể tải dữ liệu báo cáo. Vui lòng thử lại.",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchData();
+	}, [dateRange]);
+
+	const formatCurrency = (value: number) => {
+		if (value >= 1000000000) {
+			return `${(value / 1000000000).toFixed(1)}B`;
+		}
+		if (value >= 1000000) {
+			return `${(value / 1000000).toFixed(1)}M`;
+		}
+		if (value >= 1000) {
+			return `${(value / 1000).toFixed(0)}K`;
+		}
+		return value.toString();
+	};
+
+	return (
+		<MainLayout>
+			<Box
+				minH="100vh"
+				bg="gray.50"
+				py={8}>
+				<Container maxW="container.2xl">
+					{/* Header */}
+					<Flex
+						direction={{ base: "column", md: "row" }}
+						justify="space-between"
+						align={{ base: "flex-start", md: "center" }}
+						gap={{ base: 4, md: 0 }}
+						mb={{ base: 6, md: 8 }}>
+						<Box>
+							<Heading
+								size={{ base: "lg", md: "xl" }}
+								fontWeight="800"
+								color="gray.800"
+								mb={2}>
+								Báo cáo & Thống kê
+							</Heading>
+							<Text
+								color="gray.600"
+								fontSize={{ base: "md", md: "lg" }}>
+								Tổng quan và phân tích dữ liệu kinh doanh
+							</Text>
+						</Box>
+						<Box w={{ base: "full", md: "auto" }}>
+							<DateRangePicker
+								value={dateRange}
+								onChange={setDateRange}
+							/>
+						</Box>
+					</Flex>
+
+					{loading && (
+						<Box
+							h="100vh"
+							display="flex"
+							alignItems="center"
+							justifyContent="center">
+							<LoadingSpinner />
+						</Box>
+					)}
+
+					{/* Overview Metrics */}
+					<Grid
+						templateColumns={{
+							base: "1fr",
+							sm: "repeat(2, 1fr)",
+							lg: "repeat(4, 1fr)",
+						}}
+						gap={{ base: 4, md: 6 }}
+						mb={{ base: 6, md: 8 }}>
+						<MetricCard
+							title="Tổng Doanh thu"
+							value={`${formatCurrency(
+								revenueData?.totalRevenue || 0,
+							)}`}
+							suffix=" đ"
+							icon={FiDollarSign}
+							bgGradient="linear(to-br, brand.500, brand.600)"
+							growth={revenueData?.growth}
+							onClick={onRevenueModalOpen}
+						/>
+						<MetricCard
+							title="Lợi nhuận"
+							value={`${formatCurrency(
+								revenueData?.totalProfit || 0,
+							)}`}
+							suffix=" đ"
+							icon={FiTrendingUp}
+							bgGradient="linear(to-br, success.500, green.600)"
+							growth={revenueData?.growth}
+							onClick={onRevenueModalOpen}
+						/>
+						<MetricCard
+							title="Tổng Đơn hàng"
+							value={ordersData?.totalOrders || 0}
+							icon={FiShoppingCart}
+							bgGradient="linear(to-br, purple.500, purple.600)"
+							growth={ordersData?.growth}
+							onClick={onOrdersModalOpen}
+						/>
+						<MetricCard
+							title="Sản phẩm bán"
+							value={productsData?.totalProductsSold || 0}
+							icon={FiPackage}
+							bgGradient="linear(to-br, orange.500, orange.600)"
+							onClick={onProductsModalOpen}
+						/>
+					</Grid>
+
+					{/* Secondary Metrics */}
+					<Grid
+						templateColumns={{
+							base: "1fr",
+							sm: "repeat(2, 1fr)",
+							lg: "repeat(4, 1fr)",
+						}}
+						gap={{ base: 4, md: 6 }}
+						mb={{ base: 6, md: 8 }}>
+						<MetricCard
+							title="Tỷ lệ hoàn thành"
+							value={ordersData?.completionRate.toFixed(1) || 0}
+							suffix="%"
+							icon={FiShoppingCart}
+							bgGradient="linear(to-br, blue.400, blue.500)"
+						/>
+						<MetricCard
+							title="Giá trị đơn TB"
+							value={`${formatCurrency(
+								ordersData?.averageOrderValue || 0,
+							)}`}
+							suffix=" đ"
+							icon={FiCreditCard}
+							bgGradient="linear(to-br, teal.500, teal.600)"
+						/>
+						<MetricCard
+							title="Tổng khách hàng"
+							value={customerData?.totalCustomers || 0}
+							icon={FiUsers}
+							bgGradient="linear(to-br, pink.500, pink.600)"
+						/>
+						<MetricCard
+							title="Khách hàng mới"
+							value={customerData?.newCustomers || 0}
+							icon={FiUsers}
+							bgGradient="linear(to-br, cyan.500, cyan.600)"
+						/>
+					</Grid>
+
+					{/* Charts Section */}
+					<Box mb={{ base: 4, md: 6 }}>
+						{revenueData && (
+							<RevenueChart
+								data={revenueData}
+								onExpand={onRevenueModalOpen}
+							/>
+						)}
+					</Box>
+
+					<Grid
+						templateColumns={{
+							base: "1fr",
+							lg: "repeat(2, 1fr)",
+						}}
+						gap={{ base: 4, md: 6 }}
+						mb={{ base: 4, md: 6 }}>
+						{ordersData && (
+							<OrdersChart
+								data={ordersData}
+								onExpand={onOrdersModalOpen}
+							/>
+						)}
+						{categoryData && <CategoryChart data={categoryData} />}
+					</Grid>
+
+					<Box mb={{ base: 4, md: 6 }}>
+						{productsData && (
+							<ProductsChart
+								data={productsData}
+								onExpand={onProductsModalOpen}
+							/>
+						)}
+					</Box>
+
+					{/* Detail Modals */}
+					{revenueData && (
+						<RevenueDetailModal
+							isOpen={isRevenueModalOpen}
+							onClose={onRevenueModalClose}
+							data={revenueData}
+						/>
+					)}
+					{ordersData && (
+						<OrdersDetailModal
+							isOpen={isOrdersModalOpen}
+							onClose={onOrdersModalClose}
+							data={ordersData}
+						/>
+					)}
+					{productsData && (
+						<ProductsDetailModal
+							isOpen={isProductsModalOpen}
+							onClose={onProductsModalClose}
+							data={productsData}
+						/>
+					)}
+				</Container>
+			</Box>
+		</MainLayout>
+	);
+};

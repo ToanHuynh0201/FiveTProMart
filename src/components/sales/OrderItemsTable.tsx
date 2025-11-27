@@ -10,9 +10,12 @@ import {
 	NumberInput,
 	NumberInputField,
 	Button,
+	Badge,
+	Tooltip,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { OrderItem } from "../../types/sales";
+import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface OrderItemsTableProps {
 	items: OrderItem[];
@@ -123,135 +126,261 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							</Td>
 						</Tr>
 					) : (
-						items.map((item, index) => (
-							<Tr
-								key={item.id}
-								borderBottom="1px solid"
-								borderColor="gray.100"
-								transition="all 0.2s"
-								_hover={{ bg: "gray.50" }}
-								_last={{
-									borderBottom: "none",
-								}}>
-								<Td
-									py={5}
-									fontSize="16px"
-									fontWeight="600"
-									color="gray.700">
-									{index + 1}
-								</Td>
-								<Td py={5}>
-									<Text
+						items.map((item, index) => {
+							const expiryStatus = getExpiryStatus(
+								item.product.expiryDate,
+							);
+							const isProductExpired = isExpired(
+								item.product.expiryDate,
+							);
+
+							return (
+								<Tr
+									key={item.id}
+									borderBottom="1px solid"
+									borderColor="gray.100"
+									transition="all 0.2s"
+									_hover={{ bg: "gray.50" }}
+									_last={{
+										borderBottom: "none",
+									}}
+									bg={
+										isProductExpired
+											? "red.50"
+											: "transparent"
+									}>
+									<Td
+										py={5}
 										fontSize="16px"
 										fontWeight="600"
-										color="gray.800"
-										mb={item.product.promotion ? 1 : 0}>
-										{item.product.name}
-									</Text>
-									{item.product.promotion && (
-										<Text
-											fontSize="14px"
-											color="red.500"
-											fontWeight="500"
-											display="flex"
-											alignItems="center"
-											gap={1}>
-											✨ {item.product.promotion}
-										</Text>
-									)}
-								</Td>
-								<Td
-									py={5}
-									fontSize="15px"
-									color="gray.600"
-									fontFamily="mono">
-									{item.product.code}
-								</Td>
-								<Td
-									py={5}
-									textAlign="center">
-									<NumberInput
-										value={item.quantity}
-										min={1}
-										max={item.product.stock}
-										w="90px"
-										size="md"
-										mx="auto"
-										onChange={(_, valueAsNumber) => {
-											if (!isNaN(valueAsNumber)) {
-												onUpdateQuantity(
-													item.id,
-													Math.min(
-														valueAsNumber,
-														item.product.stock,
-													),
+										color="gray.700">
+										{index + 1}
+									</Td>
+									<Td py={5}>
+										<Box>
+											<Text
+												fontSize="16px"
+												fontWeight="600"
+												color="gray.800"
+												mb={
+													item.product.promotion ||
+													item.product.expiryDate ||
+													item.batchNumber
+														? 1
+														: 0
+												}>
+												{item.product.name}
+											</Text>
+											{item.batchNumber && (
+												<Text
+													fontSize="13px"
+													color="blue.600"
+													fontWeight="500"
+													display="flex"
+													alignItems="center"
+													gap={1}
+													mb={
+														item.product
+															.promotion ||
+														item.product.expiryDate
+															? 1
+															: 0
+													}>
+													📦 Lô: {item.batchNumber}
+												</Text>
+											)}
+											{item.product.promotion && (
+												<Text
+													fontSize="14px"
+													color="red.500"
+													fontWeight="500"
+													display="flex"
+													alignItems="center"
+													gap={1}
+													mb={
+														item.product.expiryDate
+															? 1
+															: 0
+													}>
+													✨ {item.product.promotion}
+												</Text>
+											)}
+											{item.product.expiryDate && (
+												<Tooltip
+													label={
+														isProductExpired
+															? "Sản phẩm đã hết hạn sử dụng, không nên bán!"
+															: expiryStatus.status ===
+															  "critical"
+															? "Sản phẩm sắp hết hạn, cần xử lý nhanh!"
+															: expiryStatus.status ===
+															  "warning"
+															? "Sản phẩm sắp hết hạn trong tuần này"
+															: `Hạn sử dụng: ${expiryStatus.text}`
+													}
+													placement="top"
+													hasArrow>
+													<Badge
+														colorScheme={
+															isProductExpired
+																? "red"
+																: expiryStatus.status ===
+																  "critical"
+																? "red"
+																: expiryStatus.status ===
+																  "warning"
+																? "orange"
+																: "green"
+														}
+														fontSize="12px"
+														px={2}
+														py={0.5}
+														borderRadius="md"
+														display="inline-flex"
+														alignItems="center"
+														gap={1}>
+														{isProductExpired
+															? "⚠️ Đã hết hạn"
+															: `📅 HSD: ${expiryStatus.text}`}
+													</Badge>
+												</Tooltip>
+											)}
+										</Box>
+									</Td>
+									<Td
+										py={5}
+										fontSize="15px"
+										color="gray.600"
+										fontFamily="mono">
+										{item.product.code}
+									</Td>
+									<Td
+										py={5}
+										textAlign="center">
+										<NumberInput
+											defaultValue={item.quantity}
+											min={1}
+											max={item.product.stock}
+											w="90px"
+											size="md"
+											mx="auto"
+											allowMouseWheel={false}
+											onChange={(
+												valueString,
+												valueAsNumber,
+											) => {
+												// Nếu rỗng, set về 1
+												if (
+													valueString === "" ||
+													valueString === null
+												) {
+													onUpdateQuantity(
+														item.id,
+														1,
+													);
+													return;
+												}
+												if (
+													!isNaN(valueAsNumber) &&
+													valueAsNumber >= 1
+												) {
+													onUpdateQuantity(
+														item.id,
+														Math.min(
+															valueAsNumber,
+															item.product.stock,
+														),
+													);
+												}
+											}}
+											onBlur={(e) => {
+												// Khi blur, nếu rỗng hoặc < 1 thì set về 1
+												const val = parseInt(
+													e.target.value,
 												);
-											}
-										}}>
-										<NumberInputField
-											px={3}
-											py={2}
-											h="42px"
-											textAlign="center"
-											fontSize="16px"
+												if (
+													isNaN(val) ||
+													val < 1 ||
+													e.target.value === ""
+												) {
+													onUpdateQuantity(
+														item.id,
+														1,
+													);
+													e.target.value = "1";
+												}
+											}}>
+											<NumberInputField
+												px={3}
+												py={2}
+												h="42px"
+												textAlign="center"
+												fontSize="16px"
+												fontWeight="600"
+												borderWidth="2px"
+												borderColor="gray.300"
+												borderRadius="8px"
+												_hover={{
+													borderColor: "gray.400",
+												}}
+												_focus={{
+													borderColor: "#161f70",
+													boxShadow:
+														"0 0 0 3px rgba(22, 31, 112, 0.15)",
+												}}
+											/>
+										</NumberInput>
+									</Td>
+									<Td
+										py={5}
+										fontSize="16px"
+										fontWeight="500"
+										color="gray.700"
+										textAlign="right"
+										isNumeric>
+										{item.unitPrice.toLocaleString("vi-VN")}
+										đ
+									</Td>
+									<Td
+										py={5}
+										fontSize="17px"
+										fontWeight="700"
+										color="#161f70"
+										textAlign="right"
+										isNumeric>
+										{item.totalPrice.toLocaleString(
+											"vi-VN",
+										)}
+										đ
+									</Td>
+									<Td
+										py={5}
+										textAlign="center">
+										<Button
+											size="md"
+											variant="ghost"
+											colorScheme="red"
+											leftIcon={<DeleteIcon />}
+											fontSize="14px"
 											fontWeight="600"
-											borderWidth="2px"
-											borderColor="gray.300"
-											borderRadius="8px"
+											px={4}
+											h="40px"
+											onClick={() =>
+												onRemoveItem(item.id)
+											}
 											_hover={{
-												borderColor: "gray.400",
+												bg: "red.50",
+												color: "red.600",
 											}}
-											_focus={{
-												borderColor: "#161f70",
-												boxShadow:
-													"0 0 0 3px rgba(22, 31, 112, 0.15)",
-											}}
-										/>
-									</NumberInput>
-								</Td>
-								<Td
-									py={5}
-									fontSize="16px"
-									fontWeight="500"
-									color="gray.700"
-									textAlign="right"
-									isNumeric>
-									{item.unitPrice.toLocaleString("vi-VN")}đ
-								</Td>
-								<Td
-									py={5}
-									fontSize="17px"
-									fontWeight="700"
-									color="#161f70"
-									textAlign="right"
-									isNumeric>
-									{item.totalPrice.toLocaleString("vi-VN")}đ
-								</Td>
-								<Td
-									py={5}
-									textAlign="center">
-									<Button
-										size="md"
-										variant="ghost"
-										colorScheme="red"
-										leftIcon={<DeleteIcon />}
-										fontSize="14px"
-										fontWeight="600"
-										px={4}
-										h="40px"
-										onClick={() => onRemoveItem(item.id)}
-										_hover={{
-											bg: "red.50",
-											color: "red.600",
-										}}
-										_active={{
-											bg: "red.100",
-										}}>
-										Xóa
-									</Button>
-								</Td>
-							</Tr>
-						))
+											_active={{
+												bg: "red.100",
+											}}>
+											Xóa
+										</Button>
+									</Td>
+								</Tr>
+							);
+						})
 					)}
 				</Tbody>
 			</Table>

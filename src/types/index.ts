@@ -5,3 +5,5 @@ export * from "./sales";
 export * from "./inventory";
 export * from "./purchase";
 export * from "./promotion";
+export * from "./reports";
+export * from "./customer";

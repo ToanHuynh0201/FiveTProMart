@@ -222,11 +222,10 @@ const InventoryPage = () => {
 					mb={6}>
 					Quản lý hàng hóa
 				</Text>
-
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
-						columns={{ base: 1, sm: 2, lg: 4 }}
+						columns={{ base: 1, sm: 2, lg: 3 }}
 						spacing={5}
 						mb={6}>
 						<StatsCard
@@ -259,16 +258,28 @@ const InventoryPage = () => {
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
 						/>
+						<StatsCard
+							title="Lô sắp hết hạn"
+							value={stats.expiringSoonBatches}
+							icon={BsExclamationTriangle}
+							color="orange.500"
+							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
+						/>
+						<StatsCard
+							title="Lô đã hết hạn"
+							value={stats.expiredBatches}
+							icon={FiPackage}
+							color="red.500"
+							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"
+						/>
 					</SimpleGrid>
-				)}
-
+				)}{" "}
 				{/* Search Bar */}
 				<ProductSearchBar
 					searchQuery={filters.searchQuery}
 					onSearchChange={handleSearchChange}
 					onAddProduct={onAddModalOpen}
 				/>
-
 				{/* Filter Bar */}
 				<ProductFilterBar
 					filters={filters}
@@ -276,7 +287,6 @@ const InventoryPage = () => {
 					onFiltersChange={handleFiltersChange}
 					onReset={handleResetFilters}
 				/>
-
 				{/* Loading State */}
 				{isLoading && (
 					<Flex
@@ -290,7 +300,6 @@ const InventoryPage = () => {
 						/>
 					</Flex>
 				)}
-
 				{/* Product Table */}
 				{!isLoading && (
 					<>
@@ -331,7 +340,6 @@ const InventoryPage = () => {
 						)}
 					</>
 				)}
-
 				{/* Empty State */}
 				{!isLoading && filteredProducts.length === 0 && (
 					<Flex

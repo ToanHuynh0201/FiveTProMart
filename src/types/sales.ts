@@ -1,3 +1,11 @@
+export interface ProductBatch {
+	id: string;
+	batchNumber: string; // Số lô
+	quantity: number; // Số lượng trong lô
+	expiryDate: Date; // Hạn sử dụng
+	importDate: Date; // Ngày nhập
+}
+
 export interface Product {
 	id: string;
 	code: string; // Mã hàng
@@ -6,6 +14,8 @@ export interface Product {
 	stock: number; // Tồn kho
 	category?: string;
 	promotion?: string; // Khuyến mãi
+	expiryDate?: Date; // Hạn sử dụng (deprecated - dùng batches)
+	batches?: ProductBatch[]; // Danh sách lô hàng
 }
 
 export interface OrderItem {
@@ -14,6 +24,8 @@ export interface OrderItem {
 	quantity: number; // Số lượng
 	unitPrice: number; // Đơn giá
 	totalPrice: number; // Thành tiền
+	batchId?: string; // ID của lô hàng được chọn
+	batchNumber?: string; // Số lô (để hiển thị)
 }
 
 export type PaymentMethod = "cash" | "card" | "transfer";

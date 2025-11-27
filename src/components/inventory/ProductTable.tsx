@@ -19,6 +19,7 @@ import {
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import type { InventoryProduct } from "../../types/inventory";
+import { isExpired, isExpiringSoon } from "../../utils/date";
 
 interface ProductTableProps {
 	products: InventoryProduct[];
@@ -79,6 +80,64 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 				</Text>
 			);
 		}
+		return null;
+	};
+
+	// Kiểm tra lô hàng hết hạn
+	const getBatchExpiryWarning = (product: InventoryProduct) => {
+		if (!product.batches || product.batches.length === 0) return null;
+
+		let expiredCount = 0;
+		let expiringSoonCount = 0;
+
+		product.batches.forEach((batch) => {
+			if (batch.quantity > 0) {
+				if (isExpired(batch.expiryDate)) {
+					expiredCount++;
+				} else if (isExpiringSoon(batch.expiryDate, 7)) {
+					expiringSoonCount++;
+				}
+			}
+		});
+
+		if (expiredCount > 0) {
+			return (
+				<Tooltip
+					label={`${expiredCount} lô đã hết hạn`}
+					placement="top"
+					hasArrow>
+					<Badge
+						colorScheme="red"
+						fontSize="10px"
+						px={2}
+						py={0.5}
+						borderRadius="md"
+						cursor="help">
+						⚠️ {expiredCount} lô hết hạn
+					</Badge>
+				</Tooltip>
+			);
+		}
+
+		if (expiringSoonCount > 0) {
+			return (
+				<Tooltip
+					label={`${expiringSoonCount} lô sắp hết hạn trong 7 ngày`}
+					placement="top"
+					hasArrow>
+					<Badge
+						colorScheme="orange"
+						fontSize="10px"
+						px={2}
+						py={0.5}
+						borderRadius="md"
+						cursor="help">
+						🔔 {expiringSoonCount} lô sắp hết hạn
+					</Badge>
+				</Tooltip>
+			);
+		}
+
 		return null;
 	};
 
@@ -178,7 +237,12 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="gray.800"
 									fontWeight="600"
 									maxW="250px">
-									{product.name}
+									<Flex
+										direction="column"
+										gap={1}>
+										<Text>{product.name}</Text>
+										{getBatchExpiryWarning(product)}
+									</Flex>
 								</Td>
 								<Td
 									fontSize="14px"

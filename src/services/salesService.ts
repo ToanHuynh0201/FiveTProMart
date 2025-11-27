@@ -7,33 +7,97 @@ const mockProducts: Product[] = [
 		code: "SN00000001",
 		name: "Bánh snack bắp cải trộn",
 		price: 50000,
-		stock: 100,
+		stock: 150,
 		category: "Snack",
+		batches: [
+			{
+				id: "b1_1",
+				batchNumber: "LOT001",
+				quantity: 100,
+				expiryDate: new Date("2025-12-31"), // Còn hạn dài
+				importDate: new Date("2025-10-15"),
+			},
+			{
+				id: "b1_2",
+				batchNumber: "LOT002",
+				quantity: 50,
+				expiryDate: new Date("2025-11-29"), // Sắp hết hạn (2 ngày)
+				importDate: new Date("2025-09-20"),
+			},
+		],
 	},
 	{
 		id: "p2",
 		code: "SN00000002",
 		name: "Bánh snack củ cải trộn",
 		price: 80000,
-		stock: 50,
+		stock: 120,
 		category: "Snack",
+		batches: [
+			{
+				id: "b2_1",
+				batchNumber: "LOT003",
+				quantity: 70,
+				expiryDate: new Date("2026-01-15"), // Còn hạn dài
+				importDate: new Date("2025-11-01"),
+			},
+			{
+				id: "b2_2",
+				batchNumber: "LOT004",
+				quantity: 50,
+				expiryDate: new Date("2025-12-01"), // Sắp hết hạn (4 ngày)
+				importDate: new Date("2025-10-10"),
+			},
+		],
 	},
 	{
 		id: "p3",
 		code: "CN00000002",
 		name: "Củ cải vàng",
 		price: 40000,
-		stock: 200,
+		stock: 250,
 		category: "Rau củ",
+		batches: [
+			{
+				id: "b3_1",
+				batchNumber: "LOT005",
+				quantity: 200,
+				expiryDate: new Date("2025-12-20"), // Còn hạn dài
+				importDate: new Date("2025-11-15"),
+			},
+			{
+				id: "b3_2",
+				batchNumber: "LOT006",
+				quantity: 50,
+				expiryDate: new Date("2025-11-28"), // Sắp hết hạn (1 ngày)
+				importDate: new Date("2025-11-10"),
+			},
+		],
 	},
 	{
 		id: "p4",
 		code: "CN00000004",
 		name: "Củ cải xanh",
 		price: 40000,
-		stock: 150,
+		stock: 180,
 		category: "Rau củ",
 		promotion: "mua 2 tặng cây đấm lưng",
+		batches: [
+			{
+				id: "b4_1",
+				batchNumber: "LOT007",
+				quantity: 150,
+				expiryDate: new Date("2026-02-10"), // Còn hạn dài
+				importDate: new Date("2025-11-20"),
+			},
+			{
+				id: "b4_2",
+				batchNumber: "LOT008",
+				quantity: 30,
+				expiryDate: new Date("2025-12-02"), // Sắp hết hạn (5 ngày)
+				importDate: new Date("2025-10-25"),
+			},
+		],
 	},
 ];
 

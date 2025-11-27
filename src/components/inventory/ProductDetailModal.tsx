@@ -16,9 +16,17 @@ import {
 	Flex,
 	useToast,
 	Spinner,
+	Table,
+	Thead,
+	Tbody,
+	Tr,
+	Th,
+	Td,
+	Tooltip,
 } from "@chakra-ui/react";
 import type { InventoryProduct } from "../../types/inventory";
 import { inventoryService } from "../../services/inventoryService";
+import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductDetailModalProps {
 	isOpen: boolean;
@@ -326,6 +334,171 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 									</Box>
 								</>
 							)}
+
+							<Divider />
+
+							{/* Batch Information */}
+							<Box>
+								<Text
+									fontSize="16px"
+									fontWeight="700"
+									color="gray.700"
+									mb={3}>
+									Danh sách lô hàng (
+									{product.batches?.length || 0} lô)
+								</Text>
+
+								{product.batches &&
+								product.batches.length > 0 ? (
+									<Box
+										border="1px solid"
+										borderColor="gray.200"
+										borderRadius="8px"
+										overflow="hidden">
+										<Table size="sm">
+											<Thead bg="gray.50">
+												<Tr>
+													<Th fontSize="12px">
+														Số lô
+													</Th>
+													<Th
+														fontSize="12px"
+														isNumeric>
+														SL
+													</Th>
+													<Th fontSize="12px">
+														Hạn SD
+													</Th>
+													<Th fontSize="12px">
+														Ngày nhập
+													</Th>
+													<Th fontSize="12px">
+														Trạng thái
+													</Th>
+												</Tr>
+											</Thead>
+											<Tbody>
+												{product.batches.map(
+													(batch) => {
+														const expiryInfo =
+															getExpiryStatus(
+																batch.expiryDate,
+															);
+														const expired =
+															isExpired(
+																batch.expiryDate,
+															);
+
+														return (
+															<Tr
+																key={batch.id}
+																bg={
+																	expired
+																		? "red.50"
+																		: "white"
+																}>
+																<Td
+																	fontSize="13px"
+																	fontWeight="600">
+																	{
+																		batch.batchNumber
+																	}
+																</Td>
+																<Td
+																	fontSize="13px"
+																	isNumeric
+																	fontWeight="600">
+																	{
+																		batch.quantity
+																	}
+																</Td>
+																<Td fontSize="13px">
+																	{batch.expiryDate ? (
+																		<Tooltip
+																			label={
+																				expiryInfo.status ===
+																				"expired"
+																					? "Đã hết hạn"
+																					: `Còn ${expiryInfo.text}`
+																			}
+																			hasArrow>
+																			<Badge
+																				colorScheme={
+																					expired
+																						? "red"
+																						: expiryInfo.status ===
+																						  "critical"
+																						? "red"
+																						: expiryInfo.status ===
+																						  "warning"
+																						? "orange"
+																						: "green"
+																				}
+																				fontSize="11px">
+																				{
+																					expiryInfo.text
+																				}
+																			</Badge>
+																		</Tooltip>
+																	) : (
+																		<Text
+																			fontSize="12px"
+																			color="gray.500">
+																			Không
+																			có
+																			HSD
+																		</Text>
+																	)}
+																</Td>
+																<Td fontSize="13px">
+																	{new Date(
+																		batch.importDate,
+																	).toLocaleDateString(
+																		"vi-VN",
+																	)}
+																</Td>
+																<Td fontSize="13px">
+																	<Badge
+																		colorScheme={
+																			batch.status ===
+																			"active"
+																				? "green"
+																				: batch.status ===
+																				  "expired"
+																				? "red"
+																				: "gray"
+																		}
+																		fontSize="11px">
+																		{batch.status ===
+																		"active"
+																			? "Hoạt động"
+																			: batch.status ===
+																			  "expired"
+																			? "Hết hạn"
+																			: "Đã bán hết"}
+																	</Badge>
+																</Td>
+															</Tr>
+														);
+													},
+												)}
+											</Tbody>
+										</Table>
+									</Box>
+								) : (
+									<Box
+										p={4}
+										bg="gray.50"
+										borderRadius="8px"
+										textAlign="center">
+										<Text
+											fontSize="14px"
+											color="gray.500">
+											Chưa có lô hàng nào
+										</Text>
+									</Box>
+								)}
+							</Box>
 
 							<Divider />
 

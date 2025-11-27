@@ -34,6 +34,7 @@ export const ROUTES = {
 	SCHEDULE: "/schedule",
 	SALES: "/sales",
 	INVENTORY: "/inventory",
+	PURCHASE: "/purchase",
 	FINANCE: "/finance",
 	REPORTS: "/reports",
 	CUSTOMERS: "/customers",

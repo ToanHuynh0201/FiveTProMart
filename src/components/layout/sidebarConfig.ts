@@ -4,6 +4,7 @@ import {
 	FiCalendar,
 	FiShoppingCart,
 	FiPackage,
+	FiTruck,
 	FiDollarSign,
 	FiBarChart2,
 	FiUserCheck,
@@ -29,6 +30,11 @@ export const navItems: NavItem[] = [
 		label: "Hàng hóa",
 		path: "/inventory",
 		icon: FiPackage,
+	},
+	{
+		label: "Nhập hàng",
+		path: "/purchase",
+		icon: FiTruck,
 	},
 	{
 		label: "Tài chính",

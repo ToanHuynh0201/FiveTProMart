@@ -8,8 +8,8 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import { BsBoxSeam, BsExclamationTriangle } from "react-icons/bs";
-import { FiPackage, FiTrendingUp } from "react-icons/fi";
+import { BsExclamationTriangle } from "react-icons/bs";
+import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ProductSearchBar,
@@ -204,6 +204,39 @@ const InventoryPage = () => {
 		}
 	};
 
+	// Stats card click handlers
+	const handleLowStockClick = () => {
+		setFilters({
+			...filters,
+			stockLevel: "low",
+			searchQuery: "",
+		});
+	};
+
+	const handleOutOfStockClick = () => {
+		setFilters({
+			...filters,
+			stockLevel: "out",
+			searchQuery: "",
+		});
+	};
+
+	const handleExpiringSoonClick = () => {
+		setFilters({
+			...filters,
+			stockLevel: "expiring-soon",
+			searchQuery: "",
+		});
+	};
+
+	const handleExpiredClick = () => {
+		setFilters({
+			...filters,
+			stockLevel: "expired",
+			searchQuery: "",
+		});
+	};
+
 	// Pagination
 	const startIndex = (currentPage - 1) * pageSize;
 	const endIndex = startIndex + pageSize;
@@ -225,31 +258,16 @@ const InventoryPage = () => {
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
-						columns={{ base: 1, sm: 2, lg: 3 }}
+						columns={{ base: 1, sm: 2, lg: 4 }}
 						spacing={5}
 						mb={6}>
-						<StatsCard
-							title="Tổng số mặt hàng"
-							value={stats.totalProducts}
-							icon={BsBoxSeam}
-							color="blue.500"
-							bgGradient="linear(135deg, #4299E1 0%, #3182CE 100%)"
-						/>
-						<StatsCard
-							title="Giá trị tồn kho"
-							value={`${(stats.totalValue / 1000000).toFixed(
-								1,
-							)}M`}
-							icon={FiTrendingUp}
-							color="green.500"
-							bgGradient="linear(135deg, #48BB78 0%, #38A169 100%)"
-						/>
 						<StatsCard
 							title="Sắp hết hàng"
 							value={stats.lowStockProducts}
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
+							onClick={handleLowStockClick}
 						/>
 						<StatsCard
 							title="Hết hàng"
@@ -257,6 +275,7 @@ const InventoryPage = () => {
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
+							onClick={handleOutOfStockClick}
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
@@ -264,6 +283,7 @@ const InventoryPage = () => {
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
+							onClick={handleExpiringSoonClick}
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
@@ -271,6 +291,7 @@ const InventoryPage = () => {
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"
+							onClick={handleExpiredClick}
 						/>
 					</SimpleGrid>
 				)}{" "}

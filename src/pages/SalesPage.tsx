@@ -5,31 +5,21 @@ import {
 	Grid,
 	Heading,
 	VStack,
-	Button,
-	Modal,
-	ModalOverlay,
-	ModalContent,
-	ModalHeader,
-	ModalBody,
-	ModalFooter,
-	ModalCloseButton,
+	useToast,
 	useDisclosure,
 	Tabs,
 	TabList,
 	TabPanels,
 	Tab,
 	TabPanel,
-	useToast,
 } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ProductSearchBar,
 	AddProductButton,
 	OrderItemsTable,
-	PaymentMethodSelector,
-	OrderSummary,
 	OrderHeader,
-	CustomerInfoInput,
+	PaymentFooter,
 	OrderHistoryTable,
 	OrderDetailModal,
 	OrderFilterBar,
@@ -54,7 +44,12 @@ interface Customer {
 
 const SalesPage = () => {
 	const toast = useToast();
-	const [customer, setCustomer] = useState<Customer | null>(null);
+	const [customer, setCustomer] = useState<Customer | null>({
+		id: `guest_${Date.now()}`,
+		name: "KHÁCH VÃNG LAI",
+		phone: "",
+		points: 0,
+	});
 	const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 	const [paymentMethod, setPaymentMethod] = useState<
 		PaymentMethod | undefined
@@ -80,11 +75,6 @@ const SalesPage = () => {
 	});
 
 	const { isOpen, onOpen, onClose } = useDisclosure();
-	const {
-		isOpen: isDetailOpen,
-		onOpen: onDetailOpen,
-		onClose: onDetailClose,
-	} = useDisclosure();
 	const {
 		isOpen: isBatchModalOpen,
 		onOpen: onBatchModalOpen,
@@ -133,7 +123,7 @@ const SalesPage = () => {
 
 	const handleViewOrderDetail = (order: SalesOrder) => {
 		setSelectedOrder(order);
-		onDetailOpen();
+		onOpen();
 	};
 
 	const handleProductSelect = (product: Product) => {
@@ -313,7 +303,12 @@ const SalesPage = () => {
 			// Reset form
 			setOrderItems([]);
 			setPaymentMethod(undefined);
-			setCustomer(null);
+			setCustomer({
+				id: `guest_${Date.now()}`,
+				name: "KHÁCH VÃNG LAI",
+				phone: "",
+				points: 0,
+			});
 
 			// Reload page to get new order number
 			window.location.reload();
@@ -323,16 +318,8 @@ const SalesPage = () => {
 		}
 	};
 
-	const handleCustomerConfirmed = (confirmedCustomer: Customer) => {
-		setCustomer(confirmedCustomer);
-	};
-
-	const handleBackToCustomerInfo = () => {
-		// Reset tất cả thông tin
-		setCustomer(null);
-		setOrderItems([]);
-		setPaymentMethod(undefined);
-		onClose();
+	const handleCustomerChange = (updatedCustomer: Customer | null) => {
+		setCustomer(updatedCustomer);
 	};
 
 	return (
@@ -381,171 +368,92 @@ const SalesPage = () => {
 						<TabPanels>
 							{/* Tab: Lập hóa đơn */}
 							<TabPanel px={0}>
-								<Box pt={4}>
-									{customer && (
-										<Box mb={5}>
-											<Flex
-												align="center"
-												gap={4}
-												mb={4}>
-												<Button
-													onClick={onOpen}
-													colorScheme="gray"
-													variant="outline"
-													size="md"
-													leftIcon={
-														<Box as="span">←</Box>
-													}>
-													Quay lại
-												</Button>
-											</Flex>
-											<OrderHeader
-												orderNumber={orderNumber}
-												customerName={customer.name}
-												createdAt={createdAt}
-											/>
-										</Box>
-									)}
-
-									{!customer ? (
-										<CustomerInfoInput
-											onCustomerConfirmed={
-												handleCustomerConfirmed
+								<Box
+									pt={4}
+									pb="100px">
+									<Box mb={5}>
+										<OrderHeader
+											orderNumber={orderNumber}
+											customerName={
+												customer?.name ||
+												"KHÁCH VÃNG LAI"
 											}
+											createdAt={createdAt}
 										/>
-									) : (
-										<>
-											<Grid
-												templateColumns={{
-													base: "1fr",
-												}}
-												gap={6}
-												alignItems="start">
-												<VStack
-													spacing={5}
-													align="stretch">
-													<Box
-														bg="white"
-														borderRadius="xl"
-														p={6}
-														boxShadow="sm">
-														<Flex
-															gap={3}
-															align="center"
-															wrap="wrap">
-															<AddProductButton
-																onClick={
-																	handleShowProductList
-																}
-															/>
-															<ProductSearchBar
-																onProductSelect={
-																	handleProductSelect
-																}
-															/>
-														</Flex>
-													</Box>
+									</Box>
 
-													<Box
-														bg="white"
-														borderRadius="xl"
-														p={6}
-														boxShadow="sm">
-														<OrderItemsTable
-															items={orderItems}
-															onUpdateQuantity={
-																handleUpdateQuantity
-															}
-															onRemoveItem={
-																handleRemoveItem
-															}
-														/>
-													</Box>
+									<Grid
+										templateColumns={{
+											base: "1fr",
+										}}
+										gap={6}
+										alignItems="start">
+										<VStack
+											spacing={5}
+											align="stretch">
+											<Box
+												bg="white"
+												borderRadius="xl"
+												p={6}
+												boxShadow="sm">
+												<Flex
+													gap={3}
+													align="center"
+													wrap="wrap">
+													<AddProductButton
+														onClick={
+															handleShowProductList
+														}
+													/>
+													<ProductSearchBar
+														onProductSelect={
+															handleProductSelect
+														}
+													/>
+												</Flex>
+											</Box>
 
-													<Grid
-														templateColumns={{
-															base: "1fr",
-															md: "repeat(2, 1fr)",
-														}}
-														gap={5}>
-														<Box
-															bg="white"
-															borderRadius="xl"
-															p={6}
-															boxShadow="sm">
-															<PaymentMethodSelector
-																selected={
-																	paymentMethod
-																}
-																onSelect={
-																	setPaymentMethod
-																}
-															/>
-														</Box>
+											<Box
+												bg="white"
+												borderRadius="xl"
+												p={6}
+												boxShadow="sm">
+												<OrderItemsTable
+													items={orderItems}
+													onUpdateQuantity={
+														handleUpdateQuantity
+													}
+													onRemoveItem={
+														handleRemoveItem
+													}
+												/>
+											</Box>
+										</VStack>
+									</Grid>
 
-														<Box
-															bg="white"
-															borderRadius="xl"
-															p={6}
-															boxShadow="sm">
-															<OrderSummary
-																total={calculateTotal()}
-																loyaltyPoints={calculateLoyaltyPoints()}
-																onPrint={
-																	handlePrint
-																}
-															/>
-														</Box>
-													</Grid>
-												</VStack>
-											</Grid>
-
-											<Modal
-												isOpen={isOpen}
-												onClose={onClose}
-												isCentered>
-												<ModalOverlay bg="blackAlpha.600" />
-												<ModalContent>
-													<ModalHeader color="#161f70">
-														Xác nhận quay lại
-													</ModalHeader>
-													<ModalCloseButton />
-													<ModalBody>
-														Bạn có chắc chắn muốn
-														quay lại? Tất cả thông
-														tin sản phẩm đã thêm và
-														phương thức thanh toán
-														sẽ bị xóa.
-													</ModalBody>
-													<ModalFooter gap={3}>
-														<Button
-															colorScheme="gray"
-															variant="ghost"
-															onClick={onClose}>
-															Hủy
-														</Button>
-														<Button
-															colorScheme="red"
-															onClick={
-																handleBackToCustomerInfo
-															}>
-															Xác nhận
-														</Button>
-													</ModalFooter>
-												</ModalContent>
-											</Modal>
-
-											<BatchSelectionModal
-												isOpen={isBatchModalOpen}
-												onClose={onBatchModalClose}
-												product={
-													selectedProductForBatch
-												}
-												onConfirm={handleBatchSelect}
-											/>
-										</>
-									)}
+									<BatchSelectionModal
+										isOpen={isBatchModalOpen}
+										onClose={onBatchModalClose}
+										product={selectedProductForBatch}
+										onConfirm={handleBatchSelect}
+									/>
 								</Box>
+
+								{/* Floating Payment Footer */}
+								<PaymentFooter
+									total={calculateTotal()}
+									loyaltyPoints={
+										customer?.phone
+											? calculateLoyaltyPoints()
+											: undefined
+									}
+									paymentMethod={paymentMethod}
+									onPaymentMethodChange={setPaymentMethod}
+									onPrint={handlePrint}
+									isDisabled={orderItems.length === 0}
+									customer={customer}
+									onCustomerChange={handleCustomerChange}
+								/>
 							</TabPanel>
 
 							{/* Tab: Lịch sử bán hàng */}
@@ -558,8 +466,7 @@ const SalesPage = () => {
 										filters={filters}
 										onFiltersChange={handleFiltersChange}
 										onReset={handleResetFilters}
-									/>
-
+									/>{" "}
 									<Box
 										bg="white"
 										borderRadius="xl"
@@ -585,8 +492,8 @@ const SalesPage = () => {
 
 				{/* Order Detail Modal */}
 				<OrderDetailModal
-					isOpen={isDetailOpen}
-					onClose={onDetailClose}
+					isOpen={isOpen}
+					onClose={onClose}
 					order={selectedOrder}
 				/>
 			</Box>

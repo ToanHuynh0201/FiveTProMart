@@ -35,7 +35,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 	const [formData, setFormData] = useState({
 		name: "",
 		position: "",
-		employmentType: "Fulltime" as "Fulltime" | "Partime",
 		shift: "",
 		phone: "",
 		email: "",
@@ -128,7 +127,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			const newStaff: Omit<Staff, "id"> = {
 				name: formData.name.trim(),
 				position: formData.position.trim(),
-				employmentType: formData.employmentType,
 				shift: formData.shift.trim(),
 				phone: formData.phone.trim(),
 				email: formData.email.trim(),
@@ -157,7 +155,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			setFormData({
 				name: "",
 				position: "",
-				employmentType: "Fulltime",
 				shift: "",
 				phone: "",
 				email: "",
@@ -187,7 +184,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 		setFormData({
 			name: "",
 			position: "",
-			employmentType: "Fulltime",
 			shift: "",
 			phone: "",
 			email: "",

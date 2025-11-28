@@ -12,16 +12,6 @@ import {
 
 export const navItems: NavItem[] = [
 	{
-		label: "Nhân sự",
-		path: "/staff",
-		icon: FiUsers,
-	},
-	{
-		label: "Ca làm",
-		path: "/schedule",
-		icon: FiCalendar,
-	},
-	{
 		label: "Bán hàng",
 		path: "/sales",
 		icon: FiShoppingCart,
@@ -40,6 +30,16 @@ export const navItems: NavItem[] = [
 		label: "Khuyến mãi",
 		path: "/promotions",
 		icon: FiGift,
+	},
+	{
+		label: "Nhân sự",
+		path: "/staff",
+		icon: FiUsers,
+	},
+	{
+		label: "Ca làm",
+		path: "/schedule",
+		icon: FiCalendar,
 	},
 	{
 		label: "Báo cáo",

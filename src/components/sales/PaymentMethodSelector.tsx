@@ -1,49 +1,67 @@
-import { Box, Heading, SimpleGrid, Button } from "@chakra-ui/react";
+import { Box, Heading, SimpleGrid, Button, Text } from "@chakra-ui/react";
 import type { PaymentMethod } from "../../types/sales";
 
 interface PaymentMethodSelectorProps {
 	selected?: PaymentMethod;
 	onSelect: (method: PaymentMethod) => void;
+	compact?: boolean;
 }
 
 export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 	selected,
 	onSelect,
+	compact = true,
 }) => {
 	return (
-		<Box>
-			<Heading
-				size="md"
-				fontWeight="700"
-				color="gray.800"
-				mb={4}>
-				Phương thức thanh toán
-			</Heading>
+		<Box w="100%">
+			{!compact && (
+				<Heading
+					size="md"
+					fontWeight="700"
+					color="gray.800"
+					mb={4}>
+					Phương thức thanh toán
+				</Heading>
+			)}
+			{compact && (
+				<Text
+					fontSize="xs"
+					fontWeight="600"
+					color="gray.500"
+					textTransform="uppercase"
+					letterSpacing="wide"
+					mb={2}>
+					Phương thức thanh toán
+				</Text>
+			)}
 			<SimpleGrid
-				columns={{ base: 3 }}
-				spacing={3}>
+				columns={3}
+				spacing={compact ? 2 : 3}
+				w="100%">
 				<Button
 					display="flex"
-					flexDirection="column"
+					flexDirection={compact ? "row" : "column"}
 					alignItems="center"
 					justifyContent="center"
-					gap={2}
-					py={4}
-					px={3}
+					gap={compact ? 1.5 : 2}
+					py={compact ? 2.5 : 4}
+					px={compact ? 2 : 3}
 					bg={selected === "cash" ? "#161f70" : "gray.50"}
 					color={selected === "cash" ? "white" : "gray.600"}
 					borderWidth="2px"
 					borderColor={selected === "cash" ? "#161f70" : "gray.200"}
-					borderRadius="10px"
-					fontSize="14px"
+					borderRadius="lg"
+					fontSize={compact ? "11px" : "sm"}
 					fontWeight="600"
-					minH="90px"
+					minH={compact ? "50px" : "90px"}
+					h={compact ? "50px" : "auto"}
+					w="100%"
 					transition="all 0.2s"
 					_hover={{
 						bg: selected === "cash" ? "#0f1654" : "gray.100",
 						borderColor:
 							selected === "cash" ? "#0f1654" : "gray.300",
-						transform: "translateY(-2px)",
+						transform: "translateY(-1px)",
 						boxShadow: "md",
 					}}
 					onClick={() => onSelect("cash")}>
@@ -51,8 +69,9 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 						as="svg"
 						viewBox="0 0 33 33"
 						fill="none"
-						w="28px"
-						h="28px">
+						w={compact ? "20px" : "28px"}
+						h={compact ? "20px" : "28px"}
+						flexShrink={0}>
 						<path
 							d="M16.5 27.5C22.5751 27.5 27.5 22.5751 27.5 16.5C27.5 10.4249 22.5751 5.5 16.5 5.5C10.4249 5.5 5.5 10.4249 5.5 16.5C5.5 22.5751 10.4249 27.5 16.5 27.5Z"
 							stroke="currentColor"
@@ -65,31 +84,39 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 							strokeLinecap="round"
 						/>
 					</Box>
-					Tiền mặt
+					<Text
+						fontSize={compact ? "11px" : "sm"}
+						fontWeight="600"
+						noOfLines={1}
+						lineHeight="1.2">
+						{compact ? "Tiền mặt" : "Tiền mặt"}
+					</Text>
 				</Button>
 
 				<Button
 					display="flex"
-					flexDirection="column"
+					flexDirection={compact ? "row" : "column"}
 					alignItems="center"
 					justifyContent="center"
-					gap={2}
-					py={4}
-					px={3}
+					gap={compact ? 1.5 : 2}
+					py={compact ? 2.5 : 4}
+					px={compact ? 2 : 3}
 					bg={selected === "card" ? "#161f70" : "gray.50"}
 					color={selected === "card" ? "white" : "gray.600"}
 					borderWidth="2px"
 					borderColor={selected === "card" ? "#161f70" : "gray.200"}
-					borderRadius="10px"
-					fontSize="14px"
+					borderRadius="lg"
+					fontSize={compact ? "11px" : "sm"}
 					fontWeight="600"
-					minH="90px"
+					minH={compact ? "50px" : "90px"}
+					h={compact ? "50px" : "auto"}
+					w="100%"
 					transition="all 0.2s"
 					_hover={{
 						bg: selected === "card" ? "#0f1654" : "gray.100",
 						borderColor:
 							selected === "card" ? "#0f1654" : "gray.300",
-						transform: "translateY(-2px)",
+						transform: "translateY(-1px)",
 						boxShadow: "md",
 					}}
 					onClick={() => onSelect("card")}>
@@ -97,8 +124,9 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 						as="svg"
 						viewBox="0 0 30 30"
 						fill="none"
-						w="28px"
-						h="28px">
+						w={compact ? "20px" : "28px"}
+						h={compact ? "20px" : "28px"}
+						flexShrink={0}>
 						<rect
 							x="2.5"
 							y="6.25"
@@ -120,33 +148,41 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 							strokeLinecap="round"
 						/>
 					</Box>
-					Thẻ
+					<Text
+						fontSize={compact ? "11px" : "sm"}
+						fontWeight="600"
+						noOfLines={1}
+						lineHeight="1.2">
+						Thẻ
+					</Text>
 				</Button>
 
 				<Button
 					display="flex"
-					flexDirection="column"
+					flexDirection={compact ? "row" : "column"}
 					alignItems="center"
 					justifyContent="center"
-					gap={2}
-					py={4}
-					px={3}
+					gap={compact ? 1 : 2}
+					py={compact ? 2.5 : 4}
+					px={compact ? 1.5 : 3}
 					bg={selected === "transfer" ? "#161f70" : "gray.50"}
 					color={selected === "transfer" ? "white" : "gray.600"}
 					borderWidth="2px"
 					borderColor={
 						selected === "transfer" ? "#161f70" : "gray.200"
 					}
-					borderRadius="10px"
-					fontSize="14px"
+					borderRadius="lg"
+					fontSize={compact ? "10px" : "sm"}
 					fontWeight="600"
-					minH="90px"
+					minH={compact ? "50px" : "90px"}
+					h={compact ? "50px" : "auto"}
+					w="100%"
 					transition="all 0.2s"
 					_hover={{
 						bg: selected === "transfer" ? "#0f1654" : "gray.100",
 						borderColor:
 							selected === "transfer" ? "#0f1654" : "gray.300",
-						transform: "translateY(-2px)",
+						transform: "translateY(-1px)",
 						boxShadow: "md",
 					}}
 					onClick={() => onSelect("transfer")}>
@@ -154,8 +190,9 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 						as="svg"
 						viewBox="0 0 21 21"
 						fill="none"
-						w="28px"
-						h="28px">
+						w={compact ? "20px" : "28px"}
+						h={compact ? "20px" : "28px"}
+						flexShrink={0}>
 						<rect
 							x="1"
 							y="1"
@@ -176,7 +213,14 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 							strokeWidth="1.2"
 						/>
 					</Box>
-					Chuyển khoản
+					<Text
+						fontSize={compact ? "10px" : "sm"}
+						fontWeight="600"
+						noOfLines={1}
+						textAlign="center"
+						lineHeight="1.2">
+						{compact ? "CK" : "Chuyển khoản"}
+					</Text>
 				</Button>
 			</SimpleGrid>
 		</Box>

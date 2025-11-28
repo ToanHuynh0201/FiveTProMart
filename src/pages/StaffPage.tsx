@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
-	StaffCard,
+	StaffTable,
 	StaffSearchBar,
 	StaffDetailModal,
 	AddStaffModal,
@@ -10,9 +10,9 @@ import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
 import { staffService } from "@/services/staffService";
 import type { Staff } from "@/types";
-import { Box, Text, SimpleGrid, Flex, Spinner } from "@chakra-ui/react";
+import { Box, Text, Flex, Spinner } from "@chakra-ui/react";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 const StaffPage = () => {
 	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
@@ -145,33 +145,27 @@ const StaffPage = () => {
 					</Flex>
 				)}
 
-				{/* Staff Grid */}
+				{/* Staff Table */}
 				{!isLoading && currentStaff.length > 0 && (
 					<>
-						<SimpleGrid
-							columns={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-							spacing={6}
-							mb={8}>
-							{currentStaff.map((staff) => (
-								<StaffCard
-									key={staff.id}
-									staff={staff}
-									onViewDetails={handleViewDetails}
-									onDelete={handleDeleteStaff}
-								/>
-							))}
-						</SimpleGrid>
+						<StaffTable
+							staffList={currentStaff}
+							onViewDetails={handleViewDetails}
+							onDelete={handleDeleteStaff}
+						/>
 
 						{/* Pagination */}
-						<Pagination
-							currentPage={currentPage}
-							totalPages={pagination.totalPages}
-							totalItems={total}
-							pageSize={pageSize}
-							onPageChange={goToPage}
-							showInfo={true}
-							itemLabel="nhân viên"
-						/>
+						<Box mt={6}>
+							<Pagination
+								currentPage={currentPage}
+								totalPages={pagination.totalPages}
+								totalItems={total}
+								pageSize={pageSize}
+								onPageChange={goToPage}
+								showInfo={true}
+								itemLabel="nhân viên"
+							/>
+						</Box>
 					</>
 				)}
 

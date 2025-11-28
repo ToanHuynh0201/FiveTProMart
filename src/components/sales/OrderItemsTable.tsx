@@ -39,77 +39,79 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 			boxShadow="sm">
 			<Table
 				variant="simple"
-				size="md">
+				size="sm">
 				<Thead bg="#161f70">
 					<Tr>
 						<Th
-							w="60px"
-							fontSize="13px"
+							w={{ base: "40px", md: "50px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}>
+							py={3}>
 							STT
 						</Th>
 						<Th
-							minW="280px"
-							fontSize="13px"
+							minW={{ base: "180px", md: "220px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}>
+							py={3}>
 							SẢN PHẨM
 						</Th>
 						<Th
-							w="140px"
-							fontSize="13px"
+							w={{ base: "100px", md: "120px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}>
+							py={3}
+							display={{ base: "none", md: "table-cell" }}>
 							MÃ HÀNG
 						</Th>
 						<Th
-							w="140px"
-							fontSize="13px"
+							w={{ base: "100px", md: "120px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}
+							py={3}
 							textAlign="center">
-							SỐ LƯỢNG
+							SL
 						</Th>
 						<Th
-							w="160px"
-							fontSize="13px"
+							w={{ base: "100px", md: "130px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}
+							py={3}
 							textAlign="right"
+							display={{ base: "none", sm: "table-cell" }}
 							isNumeric>
 							ĐƠN GIÁ
 						</Th>
 						<Th
-							w="180px"
-							fontSize="13px"
+							w={{ base: "110px", md: "140px" }}
+							fontSize="11px"
 							fontWeight="700"
 							color="white"
 							textTransform="uppercase"
 							letterSpacing="wider"
-							py={5}
+							py={3}
 							textAlign="right"
 							isNumeric>
 							THÀNH TIỀN
 						</Th>
 						<Th
-							w="120px"
-							py={5}></Th>
+							w={{ base: "70px", md: "100px" }}
+							py={3}></Th>
 					</Tr>
 				</Thead>
 				<Tbody>
@@ -117,10 +119,10 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 						<Tr>
 							<Td
 								colSpan={7}
-								py={20}
+								py={12}
 								textAlign="center"
 								color="gray.500"
-								fontSize="16px"
+								fontSize="14px"
 								fontWeight="500">
 								Chưa có sản phẩm nào trong đơn hàng
 							</Td>
@@ -146,20 +148,20 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 									}}
 									bg={
 										isProductExpired
-											? "red.50"
+											? "red.50" // Đổi từ "red.500" sang "red.50" cho dễ nhìn
 											: "transparent"
 									}>
 									<Td
-										py={5}
-										fontSize="16px"
+										py={3}
+										fontSize="14px"
 										fontWeight="600"
 										color="gray.700">
 										{index + 1}
 									</Td>
-									<Td py={5}>
+									<Td py={3}>
 										<Box>
 											<Text
-												fontSize="16px"
+												fontSize="14px"
 												fontWeight="600"
 												color="gray.800"
 												mb={
@@ -173,7 +175,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 											</Text>
 											{item.batchNumber && (
 												<Text
-													fontSize="13px"
+													fontSize="11px"
 													color="blue.600"
 													fontWeight="500"
 													display="flex"
@@ -191,7 +193,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 											)}
 											{item.product.promotion && (
 												<Text
-													fontSize="14px"
+													fontSize="12px"
 													color="red.500"
 													fontWeight="500"
 													display="flex"

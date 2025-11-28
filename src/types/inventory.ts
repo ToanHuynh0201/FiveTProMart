@@ -68,5 +68,5 @@ export interface ProductFilter {
 	searchQuery: string;
 	category: string;
 	status: string;
-	stockLevel: "all" | "low" | "out" | "normal"; // Mức tồn kho
+	stockLevel: "all" | "low" | "out" | "normal" | "expiring-soon" | "expired"; // Mức tồn kho
 }

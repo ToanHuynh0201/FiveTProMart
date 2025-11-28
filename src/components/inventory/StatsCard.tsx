@@ -7,6 +7,7 @@ interface StatsCardProps {
 	icon: IconType;
 	color: string;
 	bgGradient: string;
+	onClick?: () => void;
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({
@@ -14,6 +15,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 	value,
 	icon,
 	bgGradient,
+	onClick,
 }) => {
 	return (
 		<Box
@@ -24,9 +26,12 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 			border="1px solid"
 			borderColor="gray.100"
 			transition="all 0.3s"
+			cursor={onClick ? "pointer" : "default"}
+			onClick={onClick}
 			_hover={{
 				transform: "translateY(-4px)",
 				boxShadow: "lg",
+				bg: onClick ? "gray.50" : "white",
 			}}>
 			<Flex
 				justify="space-between"

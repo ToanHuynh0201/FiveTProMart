@@ -49,8 +49,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 		return (
 			<Badge
 				colorScheme={config.color}
-				px={3}
-				py={1}
+				px={1}
+				py={0}
 				borderRadius="full"
 				fontSize="12px"
 				fontWeight="600">
@@ -148,7 +148,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 			boxShadow="sm"
 			overflow="hidden">
 			<Box overflowX="auto">
-				<Table variant="simple">
+				<Table
+					variant="simple"
+					sx={{ tableLayout: "fixed" }}>
 					<Thead bg="gray.50">
 						<Tr>
 							<Th
@@ -156,7 +158,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								width="100px">
 								Mã hàng
 							</Th>
 							<Th
@@ -164,7 +167,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								width="200px">
 								Tên hàng hóa
 							</Th>
 							<Th
@@ -172,7 +176,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								width="120px">
 								Danh mục
 							</Th>
 							<Th
@@ -181,6 +186,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}
+								width="100px"
 								isNumeric>
 								Tồn kho
 							</Th>
@@ -189,7 +195,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								width="80px">
 								Đơn vị
 							</Th>
 							<Th
@@ -198,6 +205,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}
+								width="120px"
 								isNumeric>
 								Giá bán
 							</Th>
@@ -206,7 +214,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								width="140px">
 								Trạng thái
 							</Th>
 							<Th
@@ -215,6 +224,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}
+								width="110px"
 								textAlign="center">
 								Thao tác
 							</Th>
@@ -229,14 +239,15 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								<Td
 									fontSize="14px"
 									color="gray.700"
-									fontWeight="500">
+									fontWeight="500"
+									width="100px">
 									{product.code}
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.800"
 									fontWeight="600"
-									maxW="250px">
+									width="200px">
 									<Flex
 										direction="column"
 										gap={1}>
@@ -246,12 +257,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								</Td>
 								<Td
 									fontSize="14px"
-									color="gray.600">
+									color="gray.600"
+									width="120px">
 									{product.category}
 								</Td>
 								<Td
 									fontSize="14px"
 									fontWeight="600"
+									width="100px"
 									isNumeric>
 									<Flex
 										direction="column"
@@ -265,18 +278,22 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								</Td>
 								<Td
 									fontSize="14px"
-									color="gray.600">
+									color="gray.600"
+									width="80px">
 									{product.unit}
 								</Td>
 								<Td
 									fontSize="14px"
 									fontWeight="600"
 									color="brand.600"
+									width="120px"
 									isNumeric>
 									{product.price.toLocaleString("vi-VN")}đ
 								</Td>
-								<Td>{getStatusBadge(product.status)}</Td>
-								<Td>
+								<Td width="140px">
+									{getStatusBadge(product.status)}
+								</Td>
+								<Td width="110px">
 									<Flex
 										justify="center"
 										gap={1}>

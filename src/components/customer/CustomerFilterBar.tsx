@@ -1,4 +1,4 @@
-import { Flex, Select, Text, Box } from "@chakra-ui/react";
+import { Flex, Select, Box } from "@chakra-ui/react";
 
 interface CustomerFilterBarProps {
 	selectedGender: string;
@@ -14,14 +14,9 @@ const CustomerFilterBar = ({
 	onPointRangeChange,
 }: CustomerFilterBarProps) => {
 	return (
-		<Box mb={6}>
-			<Text
-				fontSize="16px"
-				fontWeight="600"
-				color="brand.600"
-				mb={3}>
-				Lọc khách hàng
-			</Text>
+		<Box
+			mb={6}
+			ml={6}>
 			<Flex
 				gap={4}
 				flexDirection={{ base: "column", sm: "row" }}
@@ -59,7 +54,7 @@ const CustomerFilterBar = ({
 					fontSize="16px"
 					fontWeight="400"
 					color="black"
-					maxW={{ base: "100%", sm: "250px" }}
+					minW={{ base: "100%", sm: "220px" }}
 					_focus={{
 						outline: "none",
 						boxShadow: "0 0 0 2px rgba(22, 31, 112, 0.2)",

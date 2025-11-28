@@ -85,7 +85,6 @@ const StaffDetailModal = ({
 					shift: data.shift,
 					status: data.status,
 					position: data.position,
-					employmentType: data.employmentType,
 					dateOfBirth: data.dateOfBirth,
 					hireDate: data.hireDate,
 				});
@@ -167,7 +166,6 @@ const StaffDetailModal = ({
 				shift: staffDetail.shift,
 				status: staffDetail.status,
 				position: staffDetail.position,
-				employmentType: staffDetail.employmentType,
 				dateOfBirth: staffDetail.dateOfBirth,
 				hireDate: staffDetail.hireDate,
 			});

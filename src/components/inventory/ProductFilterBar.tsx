@@ -120,6 +120,8 @@ export const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
 					<option value="normal">Tồn kho bình thường</option>
 					<option value="low">Sắp hết hàng</option>
 					<option value="out">Hết hàng</option>
+					<option value="expiring-soon">Lô sắp hết hạn</option>
+					<option value="expired">Lô đã hết hạn</option>
 				</Select>
 
 				{hasActiveFilters && (

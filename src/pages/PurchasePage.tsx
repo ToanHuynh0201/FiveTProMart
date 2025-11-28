@@ -15,12 +15,8 @@ import {
 	Icon,
 } from "@chakra-ui/react";
 import { AddIcon, DownloadIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import {
-	BsBoxSeam,
-	BsExclamationTriangle,
-	BsFileEarmarkExcel,
-} from "react-icons/bs";
-import { FiPackage, FiTrendingUp } from "react-icons/fi";
+import { BsExclamationTriangle, BsFileEarmarkExcel } from "react-icons/bs";
+import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	PurchaseTable,
@@ -227,47 +223,41 @@ const PurchasePage = () => {
 		currentPage * pageSize,
 	);
 
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("vi-VN", {
-			style: "currency",
-			currency: "VND",
-		}).format(amount);
-	};
-
 	return (
 		<MainLayout>
 			<Box
-				p={{ base: 4, md: 8 }}
-				maxW="1400px"
+				p={{ base: 4, md: 6 }}
+				maxW="100%"
 				mx="auto">
 				{/* Header */}
 				<Flex
 					justify="space-between"
 					align="center"
-					mb={8}
+					mb={4}
 					flexWrap="wrap"
-					gap={4}>
+					gap={3}>
 					<Box>
 						<Text
-							fontSize="28px"
+							fontSize="24px"
 							fontWeight="700"
 							color="gray.800"
-							mb={1}>
+							mb={0}>
 							Quản lý Nhập hàng
 						</Text>
 						<Text
-							fontSize="15px"
+							fontSize="14px"
 							color="gray.600">
 							Quản lý phiếu nhập hàng và nhà cung cấp
 						</Text>
 					</Box>
-					<Flex gap={3}>
+					<Flex gap={2}>
 						<Menu>
 							<MenuButton
 								as={Button}
 								leftIcon={<Icon as={BsFileEarmarkExcel} />}
 								rightIcon={<ChevronDownIcon />}
 								colorScheme="green"
+								size="md"
 								variant="outline">
 								Excel
 							</MenuButton>
@@ -287,9 +277,9 @@ const PurchasePage = () => {
 						<Button
 							leftIcon={<AddIcon />}
 							colorScheme="brand"
-							size="lg"
-							px={6}
-							fontSize="15px"
+							size="md"
+							px={4}
+							fontSize="14px"
 							fontWeight="600"
 							onClick={onAddModalOpen}>
 							Tạo phiếu nhập
@@ -301,7 +291,7 @@ const PurchasePage = () => {
 				{isLoading ? (
 					<Flex
 						justify="center"
-						py={10}>
+						py={6}>
 						<Spinner
 							size="xl"
 							color="brand.500"
@@ -310,23 +300,9 @@ const PurchasePage = () => {
 				) : (
 					<>
 						<SimpleGrid
-							columns={{ base: 1, sm: 2, lg: 4 }}
-							spacing={6}
-							mb={8}>
-							<StatsCard
-								title="Tổng phiếu nhập"
-								value={stats?.totalPurchases || 0}
-								icon={BsBoxSeam}
-								color="blue.500"
-								bgGradient="linear(to-br, blue.400, blue.600)"
-							/>
-							<StatsCard
-								title="Tổng tiền nhập"
-								value={formatCurrency(stats?.totalAmount || 0)}
-								icon={FiTrendingUp}
-								color="green.500"
-								bgGradient="linear(to-br, green.400, green.600)"
-							/>
+							columns={{ base: 1, sm: 2, lg: 2 }}
+							spacing={4}
+							mb={3}>
 							<StatsCard
 								title="Đơn chờ nhận"
 								value={stats?.pendingOrders || 0}
@@ -352,7 +328,7 @@ const PurchasePage = () => {
 						/>
 
 						{/* Search Bar */}
-						<Box mb={6}>
+						<Box mb={4}>
 							<input
 								type="text"
 								placeholder="Tìm kiếm theo mã phiếu nhập, nhà cung cấp..."
@@ -365,10 +341,10 @@ const PurchasePage = () => {
 								}
 								style={{
 									width: "100%",
-									padding: "12px 16px",
+									padding: "10px 14px",
 									fontSize: "15px",
 									border: "1px solid #E2E8F0",
-									borderRadius: "10px",
+									borderRadius: "8px",
 									outline: "none",
 								}}
 							/>
@@ -386,7 +362,7 @@ const PurchasePage = () => {
 						{total > pageSize && (
 							<Flex
 								justify="center"
-								mt={6}>
+								mt={4}>
 								<Pagination
 									currentPage={currentPage}
 									totalPages={Math.ceil(total / pageSize)}

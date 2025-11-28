@@ -19,7 +19,8 @@ const MainLayout = ({ children, showSidebar = true }: any) => {
 					as="main"
 					flex="1"
 					overflowY="auto"
-					p={6}>
+					px={6}
+					py={0}>
 					{children}
 				</Box>
 			</Flex>

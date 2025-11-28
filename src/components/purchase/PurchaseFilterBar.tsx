@@ -29,19 +29,19 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 	return (
 		<Box
 			bg="white"
-			p={5}
-			borderRadius="12px"
+			p={4}
+			borderRadius="10px"
 			boxShadow="sm"
-			mb={6}>
+			mb={4}>
 			<Flex
-				gap={4}
+				gap={3}
 				flexWrap={{ base: "wrap", lg: "nowrap" }}
 				align="center">
 				<Text
-					fontSize="16px"
+					fontSize="14px"
 					fontWeight="600"
 					color="gray.700"
-					minW="80px">
+					minW="70px">
 					Lọc theo:
 				</Text>
 
@@ -53,9 +53,9 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 					bg="gray.50"
 					border="1px solid"
 					borderColor="gray.200"
-					borderRadius="10px"
-					fontSize="15px"
-					h="48px"
+					borderRadius="8px"
+					fontSize="14px"
+					h="42px"
 					flex={{ base: "1 1 100%", sm: "1 1 45%", lg: "1" }}
 					_hover={{ bg: "gray.100" }}
 					_focus={{
@@ -125,9 +125,9 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 					<Button
 						variant="ghost"
 						colorScheme="blue"
-						h="48px"
-						px={4}
-						fontSize="15px"
+						h="42px"
+						px={3}
+						fontSize="14px"
 						fontWeight="600"
 						onClick={onReset}
 						flexShrink={0}

@@ -25,7 +25,7 @@ const CustomerSearchBar = ({
 			<InputGroup
 				size="lg"
 				flex={1}
-				maxW={{ base: "100%", md: "354px" }}>
+				maxW={{ base: "100%", sm: "360px" }}>
 				<InputLeftElement
 					pointerEvents="none"
 					height="47px"
@@ -51,6 +51,7 @@ const CustomerSearchBar = ({
 					height="47px"
 					pl={12}
 					fontSize="16px"
+					minW={{ base: "100%", sm: "360px" }}
 					fontWeight="400"
 					color="black"
 					_placeholder={{

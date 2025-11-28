@@ -507,6 +507,33 @@ export const inventoryService = {
 				case "normal":
 					filtered = filtered.filter((p) => p.stock > p.minStock);
 					break;
+				case "expiring-soon":
+					filtered = filtered.filter((p) => {
+						if (!p.batches || p.batches.length === 0) return false;
+						const now = new Date();
+						const sevenDaysLater = new Date();
+						sevenDaysLater.setDate(now.getDate() + 7);
+						return p.batches.some((batch) => {
+							if (!batch.expiryDate || batch.status !== "active")
+								return false;
+							const expiryDate = new Date(batch.expiryDate);
+							return (
+								expiryDate > now && expiryDate <= sevenDaysLater
+							);
+						});
+					});
+					break;
+				case "expired":
+					filtered = filtered.filter((p) => {
+						if (!p.batches || p.batches.length === 0) return false;
+						const now = new Date();
+						return p.batches.some((batch) => {
+							if (!batch.expiryDate) return false;
+							const expiryDate = new Date(batch.expiryDate);
+							return expiryDate <= now;
+						});
+					});
+					break;
 			}
 		}
 

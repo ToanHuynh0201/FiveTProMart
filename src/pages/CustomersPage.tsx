@@ -1,18 +1,27 @@
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
-	CustomerCard,
+	CustomerTable,
 	CustomerSearchBar,
 	CustomerFilterBar,
 	CustomerDetailModal,
+	AddCustomerModal,
 } from "@/components/customer";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
 import { customerService } from "@/services/customerService";
 import type { Customer } from "@/types";
-import { Box, Text, SimpleGrid, Flex, Spinner } from "@chakra-ui/react";
+import {
+	Box,
+	Text,
+	Flex,
+	Spinner,
+	Button,
+	useDisclosure,
+} from "@chakra-ui/react";
+import { AddIcon } from "@chakra-ui/icons";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 const CustomersPage = () => {
 	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
@@ -32,6 +41,11 @@ const CustomersPage = () => {
 		null,
 	);
 	const [isModalOpen, setIsModalOpen] = useState(false);
+	const {
+		isOpen: isAddModalOpen,
+		onOpen: onAddModalOpen,
+		onClose: onAddModalClose,
+	} = useDisclosure();
 
 	// Load customer data on mount
 	useEffect(() => {
@@ -157,33 +171,74 @@ const CustomersPage = () => {
 		}
 	};
 
+	const handleAddCustomer = async (customer: Omit<Customer, "id">) => {
+		try {
+			const newCustomer = await customerService.addCustomer(customer);
+			setCustomerList((prev) => [...prev, newCustomer]);
+		} catch (error) {
+			console.error("Error adding customer:", error);
+			throw error;
+		}
+	};
+
 	return (
 		<MainLayout>
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
 				py={6}>
-				{/* Page Title */}
-				<Text
-					fontSize={{ base: "28px", md: "36px" }}
-					fontWeight="600"
-					color="brand.600"
-					mb={6}>
-					Danh sách khách hàng
-				</Text>
+				{/* Page Title and Add Button */}
+				<Flex
+					justify="space-between"
+					align="center"
+					mb={6}
+					gap={4}
+					flexDirection={{ base: "column", md: "row" }}>
+					<Text
+						fontSize={{ base: "28px", md: "36px" }}
+						fontWeight="600"
+						color="brand.600">
+						Danh sách khách hàng
+					</Text>
 
-				{/* Search Bar */}
-				<CustomerSearchBar
-					searchQuery={searchQuery}
-					onSearchChange={handleSearchChange}
-				/>
+					<Button
+						leftIcon={<AddIcon />}
+						bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
+						color="white"
+						size={{ base: "md", md: "lg" }}
+						fontSize={{ base: "14px", md: "16px" }}
+						px={{ base: 4, md: 6 }}
+						onClick={onAddModalOpen}
+						_hover={{
+							bgGradient:
+								"linear(135deg, brand.600 0%, brand.500 100%)",
+							transform: "translateY(-2px)",
+							boxShadow: "0 6px 20px rgba(22, 31, 112, 0.35)",
+						}}
+						_active={{
+							bgGradient:
+								"linear(135deg, brand.700 0%, brand.600 100%)",
+							transform: "translateY(0)",
+						}}
+						width={{ base: "100%", md: "auto" }}>
+						Thêm khách hàng
+					</Button>
+				</Flex>
 
-				{/* Filter Bar */}
-				<CustomerFilterBar
-					selectedGender={selectedGender}
-					selectedPointRange={selectedPointRange}
-					onGenderChange={handleGenderChange}
-					onPointRangeChange={handlePointRangeChange}
-				/>
+				<Flex direction="row">
+					{/* Search Bar */}
+					<CustomerSearchBar
+						searchQuery={searchQuery}
+						onSearchChange={handleSearchChange}
+					/>
+
+					{/* Filter Bar */}
+					<CustomerFilterBar
+						selectedGender={selectedGender}
+						selectedPointRange={selectedPointRange}
+						onGenderChange={handleGenderChange}
+						onPointRangeChange={handlePointRangeChange}
+					/>
+				</Flex>
 
 				{/* Loading State */}
 				{isLoading && (
@@ -199,33 +254,27 @@ const CustomersPage = () => {
 					</Flex>
 				)}
 
-				{/* Customer Grid */}
+				{/* Customer Table */}
 				{!isLoading && currentCustomers.length > 0 && (
 					<>
-						<SimpleGrid
-							columns={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-							spacing={6}
-							mb={8}>
-							{currentCustomers.map((customer) => (
-								<CustomerCard
-									key={customer.id}
-									customer={customer}
-									onViewDetails={handleViewDetails}
-									onDelete={handleDeleteCustomer}
-								/>
-							))}
-						</SimpleGrid>
+						<CustomerTable
+							customerList={currentCustomers}
+							onViewDetails={handleViewDetails}
+							onDelete={handleDeleteCustomer}
+						/>
 
 						{/* Pagination */}
-						<Pagination
-							currentPage={currentPage}
-							totalPages={pagination.totalPages}
-							totalItems={total}
-							pageSize={pageSize}
-							onPageChange={goToPage}
-							showInfo={true}
-							itemLabel="khách hàng"
-						/>
+						<Box mt={6}>
+							<Pagination
+								currentPage={currentPage}
+								totalPages={pagination.totalPages}
+								totalItems={total}
+								pageSize={pageSize}
+								onPageChange={goToPage}
+								showInfo={true}
+								itemLabel="khách hàng"
+							/>
+						</Box>
 					</>
 				)}
 
@@ -257,6 +306,13 @@ const CustomersPage = () => {
 				onClose={handleCloseModal}
 				customerId={selectedCustomerId}
 				onDelete={handleDeleteCustomer}
+			/>
+
+			{/* Add Customer Modal */}
+			<AddCustomerModal
+				isOpen={isAddModalOpen}
+				onClose={onAddModalClose}
+				onAdd={handleAddCustomer}
 			/>
 		</MainLayout>
 	);

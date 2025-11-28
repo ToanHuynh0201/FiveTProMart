@@ -2,7 +2,6 @@ export interface Staff {
 	id: string;
 	name: string;
 	position: string;
-	employmentType: "Fulltime" | "Partime";
 	shift: string;
 	avatar?: string;
 	// Extended details

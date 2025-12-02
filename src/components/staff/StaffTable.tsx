@@ -20,7 +20,7 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import { ViewIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import { ViewIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Staff } from "@/types";
 import { useState } from "react";
 
@@ -92,28 +92,31 @@ const StaffTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									py={2.5}>
+									py={3}>
 									STT
 								</Th>
 								<Th
 									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Tên nhân viên
 								</Th>
 								<Th
 									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Vị trí
 								</Th>
 								<Th
 									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Ca làm việc
 								</Th>
 								<Th
@@ -121,7 +124,8 @@ const StaffTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									textAlign="center">
+									textAlign="center"
+									py={3}>
 									Thao tác
 								</Th>
 							</Tr>
@@ -149,7 +153,8 @@ const StaffTable = ({
 										<Td
 											fontSize="13px"
 											fontWeight="600"
-											color="gray.700">
+											color="gray.700"
+											py={3}>
 											{index + 1}
 										</Td>
 										<Td
@@ -162,20 +167,23 @@ const StaffTable = ({
 											}
 											_hover={{
 												textDecoration: "underline",
-											}}>
+											}}
+											py={3}>
 											{staff.name}
 										</Td>
 										<Td>
 											<Text
 												fontSize="13px"
 												fontWeight="500"
-												color="gray.800">
+												color="gray.800"
+												py={3}>
 												{staff.position}
 											</Text>
 										</Td>
 										<Td
 											fontSize="13px"
-											color="gray.600">
+											color="gray.600"
+											py={3}>
 											{staff.shift}
 										</Td>
 										<Td>

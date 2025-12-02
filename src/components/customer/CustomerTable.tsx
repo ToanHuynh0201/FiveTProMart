@@ -102,28 +102,31 @@ const CustomerTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									py={4}>
+									py={3}>
 									STT
 								</Th>
 								<Th
 									fontSize="13px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Tên khách hàng
 								</Th>
 								<Th
 									fontSize="13px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Số điện thoại
 								</Th>
 								<Th
 									fontSize="13px"
 									fontWeight="700"
 									color="gray.700"
-									textTransform="none">
+									textTransform="none"
+									py={3}>
 									Giới tính
 								</Th>
 								<Th
@@ -131,6 +134,7 @@ const CustomerTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
+									py={3}
 									isNumeric>
 									Điểm tích lũy
 								</Th>
@@ -139,6 +143,7 @@ const CustomerTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
+									py={3}
 									textAlign="center">
 									Thao tác
 								</Th>
@@ -150,7 +155,7 @@ const CustomerTable = ({
 									<Td
 										colSpan={6}
 										textAlign="center"
-										py={10}>
+										py={4}>
 										<Text
 											fontSize="15px"
 											color="gray.500">
@@ -167,7 +172,8 @@ const CustomerTable = ({
 										<Td
 											fontSize="14px"
 											fontWeight="600"
-											color="gray.700">
+											color="gray.700"
+											py={2}>
 											{index + 1}
 										</Td>
 										<Td
@@ -175,6 +181,7 @@ const CustomerTable = ({
 											fontWeight="600"
 											color="brand.500"
 											cursor="pointer"
+											py={2}
 											onClick={() =>
 												onViewDetails?.(customer.id)
 											}
@@ -183,7 +190,7 @@ const CustomerTable = ({
 											}}>
 											{customer.name}
 										</Td>
-										<Td>
+										<Td py={2}>
 											<Text
 												fontSize="14px"
 												fontWeight="500"
@@ -191,7 +198,7 @@ const CustomerTable = ({
 												{customer.phone}
 											</Text>
 										</Td>
-										<Td>
+										<Td py={2}>
 											<Badge
 												colorScheme={
 													customer.gender === "Nam"
@@ -213,13 +220,14 @@ const CustomerTable = ({
 											isNumeric
 											fontSize="14px"
 											fontWeight="700"
-											color="orange.500">
+											color="orange.500"
+											py={2}>
 											{formatPoints(
 												customer.loyaltyPoints,
 											)}{" "}
 											điểm
 										</Td>
-										<Td>
+										<Td py={2}>
 											<Flex
 												justify="center"
 												gap={1}>

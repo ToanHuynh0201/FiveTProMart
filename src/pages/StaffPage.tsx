@@ -114,7 +114,7 @@ const StaffPage = () => {
 		<MainLayout>
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
-				py={4}>
+				py={3}>
 				{/* Page Title */}
 				<Text
 					fontSize={{ base: "24px", md: "28px" }}

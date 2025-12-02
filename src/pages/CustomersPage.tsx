@@ -185,12 +185,12 @@ const CustomersPage = () => {
 		<MainLayout>
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
-				py={6}>
+				py={4}>
 				{/* Page Title and Add Button */}
 				<Flex
 					justify="space-between"
 					align="center"
-					mb={6}
+					mb={4}
 					gap={4}
 					flexDirection={{ base: "column", md: "row" }}>
 					<Text
@@ -223,7 +223,6 @@ const CustomersPage = () => {
 						Thêm khách hàng
 					</Button>
 				</Flex>
-
 				<Flex direction="row">
 					{/* Search Bar */}
 					<CustomerSearchBar
@@ -239,7 +238,6 @@ const CustomersPage = () => {
 						onPointRangeChange={handlePointRangeChange}
 					/>
 				</Flex>
-
 				{/* Loading State */}
 				{isLoading && (
 					<Flex
@@ -253,7 +251,6 @@ const CustomersPage = () => {
 						/>
 					</Flex>
 				)}
-
 				{/* Customer Table */}
 				{!isLoading && currentCustomers.length > 0 && (
 					<>
@@ -264,7 +261,7 @@ const CustomersPage = () => {
 						/>
 
 						{/* Pagination */}
-						<Box mt={6}>
+						<Box mt={3}>
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}
@@ -276,8 +273,7 @@ const CustomersPage = () => {
 							/>
 						</Box>
 					</>
-				)}
-
+				)}{" "}
 				{/* Empty State */}
 				{!isLoading && currentCustomers.length === 0 && (
 					<Flex

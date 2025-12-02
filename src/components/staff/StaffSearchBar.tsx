@@ -68,20 +68,20 @@ const StaffSearchBar = ({
 
 			{/* Add Staff Button */}
 			<Flex
-				bg="brand.50"
+				bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
 				borderRadius="10px"
 				height="40px"
 				px={4}
 				cursor="pointer"
 				transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
 				_hover={{
-					bg: "brand.100",
+					bgGradient: "linear(135deg, brand.600 0%, brand.500 100%)",
 					transform: "translateY(-2px)",
-					boxShadow: "0 4px 12px rgba(22, 31, 112, 0.15)",
+					boxShadow: "0 6px 20px rgba(22, 31, 112, 0.35)",
 				}}
 				_active={{
+					bgGradient: "linear(135deg, brand.700 0%, brand.600 100%)",
 					transform: "translateY(0)",
-					bg: "brand.200",
 				}}
 				onClick={onAddStaff}
 				alignItems="center"
@@ -104,7 +104,7 @@ const StaffSearchBar = ({
 						viewBox="0 0 24 24"
 						w={4}
 						h={4}
-						color="brand.600">
+						color="white">
 						<path
 							fill="none"
 							stroke="currentColor"
@@ -117,7 +117,7 @@ const StaffSearchBar = ({
 				<Text
 					fontSize="16px"
 					fontWeight="500"
-					color="brand.600"
+					color="white"
 					letterSpacing="tight">
 					Thêm nhân sự
 				</Text>

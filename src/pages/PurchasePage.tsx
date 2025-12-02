@@ -314,7 +314,20 @@ const PurchasePage = () => {
 									gap={3}
 									boxShadow="sm"
 									borderLeft="4px solid"
-									borderColor="orange.500">
+									borderColor="orange.500"
+									cursor="pointer"
+									transition="all 0.2s"
+									_hover={{
+										transform: "translateY(-2px)",
+										boxShadow: "md",
+										bg: "orange.50",
+									}}
+									onClick={() => {
+										setFilters({
+											...filters,
+											status: filters.status === "ordered" ? "all" : "ordered",
+										});
+									}}>
 									<Flex
 										bg="orange.50"
 										p={2}

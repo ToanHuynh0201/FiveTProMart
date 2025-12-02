@@ -34,6 +34,8 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 	onEdit,
 	onDelete,
 }) => {
+	// Create a key based on purchases to trigger animation on filter changes
+	const tableKey = purchases.map((p) => p.id).join("-");
 	const getStatusBadge = (status: Purchase["status"]) => {
 		const statusConfig = {
 			draft: { color: "gray", label: "Nháp" },
@@ -89,10 +91,18 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 
 	return (
 		<Box
+			key={tableKey}
 			bg="white"
 			borderRadius="12px"
 			boxShadow="sm"
-			overflow="hidden">
+			overflow="hidden"
+			sx={{
+				"@keyframes fadeIn": {
+					from: { opacity: 0, transform: "translateY(8px)" },
+					to: { opacity: 1, transform: "translateY(0)" },
+				},
+				animation: "fadeIn 0.3s ease-out",
+			}}>
 			<Box overflowX="auto">
 				<Table variant="simple">
 					<Thead bg="gray.50">

@@ -34,6 +34,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	onEdit,
 	onDelete,
 }) => {
+	// Create a key based on products to trigger animation on filter changes
+	const tableKey = products.map((p) => p.id).join("-");
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
 			active: { color: "green", label: "Đang kinh doanh" },
@@ -143,10 +145,18 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 
 	return (
 		<Box
+			key={tableKey}
 			bg="white"
 			borderRadius="12px"
 			boxShadow="sm"
-			overflow="hidden">
+			overflow="hidden"
+			sx={{
+				"@keyframes fadeIn": {
+					from: { opacity: 0, transform: "translateY(8px)" },
+					to: { opacity: 1, transform: "translateY(0)" },
+				},
+				animation: "fadeIn 0.3s ease-out",
+			}}>
 			<Box overflowX="auto">
 				<Table
 					variant="simple"

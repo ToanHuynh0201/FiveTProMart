@@ -183,35 +183,51 @@ const InventoryPage = () => {
 
 	// Stats card click handlers
 	const handleLowStockClick = () => {
-		setFilters({
-			...filters,
-			stockLevel: "low",
-			searchQuery: "",
-		});
+		if (filters.stockLevel === "low") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				stockLevel: "low",
+				searchQuery: "",
+			});
+		}
 	};
 
 	const handleOutOfStockClick = () => {
-		setFilters({
-			...filters,
-			stockLevel: "out",
-			searchQuery: "",
-		});
+		if (filters.stockLevel === "out") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				stockLevel: "out",
+				searchQuery: "",
+			});
+		}
 	};
 
 	const handleExpiringSoonClick = () => {
-		setFilters({
-			...filters,
-			stockLevel: "expiring-soon",
-			searchQuery: "",
-		});
+		if (filters.stockLevel === "expiring-soon") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				stockLevel: "expiring-soon",
+				searchQuery: "",
+			});
+		}
 	};
 
 	const handleExpiredClick = () => {
-		setFilters({
-			...filters,
-			stockLevel: "expired",
-			searchQuery: "",
-		});
+		if (filters.stockLevel === "expired") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				stockLevel: "expired",
+				searchQuery: "",
+			});
+		}
 	};
 
 	// Pagination

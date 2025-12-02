@@ -92,7 +92,6 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 						boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)",
 					}}>
 					<option value="all">Tất cả trạng thái</option>
-					<option value="draft">Nháp</option>
 					<option value="ordered">Đã đặt</option>
 					<option value="received">Đã nhận</option>
 					<option value="cancelled">Đã hủy</option>

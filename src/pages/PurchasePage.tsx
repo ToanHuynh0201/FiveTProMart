@@ -14,7 +14,7 @@ import {
 	Icon,
 	HStack,
 } from "@chakra-ui/react";
-import { AddIcon, DownloadIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { AddIcon, DownloadIcon, ChevronDownIcon, RepeatIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsFileEarmarkExcel } from "react-icons/bs";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -325,7 +325,10 @@ const PurchasePage = () => {
 									onClick={() => {
 										setFilters({
 											...filters,
-											status: filters.status === "ordered" ? "all" : "ordered",
+											status:
+												filters.status === "ordered"
+													? "all"
+													: "ordered",
 										});
 									}}>
 									<Flex
@@ -365,34 +368,54 @@ const PurchasePage = () => {
 									filters={filters}
 									suppliers={suppliers}
 									onFiltersChange={setFilters}
-									onReset={handleResetFilters}
 								/>
 							</Box>
 						</HStack>
 						{/* Stats Card - Đơn chờ nhận */}
 
 						{/* Search Bar */}
-						<Box mb={4}>
-							<input
-								type="text"
-								placeholder="Tìm kiếm theo mã phiếu nhập, nhà cung cấp..."
-								value={filters.searchQuery}
-								onChange={(e) =>
-									setFilters({
-										...filters,
-										searchQuery: e.target.value,
-									})
-								}
-								style={{
-									width: "100%",
-									padding: "10px 14px",
-									fontSize: "15px",
-									border: "1px solid #E2E8F0",
-									borderRadius: "8px",
-									outline: "none",
-								}}
-							/>
-						</Box>
+						<Flex
+							mb={4}
+							gap={3}
+							align="stretch">
+							<Box flex={1}>
+								<input
+									type="text"
+									placeholder="Tìm kiếm theo mã phiếu nhập, nhà cung cấp..."
+									value={filters.searchQuery}
+									onChange={(e) =>
+										setFilters({
+											...filters,
+											searchQuery: e.target.value,
+										})
+									}
+									style={{
+										width: "100%",
+										padding: "10px 14px",
+										fontSize: "15px",
+										border: "1px solid #E2E8F0",
+										borderRadius: "8px",
+										outline: "none",
+									}}
+								/>
+							</Box>
+							{(filters.searchQuery !== "" ||
+								filters.status !== "all" ||
+								filters.paymentStatus !== "all" ||
+								filters.supplierId !== "all") && (
+								<Button
+									leftIcon={<RepeatIcon />}
+									variant="ghost"
+									colorScheme="gray"
+									onClick={handleResetFilters}
+									fontSize="14px"
+									fontWeight="600"
+									px={4}
+									flexShrink={0}>
+									Đặt lại bộ lọc
+								</Button>
+							)}
+						</Flex>
 
 						{/* Purchase Table */}
 						<PurchaseTable

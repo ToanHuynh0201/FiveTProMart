@@ -3,7 +3,6 @@ import {
 	InputGroup,
 	InputLeftElement,
 	Flex,
-	Button,
 	Select,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
@@ -13,14 +12,12 @@ interface ProductSearchBarProps {
 	filters: ProductFilter;
 	categories: InventoryCategory[];
 	onFiltersChange: (filters: ProductFilter) => void;
-	onReset: () => void;
 }
 
 export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 	filters,
 	categories,
 	onFiltersChange,
-	onReset,
 }) => {
 	const handleFilterChange = (key: keyof ProductFilter, value: string) => {
 		onFiltersChange({
@@ -28,11 +25,6 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 			[key]: value,
 		});
 	};
-
-	const hasActiveFilters =
-		filters.category !== "all" ||
-		filters.status !== "all" ||
-		filters.stockLevel !== "all";
 
 	return (
 		<Flex
@@ -147,24 +139,6 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				<option value="expiring-soon">Lô sắp hết hạn</option>
 				<option value="expired">Lô đã hết hạn</option>
 			</Select>
-
-			{/* Reset Button */}
-			{hasActiveFilters && (
-				<Button
-					variant="ghost"
-					colorScheme="blue"
-					h="56px"
-					px={5}
-					fontSize="16px"
-					fontWeight="600"
-					onClick={onReset}
-					flexShrink={0}
-					_hover={{
-						bg: "blue.50",
-					}}>
-					Xóa lọc
-				</Button>
-			)}
 		</Flex>
 	);
 };

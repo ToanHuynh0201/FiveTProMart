@@ -8,7 +8,7 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import { FiGift, FiPercent, FiShoppingBag, FiClock } from "react-icons/fi";
+import { FiPercent, FiShoppingBag, FiClock } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	PromotionSearchBar,
@@ -194,6 +194,43 @@ const PromotionPage = () => {
 		}
 	};
 
+	// Stats card click handlers
+	const handleActiveClick = () => {
+		if (filters.status === "active") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				status: "active",
+				searchQuery: "",
+			});
+		}
+	};
+
+	const handleUpcomingClick = () => {
+		if (filters.status === "inactive") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				status: "inactive",
+				searchQuery: "",
+			});
+		}
+	};
+
+	const handleExpiredClick = () => {
+		if (filters.status === "expired") {
+			handleResetFilters();
+		} else {
+			setFilters({
+				...filters,
+				status: "expired",
+				searchQuery: "",
+			});
+		}
+	};
+
 	// Pagination
 	const startIndex = (currentPage - 1) * pageSize;
 	const endIndex = startIndex + pageSize;
@@ -216,32 +253,29 @@ const PromotionPage = () => {
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
-						columns={{ base: 1, sm: 2, lg: 4 }}
+						columns={{ base: 1, sm: 2, lg: 3 }}
 						spacing={5}
 						mb={6}>
-						<StatsCard
-							title="Tổng số khuyến mãi"
-							value={stats.totalPromotions}
-							icon={FiGift}
-							bgGradient="linear(135deg, #4299E1 0%, #3182CE 100%)"
-						/>
 						<StatsCard
 							title="Đang áp dụng"
 							value={stats.activePromotions}
 							icon={FiPercent}
 							bgGradient="linear(135deg, #48BB78 0%, #38A169 100%)"
+							onClick={handleActiveClick}
 						/>
 						<StatsCard
 							title="Sắp diễn ra"
 							value={stats.upcomingPromotions}
 							icon={FiClock}
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
+							onClick={handleUpcomingClick}
 						/>
 						<StatsCard
 							title="Đã hết hạn"
 							value={stats.expiredPromotions}
 							icon={FiShoppingBag}
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
+							onClick={handleExpiredClick}
 						/>
 					</SimpleGrid>
 				)}

@@ -1,18 +1,16 @@
-import { Box, Flex, Select, Button, Text } from "@chakra-ui/react";
+import { Box, Flex, Select } from "@chakra-ui/react";
 import type { PurchaseFilter, Supplier } from "../../types/purchase";
 
 interface PurchaseFilterBarProps {
 	filters: PurchaseFilter;
 	suppliers: Supplier[];
 	onFiltersChange: (filters: PurchaseFilter) => void;
-	onReset: () => void;
 }
 
 export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 	filters,
 	suppliers,
 	onFiltersChange,
-	onReset,
 }) => {
 	const handleFilterChange = (key: keyof PurchaseFilter, value: string) => {
 		onFiltersChange({
@@ -20,11 +18,6 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 			[key]: value,
 		});
 	};
-
-	const hasActiveFilters =
-		filters.status !== "all" ||
-		filters.paymentStatus !== "all" ||
-		filters.supplierId !== "all";
 
 	return (
 		<Box
@@ -37,14 +30,6 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 				gap={3}
 				flexWrap={{ base: "wrap", lg: "nowrap" }}
 				align="center">
-				<Text
-					fontSize="14px"
-					fontWeight="600"
-					color="gray.700"
-					minW="70px">
-					Lọc theo:
-				</Text>
-
 				<Select
 					value={filters.supplierId}
 					onChange={(e) =>
@@ -119,23 +104,6 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 					<option value="unpaid">Chưa trả</option>
 					<option value="paid">Đã trả</option>
 				</Select>
-
-				{hasActiveFilters && (
-					<Button
-						variant="ghost"
-						colorScheme="blue"
-						h="42px"
-						px={3}
-						fontSize="14px"
-						fontWeight="600"
-						onClick={onReset}
-						flexShrink={0}
-						_hover={{
-							bg: "blue.50",
-						}}>
-						Xóa lọc
-					</Button>
-				)}
 			</Flex>
 		</Box>
 	);

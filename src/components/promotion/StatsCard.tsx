@@ -6,6 +6,7 @@ interface StatsCardProps {
 	value: number | string;
 	icon: IconType;
 	bgGradient: string;
+	onClick?: () => void;
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({
@@ -13,6 +14,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 	value,
 	icon,
 	bgGradient,
+	onClick,
 }) => {
 	return (
 		<Box
@@ -23,10 +25,12 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 			position="relative"
 			overflow="hidden"
 			transition="all 0.3s"
+			cursor={onClick ? "pointer" : "default"}
 			_hover={{
 				transform: "translateY(-4px)",
 				boxShadow: "xl",
-			}}>
+			}}
+			onClick={onClick}>
 			{/* Background gradient circle */}
 			<Box
 				position="absolute"

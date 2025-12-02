@@ -7,7 +7,9 @@ import {
 	Spinner,
 	useDisclosure,
 	useToast,
+	Button,
 } from "@chakra-ui/react";
+import { RepeatIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle } from "react-icons/bs";
 import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
@@ -293,7 +295,6 @@ const InventoryPage = () => {
 					filters={filters}
 					categories={categories}
 					onFiltersChange={handleFiltersChange}
-					onReset={handleResetFilters}
 				/>
 				{/* Loading State */}
 				{isLoading && (
@@ -316,7 +317,8 @@ const InventoryPage = () => {
 								justify="space-between"
 								align="center"
 								mb={4}
-								px={2}>
+								px={2}
+								minH="40px">
 								<Text
 									fontSize="18px"
 									fontWeight="600"
@@ -324,6 +326,20 @@ const InventoryPage = () => {
 									Danh sách hàng hóa (
 									{filteredProducts.length})
 								</Text>
+								{(filters.category !== "all" ||
+									filters.status !== "all" ||
+									filters.stockLevel !== "all" ||
+									filters.searchQuery !== "") && (
+									<Button
+										leftIcon={<RepeatIcon />}
+										variant="ghost"
+										colorScheme="gray"
+										onClick={handleResetFilters}
+										fontSize="14px"
+										fontWeight="600">
+										Đặt lại bộ lọc
+									</Button>
+								)}
 							</Flex>
 
 							<ProductTable

@@ -36,6 +36,8 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 	onEdit,
 	onDelete,
 }) => {
+	// Create a key based on promotions to trigger animation on filter changes
+	const tableKey = promotions.map((p) => p.id).join("-");
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
 			active: { color: "green", label: "Đang áp dụng" },
@@ -101,10 +103,18 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 
 	return (
 		<Box
+			key={tableKey}
 			bg="white"
 			borderRadius="12px"
 			boxShadow="sm"
-			overflow="hidden">
+			overflow="hidden"
+			sx={{
+				"@keyframes fadeIn": {
+					from: { opacity: 0, transform: "translateY(8px)" },
+					to: { opacity: 1, transform: "translateY(0)" },
+				},
+				animation: "fadeIn 0.3s ease-out",
+			}}>
 			<Box overflowX="auto">
 				<Table variant="simple">
 					<Thead bg="gray.50">

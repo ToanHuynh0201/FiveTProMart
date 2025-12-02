@@ -1,4 +1,4 @@
-import { Box, Flex, Select, Button, HStack, Text } from "@chakra-ui/react";
+import { Box, Flex, Select, Button, HStack } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import type { PromotionFilter } from "../../types/promotion";
 
@@ -84,70 +84,6 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 					</Button>
 				)}
 			</Flex>
-
-			{hasActiveFilters && (
-				<Flex
-					mt={3}
-					pt={3}
-					borderTop="1px"
-					borderColor="gray.200"
-					gap={2}
-					flexWrap="wrap"
-					align="center">
-					<Text
-						fontSize="13px"
-						color="gray.600"
-						fontWeight="600">
-						Đang lọc:
-					</Text>
-					{filters.type !== "all" && (
-						<Box
-							bg="brand.50"
-							px={3}
-							py={1}
-							borderRadius="full"
-							fontSize="12px"
-							fontWeight="600"
-							color="brand.700">
-							Loại:{" "}
-							{filters.type === "discount"
-								? "Giảm giá"
-								: filters.type === "buy1getN"
-								? "Mua 1 tặng N"
-								: "Mua này tặng kia"}
-						</Box>
-					)}
-					{filters.status !== "all" && (
-						<Box
-							bg="brand.50"
-							px={3}
-							py={1}
-							borderRadius="full"
-							fontSize="12px"
-							fontWeight="600"
-							color="brand.700">
-							Trạng thái:{" "}
-							{filters.status === "active"
-								? "Đang áp dụng"
-								: filters.status === "inactive"
-								? "Chưa áp dụng"
-								: "Đã hết hạn"}
-						</Box>
-					)}
-					{filters.searchQuery && (
-						<Box
-							bg="brand.50"
-							px={3}
-							py={1}
-							borderRadius="full"
-							fontSize="12px"
-							fontWeight="600"
-							color="brand.700">
-							Tìm kiếm: "{filters.searchQuery}"
-						</Box>
-					)}
-				</Flex>
-			)}
 		</Box>
 	);
 };

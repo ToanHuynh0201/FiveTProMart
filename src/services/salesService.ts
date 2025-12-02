@@ -9,6 +9,7 @@ const mockProducts: Product[] = [
 		price: 50000,
 		stock: 150,
 		category: "Snack",
+		barcode: "8934567890123",
 		batches: [
 			{
 				id: "b1_1",
@@ -33,6 +34,7 @@ const mockProducts: Product[] = [
 		price: 80000,
 		stock: 120,
 		category: "Snack",
+		barcode: "8934567890124",
 		batches: [
 			{
 				id: "b2_1",
@@ -57,6 +59,7 @@ const mockProducts: Product[] = [
 		price: 40000,
 		stock: 250,
 		category: "Rau củ",
+		barcode: "8934567890125",
 		batches: [
 			{
 				id: "b3_1",
@@ -81,6 +84,7 @@ const mockProducts: Product[] = [
 		price: 40000,
 		stock: 180,
 		category: "Rau củ",
+		barcode: "8934567890126",
 		promotion: "mua 2 tặng cây đấm lưng",
 		batches: [
 			{
@@ -96,6 +100,60 @@ const mockProducts: Product[] = [
 				quantity: 30,
 				expiryDate: new Date("2025-12-02"), // Sắp hết hạn (5 ngày)
 				importDate: new Date("2025-10-25"),
+			},
+		],
+	},
+	{
+		id: "p5",
+		code: "NC00000001",
+		name: "Nước ngọt Coca Cola",
+		price: 12000,
+		stock: 300,
+		category: "Nước uống",
+		barcode: "8934567890127",
+		batches: [
+			{
+				id: "b5_1",
+				batchNumber: "LOT009",
+				quantity: 300,
+				expiryDate: new Date("2026-06-15"),
+				importDate: new Date("2025-11-01"),
+			},
+		],
+	},
+	{
+		id: "p6",
+		code: "NC00000002",
+		name: "Nước suối Lavie",
+		price: 5000,
+		stock: 500,
+		category: "Nước uống",
+		barcode: "8934567890128",
+		batches: [
+			{
+				id: "b6_1",
+				batchNumber: "LOT010",
+				quantity: 500,
+				expiryDate: new Date("2026-08-20"),
+				importDate: new Date("2025-11-01"),
+			},
+		],
+	},
+	{
+		id: "p7",
+		code: "TP00000001",
+		name: "Mì gói Hảo Hảo",
+		price: 4000,
+		stock: 600,
+		category: "Thực phẩm khô",
+		barcode: "8934567890129",
+		batches: [
+			{
+				id: "b7_1",
+				batchNumber: "LOT011",
+				quantity: 600,
+				expiryDate: new Date("2026-03-10"),
+				importDate: new Date("2025-10-15"),
 			},
 		],
 	},
@@ -384,7 +442,8 @@ export const salesService = {
 		return mockProducts.filter(
 			(p) =>
 				p.name.toLowerCase().includes(lowerQuery) ||
-				p.code.toLowerCase().includes(lowerQuery),
+				p.code.toLowerCase().includes(lowerQuery) ||
+				(p.barcode && p.barcode.includes(query.trim())), // Search by barcode (exact match)
 		);
 	},
 

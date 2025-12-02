@@ -24,6 +24,7 @@ import {
 	OrderFilterBar,
 	BatchSelectionModal,
 	PendingOrdersList,
+	BarcodeScanner,
 } from "../components/sales";
 import type {
 	OrderItem,
@@ -85,6 +86,12 @@ const SalesPage = () => {
 		isOpen: isBatchModalOpen,
 		onOpen: onBatchModalOpen,
 		onClose: onBatchModalClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isBarcodeScannerOpen,
+		onOpen: onBarcodeScannerOpen,
+		onClose: onBarcodeScannerClose,
 	} = useDisclosure();
 
 	useEffect(() => {
@@ -505,6 +512,9 @@ const SalesPage = () => {
 													onProductSelect={
 														handleProductSelect
 													}
+													onOpenBarcodeScanner={
+														onBarcodeScannerOpen
+													}
 												/>
 											</Flex>
 										</Box>
@@ -538,6 +548,12 @@ const SalesPage = () => {
 										onClose={onBatchModalClose}
 										product={selectedProductForBatch}
 										onConfirm={handleBatchSelect}
+									/>
+
+									<BarcodeScanner
+										isOpen={isBarcodeScannerOpen}
+										onClose={onBarcodeScannerClose}
+										onProductFound={handleProductSelect}
 									/>
 								</Box>
 

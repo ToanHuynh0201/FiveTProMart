@@ -1,35 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
 	Box,
 	Input,
 	InputGroup,
 	InputLeftElement,
+	InputRightElement,
 	Text,
 	Flex,
 	Badge,
+	IconButton,
+	Tooltip,
+	useToast,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
+import { FiCamera } from "react-icons/fi";
 import type { Product } from "../../types/sales";
 import { salesService } from "../../services/salesService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductSearchBarProps {
 	onProductSelect: (product: Product) => void;
+	onOpenBarcodeScanner?: () => void;
 }
 
 export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 	onProductSelect,
+	onOpenBarcodeScanner,
 }) => {
+	const toast = useToast();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState<Product[]>([]);
 	const [showResults, setShowResults] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
+	const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+	// Auto-detect barcode input (fast typing pattern)
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Shortcut Ctrl+B to open barcode scanner
+			if (e.ctrlKey && e.key === "b") {
+				e.preventDefault();
+				onOpenBarcodeScanner?.();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [onOpenBarcodeScanner]);
 
 	const handleSearch = async (query: string) => {
 		setSearchQuery(query);
+
+		// Clear previous timeout
+		if (searchTimeoutRef.current) {
+			clearTimeout(searchTimeoutRef.current);
+		}
+
 		if (query.trim()) {
-			const results = await salesService.searchProducts(query);
-			setSearchResults(results);
-			setShowResults(true);
+			// Debounce search for better performance
+			searchTimeoutRef.current = setTimeout(async () => {
+				const results = await salesService.searchProducts(query);
+				setSearchResults(results);
+				setShowResults(true);
+
+				// Auto-select if exact barcode match
+				const exactBarcodeMatch = results.find(
+					(p) => p.barcode === query.trim(),
+				);
+				if (exactBarcodeMatch && results.length === 1) {
+					handleSelectProduct(exactBarcodeMatch);
+					toast({
+						title: "Quét mã vạch thành công!",
+						description: `Đã thêm: ${exactBarcodeMatch.name}`,
+						status: "success",
+						duration: 2000,
+						position: "top",
+					});
+				}
+			}, 300);
 		} else {
 			setSearchResults([]);
 			setShowResults(false);
@@ -47,7 +95,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		<Box
 			position="relative"
 			flex="1"
-			maxW="500px">
+			maxW="600px">
 			<InputGroup>
 				<InputLeftElement
 					pointerEvents="none"
@@ -55,12 +103,13 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					<SearchIcon color="gray.500" />
 				</InputLeftElement>
 				<Input
+					ref={inputRef}
 					h="48px"
 					bg="gray.50"
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="Tìm kiếm"
+					placeholder="Tìm kiếm hoặc quét mã vạch (Ctrl+B)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>
@@ -73,7 +122,30 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 						borderColor: "#161f70",
 						boxShadow: "0 0 0 3px rgba(22, 31, 112, 0.1)",
 					}}
+					pr="50px"
 				/>
+				<InputRightElement
+					h="48px"
+					w="50px">
+					<Tooltip
+						label="Quét mã vạch (Ctrl+B)"
+						hasArrow
+						placement="top">
+						<IconButton
+							aria-label="Scan barcode"
+							icon={<FiCamera size={20} />}
+							variant="ghost"
+							colorScheme="brand"
+							size="sm"
+							onClick={onOpenBarcodeScanner}
+							_hover={{
+								bg: "brand.50",
+								transform: "scale(1.1)",
+							}}
+							transition="all 0.2s"
+						/>
+					</Tooltip>
+				</InputRightElement>
 			</InputGroup>
 
 			{showResults && searchResults.length > 0 && (

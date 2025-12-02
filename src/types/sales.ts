@@ -13,6 +13,7 @@ export interface Product {
 	price: number; // Đơn giá
 	stock: number; // Tồn kho
 	category?: string;
+	barcode?: string; // Mã vạch
 	promotion?: string; // Khuyến mãi
 	expiryDate?: Date; // Hạn sử dụng (deprecated - dùng batches)
 	batches?: ProductBatch[]; // Danh sách lô hàng

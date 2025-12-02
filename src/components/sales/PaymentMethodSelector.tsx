@@ -14,26 +14,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 }) => {
 	return (
 		<Box w="100%">
-			{!compact && (
-				<Heading
-					size="md"
-					fontWeight="700"
-					color="gray.800"
-					mb={4}>
-					Phương thức thanh toán
-				</Heading>
-			)}
-			{compact && (
-				<Text
-					fontSize="xs"
-					fontWeight="600"
-					color="gray.500"
-					textTransform="uppercase"
-					letterSpacing="wide"
-					mb={2}>
-					Phương thức thanh toán
-				</Text>
-			)}
 			<SimpleGrid
 				columns={3}
 				spacing={compact ? 2 : 3}

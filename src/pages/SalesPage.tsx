@@ -65,6 +65,9 @@ const SalesPage = () => {
 	// Pending orders state
 	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
 
+	// Tab state
+	const [activeTabIndex, setActiveTabIndex] = useState(0);
+
 	// Order history states
 	const [orders, setOrders] = useState<SalesOrder[]>([]);
 	const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
@@ -425,16 +428,37 @@ const SalesPage = () => {
 					borderRadius="xl"
 					boxShadow="sm"
 					mb={6}>
-					<Heading
-						size="lg"
-						color="#161f70"
-						mb={5}>
-						Quản lý bán hàng
-					</Heading>
+					<Flex
+						justify="space-between"
+						align="flex-start"
+						mb={5}
+						gap={4}
+						flexWrap={{ base: "wrap", lg: "nowrap" }}>
+						<Heading
+							size="lg"
+							color="#161f70"
+							minW="200px">
+							Quản lý bán hàng
+						</Heading>
+						{activeTabIndex === 0 && (
+							<Box flex="1">
+								<OrderHeader
+									orderNumber={orderNumber}
+									customerName={
+										customer?.name || "KHÁCH VÃNG LAI"
+									}
+									createdAt={createdAt}
+									onPauseOrder={handlePauseOrder}
+								/>
+							</Box>
+						)}
+					</Flex>
 
 					<Tabs
 						colorScheme="blue"
-						variant="enclosed">
+						variant="enclosed"
+						index={activeTabIndex}
+						onChange={setActiveTabIndex}>
 						<TabList>
 							<Tab
 								_selected={{
@@ -462,18 +486,6 @@ const SalesPage = () => {
 								<Box
 									pt={4}
 									pb="100px">
-									<Box mb={5}>
-										<OrderHeader
-											orderNumber={orderNumber}
-											customerName={
-												customer?.name ||
-												"KHÁCH VÃNG LAI"
-											}
-											createdAt={createdAt}
-											onPauseOrder={handlePauseOrder}
-										/>
-									</Box>
-
 									<Box mb={5}>
 										<Box
 											bg="white"

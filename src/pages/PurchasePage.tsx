@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
 	Box,
 	Text,
-	SimpleGrid,
 	Flex,
 	Button,
 	Spinner,
@@ -13,10 +12,10 @@ import {
 	MenuList,
 	MenuItem,
 	Icon,
+	HStack,
 } from "@chakra-ui/react";
 import { AddIcon, DownloadIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsFileEarmarkExcel } from "react-icons/bs";
-import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	PurchaseTable,
@@ -25,7 +24,6 @@ import {
 	PurchaseDetailModal,
 	ImportExcelModal,
 } from "@/components/purchase";
-import { StatsCard } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
 import { purchaseService } from "@/services/purchaseService";
@@ -247,7 +245,7 @@ const PurchasePage = () => {
 						<Text
 							fontSize="14px"
 							color="gray.600">
-							Quản lý phiếu nhập hàng và nhà cung cấp
+							Quản lý phiếu nhập hàng
 						</Text>
 					</Box>
 					<Flex gap={2}>
@@ -287,7 +285,6 @@ const PurchasePage = () => {
 					</Flex>
 				</Flex>
 
-				{/* Stats Cards */}
 				{isLoading ? (
 					<Flex
 						justify="center"
@@ -299,33 +296,67 @@ const PurchasePage = () => {
 					</Flex>
 				) : (
 					<>
-						<SimpleGrid
-							columns={{ base: 1, sm: 2, lg: 2 }}
-							spacing={4}
-							mb={3}>
-							<StatsCard
-								title="Đơn chờ nhận"
-								value={stats?.pendingOrders || 0}
-								icon={BsExclamationTriangle}
-								color="orange.500"
-								bgGradient="linear(to-br, orange.400, orange.600)"
-							/>
-							<StatsCard
-								title="Tổng mặt hàng"
-								value={stats?.totalItems || 0}
-								icon={FiPackage}
-								color="purple.500"
-								bgGradient="linear(to-br, purple.400, purple.600)"
-							/>
-						</SimpleGrid>
+						<HStack
+							flex={1}
+							gap={3}
+							flexWrap={{ base: "wrap", lg: "nowrap" }}
+							width="100%"
+							maxWidth="100%"
+							align="center">
+							<Box
+								mb={3}
+								flexShrink={0}>
+								<Flex
+									bg="white"
+									borderRadius="lg"
+									p={3}
+									align="center"
+									gap={3}
+									boxShadow="sm"
+									borderLeft="4px solid"
+									borderColor="orange.500">
+									<Flex
+										bg="orange.50"
+										p={2}
+										borderRadius="md">
+										<Icon
+											as={BsExclamationTriangle}
+											boxSize={5}
+											color="orange.500"
+										/>
+									</Flex>
+									<Box>
+										<Text
+											fontSize="12px"
+											color="gray.600"
+											fontWeight="500">
+											Đơn chờ nhận
+										</Text>
+										<Text
+											fontSize="20px"
+											fontWeight="700"
+											color="orange.500">
+											{stats?.pendingOrders || 0}
+										</Text>
+									</Box>
+								</Flex>
+							</Box>
 
-						{/* Filters */}
-						<PurchaseFilterBar
-							filters={filters}
-							suppliers={suppliers}
-							onFiltersChange={setFilters}
-							onReset={handleResetFilters}
-						/>
+							{/* Filters */}
+							<Box
+								flex={1}
+								width="100%">
+								{" "}
+								{/* Wrap PurchaseFilterBar trong Box với flex={1} */}
+								<PurchaseFilterBar
+									filters={filters}
+									suppliers={suppliers}
+									onFiltersChange={setFilters}
+									onReset={handleResetFilters}
+								/>
+							</Box>
+						</HStack>
+						{/* Stats Card - Đơn chờ nhận */}
 
 						{/* Search Bar */}
 						<Box mb={4}>

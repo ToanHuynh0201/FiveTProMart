@@ -1,4 +1,4 @@
-import { Grid, Box, Text, Button, Flex } from "@chakra-ui/react";
+import { Text, Button, Flex } from "@chakra-ui/react";
 import { FiPause } from "react-icons/fi";
 
 interface OrderHeaderProps {
@@ -24,121 +24,97 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
 	};
 
 	return (
-		<Box>
+		<Flex
+			gap={2}
+			align="center"
+			flexWrap="wrap"
+			justify="flex-end">
 			<Flex
-				justify="space-between"
+				gap={2}
 				align="center"
-				mb={4}>
+				bg="blue.50"
+				px={2}
+				py={1.5}
+				borderRadius="lg"
+				border="1px solid"
+				borderColor="blue.100">
 				<Text
-					fontSize="lg"
-					fontWeight="bold"
-					color="#161f70">
-					Thông tin đơn hàng
+					fontSize="xs"
+					color="gray.600"
+					fontWeight="500">
+					Mã:
 				</Text>
-				{onPauseOrder && (
-					<Button
-						leftIcon={<FiPause />}
-						colorScheme="orange"
-						size="sm"
-						variant="outline"
-						onClick={onPauseOrder}
-						_hover={{
-							bg: "orange.50",
-							borderColor: "orange.600",
-						}}>
-						Tạm dừng hóa đơn
-					</Button>
-				)}
+				<Text
+					fontSize="sm"
+					fontWeight="700"
+					color="#161f70">
+					{orderNumber}
+				</Text>
 			</Flex>
-			<Grid
-				templateColumns="repeat(auto-fit, minmax(200px, 1fr))"
-				gap={6}>
-				<Box
-					p={3}
-					bg="gray.50"
-					borderRadius="md"
-					borderLeft="3px solid"
-					borderColor="#161f70"
-					transition="all 0.2s"
-					_hover={{
-						bg: "gray.100",
-						transform: "translateY(-2px)",
-					}}>
+
+			<Flex
+				gap={2}
+				align="center"
+				bg="purple.50"
+				px={2}
+				py={1.5}
+				borderRadius="lg"
+				border="1px solid"
+				borderColor="purple.100">
+				<Text
+					fontSize="xs"
+					color="gray.600"
+					fontWeight="500">
+					Thời gian:
+				</Text>
+				<Text
+					fontSize="sm"
+					fontWeight="600"
+					color="#161f70">
+					{formatDateTime(createdAt)}
+				</Text>
+			</Flex>
+
+			{customerName && (
+				<Flex
+					gap={2}
+					align="center"
+					bg="green.50"
+					px={2}
+					py={1.5}
+					borderRadius="lg"
+					border="1px solid"
+					borderColor="green.100">
 					<Text
 						fontSize="xs"
-						fontWeight="500"
 						color="gray.600"
-						textTransform="uppercase"
-						letterSpacing="wider"
-						mb={1.5}>
-						Mã đơn hàng
+						fontWeight="500">
+						Khách:
 					</Text>
 					<Text
-						fontSize="xl"
+						fontSize="sm"
 						fontWeight="700"
 						color="#161f70">
-						{orderNumber}
+						{customerName}
 					</Text>
-				</Box>
+				</Flex>
+			)}
 
-				<Box
-					p={3}
-					bg="gray.50"
-					borderRadius="md"
-					borderLeft="3px solid"
-					borderColor="#161f70"
-					transition="all 0.2s"
+			{onPauseOrder && (
+				<Button
+					leftIcon={<FiPause />}
+					colorScheme="orange"
+					size="sm"
+					variant="solid"
+					onClick={onPauseOrder}
+					h="auto"
+					py={1.5}
 					_hover={{
-						bg: "gray.100",
-						transform: "translateY(-2px)",
+						bg: "orange.600",
 					}}>
-					<Text
-						fontSize="xs"
-						fontWeight="500"
-						color="gray.600"
-						textTransform="uppercase"
-						letterSpacing="wider"
-						mb={1.5}>
-						Thời gian tạo
-					</Text>
-					<Text
-						fontSize="lg"
-						fontWeight="600"
-						color="#161f70">
-						{formatDateTime(createdAt)}
-					</Text>
-				</Box>
-
-				{customerName && (
-					<Box
-						p={3}
-						bg="gray.50"
-						borderRadius="md"
-						borderLeft="3px solid"
-						borderColor="#161f70"
-						transition="all 0.2s"
-						_hover={{
-							bg: "gray.100",
-							transform: "translateY(-2px)",
-						}}>
-						<Text
-							fontSize="xs"
-							fontWeight="500"
-							color="gray.600"
-							textTransform="uppercase"
-							letterSpacing="wider"
-							mb={1.5}>
-							Khách hàng
-						</Text>
-						<Text
-							fontSize="xl"
-							fontWeight="700"
-							color="#161f70">
-							{customerName}
-						</Text>
-					</Box>
-				)}
-			</Grid>
-		</Box>
+					Tạm dừng
+				</Button>
+			)}
+		</Flex>
 	);
 };

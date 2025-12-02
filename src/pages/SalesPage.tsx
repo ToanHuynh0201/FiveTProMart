@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import {
 	Box,
 	Flex,
-	Grid,
 	Heading,
 	VStack,
 	useToast,
@@ -24,12 +23,14 @@ import {
 	OrderDetailModal,
 	OrderFilterBar,
 	BatchSelectionModal,
+	PendingOrdersList,
 } from "../components/sales";
 import type {
 	OrderItem,
 	PaymentMethod,
 	Product,
 	SalesOrder,
+	PendingOrder,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { salesService } from "../services/salesService";
@@ -61,6 +62,8 @@ const SalesPage = () => {
 	const [showProductList, setShowProductList] = useState(false);
 	const [selectedProductForBatch, setSelectedProductForBatch] =
 		useState<Product | null>(null);
+	// Pending orders state
+	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
 
 	// Order history states
 	const [orders, setOrders] = useState<SalesOrder[]>([]);
@@ -322,6 +325,94 @@ const SalesPage = () => {
 		setCustomer(updatedCustomer);
 	};
 
+	// Tạm dừng hóa đơn hiện tại
+	const handlePauseOrder = () => {
+		if (orderItems.length === 0) {
+			toast({
+				title: "Không có hóa đơn để tạm dừng",
+				description: "Vui lòng thêm sản phẩm trước khi tạm dừng",
+				status: "warning",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+			return;
+		}
+
+		const pendingOrder: PendingOrder = {
+			id: `pending_${Date.now()}`,
+			orderNumber,
+			items: [...orderItems],
+			customer: customer ? { ...customer } : null,
+			paymentMethod,
+			createdAt,
+			pausedAt: new Date(),
+		};
+
+		setPendingOrders([...pendingOrders, pendingOrder]);
+
+		// Reset form để tạo hóa đơn mới
+		setOrderItems([]);
+		setPaymentMethod(undefined);
+		setCustomer({
+			id: `guest_${Date.now()}`,
+			name: "KHÁCH VÃNG LAI",
+			phone: "",
+			points: 0,
+		});
+
+		toast({
+			title: "Đã tạm dừng hóa đơn",
+			description: `Hóa đơn ${orderNumber} đã được lưu. Bạn có thể tạo hóa đơn mới.`,
+			status: "success",
+			duration: 3000,
+			isClosable: true,
+			position: "top",
+		});
+	};
+
+	// Khôi phục hóa đơn tạm dừng
+	const handleRestoreOrder = (order: PendingOrder) => {
+		// Nếu đang có hóa đơn, hỏi có muốn tạm dừng không
+		if (orderItems.length > 0) {
+			const shouldPause = window.confirm(
+				"Bạn đang có hóa đơn chưa hoàn thành. Bạn có muốn tạm dừng hóa đơn hiện tại không?",
+			);
+			if (shouldPause) {
+				handlePauseOrder();
+			} else {
+				return;
+			}
+		}
+
+		// Khôi phục dữ liệu từ pending order
+		setOrderItems(order.items);
+		if (order.customer) {
+			setCustomer({
+				id: order.customer.id,
+				name: order.customer.name,
+				phone: order.customer.phone || "",
+				points: order.customer.points || 0,
+			});
+		} else {
+			setCustomer({
+				id: `guest_${Date.now()}`,
+				name: "KHÁCH VÃNG LAI",
+				phone: "",
+				points: 0,
+			});
+		}
+		setPaymentMethod(order.paymentMethod);
+
+		// Xóa khỏi danh sách pending
+		setPendingOrders(pendingOrders.filter((po) => po.id !== order.id));
+	};
+
+	// Xóa hóa đơn tạm dừng
+	const handleDeletePendingOrder = (orderId: string) => {
+		setPendingOrders(pendingOrders.filter((order) => order.id !== orderId));
+	};
+
 	return (
 		<MainLayout>
 			<Box
@@ -379,57 +470,56 @@ const SalesPage = () => {
 												"KHÁCH VÃNG LAI"
 											}
 											createdAt={createdAt}
+											onPauseOrder={handlePauseOrder}
 										/>
 									</Box>
 
-									<Grid
-										templateColumns={{
-											base: "1fr",
-										}}
-										gap={6}
-										alignItems="start">
-										<VStack
-											spacing={5}
-											align="stretch">
-											<Box
-												bg="white"
-												borderRadius="xl"
-												p={6}
-												boxShadow="sm">
-												<Flex
-													gap={3}
-													align="center"
-													wrap="wrap">
-													<AddProductButton
-														onClick={
-															handleShowProductList
-														}
-													/>
-													<ProductSearchBar
-														onProductSelect={
-															handleProductSelect
-														}
-													/>
-												</Flex>
-											</Box>
-
-											<Box
-												bg="white"
-												borderRadius="xl"
-												p={6}
-												boxShadow="sm">
-												<OrderItemsTable
-													items={orderItems}
-													onUpdateQuantity={
-														handleUpdateQuantity
-													}
-													onRemoveItem={
-														handleRemoveItem
+									<Box mb={5}>
+										<Box
+											bg="white"
+											borderRadius="xl"
+											p={6}
+											boxShadow="sm">
+											<Flex
+												gap={3}
+												align="center"
+												wrap="wrap">
+												<AddProductButton
+													onClick={
+														handleShowProductList
 													}
 												/>
-											</Box>
-										</VStack>
-									</Grid>
+												<ProductSearchBar
+													onProductSelect={
+														handleProductSelect
+													}
+												/>
+											</Flex>
+										</Box>
+									</Box>
+
+									<Box mb={5}>
+										<Box
+											bg="white"
+											borderRadius="xl"
+											p={6}
+											boxShadow="sm">
+											<OrderItemsTable
+												items={orderItems}
+												onUpdateQuantity={
+													handleUpdateQuantity
+												}
+												onRemoveItem={handleRemoveItem}
+											/>
+										</Box>
+									</Box>
+
+									{/* Danh sách hóa đơn tạm dừng */}
+									<PendingOrdersList
+										pendingOrders={pendingOrders}
+										onRestore={handleRestoreOrder}
+										onDelete={handleDeletePendingOrder}
+									/>
 
 									<BatchSelectionModal
 										isOpen={isBatchModalOpen}

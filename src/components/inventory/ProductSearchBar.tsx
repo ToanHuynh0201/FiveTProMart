@@ -4,26 +4,44 @@ import {
 	InputLeftElement,
 	Flex,
 	Button,
+	Select,
 } from "@chakra-ui/react";
-import { SearchIcon, AddIcon } from "@chakra-ui/icons";
+import { SearchIcon } from "@chakra-ui/icons";
+import type { ProductFilter, InventoryCategory } from "../../types/inventory";
 
 interface ProductSearchBarProps {
-	searchQuery: string;
-	onSearchChange: (query: string) => void;
-	onAddProduct: () => void;
+	filters: ProductFilter;
+	categories: InventoryCategory[];
+	onFiltersChange: (filters: ProductFilter) => void;
+	onReset: () => void;
 }
 
 export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
-	searchQuery,
-	onSearchChange,
-	onAddProduct,
+	filters,
+	categories,
+	onFiltersChange,
+	onReset,
 }) => {
+	const handleFilterChange = (key: keyof ProductFilter, value: string) => {
+		onFiltersChange({
+			...filters,
+			[key]: value,
+		});
+	};
+
+	const hasActiveFilters =
+		filters.category !== "all" ||
+		filters.status !== "all" ||
+		filters.stockLevel !== "all";
+
 	return (
 		<Flex
 			gap={4}
 			mb={6}
-			flexWrap={{ base: "wrap", md: "nowrap" }}>
-			<InputGroup flex="1">
+			flexWrap={{ base: "wrap", lg: "nowrap" }}
+			align="stretch">
+			{/* Search Input */}
+			<InputGroup flex={{ base: "1 1 100%", lg: "2" }}>
 				<InputLeftElement
 					pointerEvents="none"
 					h="56px">
@@ -37,8 +55,10 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					borderRadius="12px"
 					fontSize="16px"
 					placeholder="Tìm kiếm theo tên, mã hàng hoặc mã vạch..."
-					value={searchQuery}
-					onChange={(e) => onSearchChange(e.target.value)}
+					value={filters.searchQuery}
+					onChange={(e) =>
+						handleFilterChange("searchQuery", e.target.value)
+					}
 					_placeholder={{ color: "gray.500" }}
 					_hover={{
 						borderColor: "gray.300",
@@ -51,28 +71,100 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				/>
 			</InputGroup>
 
-			<Button
-				h="56px"
-				px={6}
-				bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
-				color="white"
+			{/* Category Filter */}
+			<Select
+				value={filters.category}
+				onChange={(e) => handleFilterChange("category", e.target.value)}
+				bg="white"
+				border="2px solid"
+				borderColor="gray.200"
 				borderRadius="12px"
-				fontWeight="600"
 				fontSize="16px"
-				leftIcon={<AddIcon />}
-				onClick={onAddProduct}
-				boxShadow="0 4px 14px rgba(22, 31, 112, 0.25)"
-				_hover={{
-					bgGradient: "linear(135deg, brand.600 0%, brand.500 100%)",
-					transform: "translateY(-2px)",
-					boxShadow: "0 6px 20px rgba(22, 31, 112, 0.35)",
-				}}
-				_active={{
-					bgGradient: "linear(135deg, brand.700 0%, brand.600 100%)",
-					transform: "translateY(0)",
+				h="56px"
+				flex={{ base: "1 1 48%", sm: "1 1 32%", lg: "1" }}
+				_hover={{ borderColor: "gray.300" }}
+				_focus={{
+					bg: "white",
+					borderColor: "brand.500",
+					boxShadow: "0 0 0 3px rgba(22, 31, 112, 0.1)",
 				}}>
-				Thêm hàng hóa
-			</Button>
+				<option value="all">Tất cả danh mục</option>
+				{categories.map((cat) => (
+					<option
+						key={cat.id}
+						value={cat.name}>
+						{cat.name} ({cat.productCount})
+					</option>
+				))}
+			</Select>
+
+			{/* Status Filter */}
+			<Select
+				value={filters.status}
+				onChange={(e) => handleFilterChange("status", e.target.value)}
+				bg="white"
+				border="2px solid"
+				borderColor="gray.200"
+				borderRadius="12px"
+				fontSize="16px"
+				h="56px"
+				flex={{ base: "1 1 48%", sm: "1 1 32%", lg: "1" }}
+				_hover={{ borderColor: "gray.300" }}
+				_focus={{
+					bg: "white",
+					borderColor: "brand.500",
+					boxShadow: "0 0 0 3px rgba(22, 31, 112, 0.1)",
+				}}>
+				<option value="all">Tất cả trạng thái</option>
+				<option value="active">Đang kinh doanh</option>
+				<option value="inactive">Ngừng kinh doanh</option>
+				<option value="out-of-stock">Hết hàng</option>
+			</Select>
+
+			{/* Stock Level Filter */}
+			<Select
+				value={filters.stockLevel}
+				onChange={(e) =>
+					handleFilterChange("stockLevel", e.target.value)
+				}
+				bg="white"
+				border="2px solid"
+				borderColor="gray.200"
+				borderRadius="12px"
+				fontSize="16px"
+				h="56px"
+				flex={{ base: "1 1 100%", sm: "1 1 32%", lg: "1" }}
+				_hover={{ borderColor: "gray.300" }}
+				_focus={{
+					bg: "white",
+					borderColor: "brand.500",
+					boxShadow: "0 0 0 3px rgba(22, 31, 112, 0.1)",
+				}}>
+				<option value="all">Tất cả tồn kho</option>
+				<option value="normal">Tồn kho bình thường</option>
+				<option value="low">Sắp hết hàng</option>
+				<option value="out">Hết hàng</option>
+				<option value="expiring-soon">Lô sắp hết hạn</option>
+				<option value="expired">Lô đã hết hạn</option>
+			</Select>
+
+			{/* Reset Button */}
+			{hasActiveFilters && (
+				<Button
+					variant="ghost"
+					colorScheme="blue"
+					h="56px"
+					px={5}
+					fontSize="16px"
+					fontWeight="600"
+					onClick={onReset}
+					flexShrink={0}
+					_hover={{
+						bg: "blue.50",
+					}}>
+					Xóa lọc
+				</Button>
+			)}
 		</Flex>
 	);
 };

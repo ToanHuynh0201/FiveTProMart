@@ -57,3 +57,19 @@ export interface SalesStats {
 	totalRevenue: number;
 	averageOrderValue: number;
 }
+
+// Interface cho hóa đơn đang tạm dừng
+export interface PendingOrder {
+	id: string; // ID unique cho pending order
+	orderNumber: string; // Số hóa đơn
+	items: OrderItem[]; // Danh sách sản phẩm
+	customer: {
+		id: string;
+		name: string;
+		phone?: string;
+		points?: number;
+	} | null;
+	paymentMethod?: PaymentMethod;
+	createdAt: Date; // Thời gian tạo
+	pausedAt: Date; // Thời gian tạm dừng
+}

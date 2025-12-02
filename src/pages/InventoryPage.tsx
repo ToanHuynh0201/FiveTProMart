@@ -13,10 +13,8 @@ import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ProductSearchBar,
-	ProductFilterBar,
 	ProductTable,
 	StatsCard,
-	AddProductModal,
 	EditProductModal,
 	ProductDetailModal,
 } from "@/components/inventory";
@@ -62,11 +60,6 @@ const InventoryPage = () => {
 	const [selectedProductId, setSelectedProductId] = useState<string | null>(
 		null,
 	);
-	const {
-		isOpen: isAddModalOpen,
-		onOpen: onAddModalOpen,
-		onClose: onAddModalClose,
-	} = useDisclosure();
 	const {
 		isOpen: isEditModalOpen,
 		onOpen: onEditModalOpen,
@@ -139,22 +132,6 @@ const InventoryPage = () => {
 			status: "all",
 			stockLevel: "all",
 		});
-	};
-
-	const handleSearchChange = (query: string) => {
-		setFilters({ ...filters, searchQuery: query });
-	};
-
-	const handleAddProduct = async (
-		product: Omit<InventoryProduct, "id" | "createdAt" | "updatedAt">,
-	) => {
-		try {
-			await inventoryService.addProduct(product);
-			await loadData(); // Reload all data to update stats
-		} catch (error) {
-			console.error("Error adding product:", error);
-			throw error;
-		}
 	};
 
 	const handleUpdateProduct = async (
@@ -294,15 +271,9 @@ const InventoryPage = () => {
 							onClick={handleExpiredClick}
 						/>
 					</SimpleGrid>
-				)}{" "}
-				{/* Search Bar */}
+				)}
+				{/* Search & Filter Bar */}
 				<ProductSearchBar
-					searchQuery={filters.searchQuery}
-					onSearchChange={handleSearchChange}
-					onAddProduct={onAddModalOpen}
-				/>
-				{/* Filter Bar */}
-				<ProductFilterBar
 					filters={filters}
 					categories={categories}
 					onFiltersChange={handleFiltersChange}
@@ -383,14 +354,6 @@ const InventoryPage = () => {
 					</Flex>
 				)}
 			</Box>
-
-			{/* Add Product Modal */}
-			<AddProductModal
-				isOpen={isAddModalOpen}
-				onClose={onAddModalClose}
-				onAdd={handleAddProduct}
-				categories={categories}
-			/>
 
 			{/* Edit Product Modal */}
 			<EditProductModal

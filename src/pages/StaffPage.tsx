@@ -114,13 +114,13 @@ const StaffPage = () => {
 		<MainLayout>
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
-				py={6}>
+				py={4}>
 				{/* Page Title */}
 				<Text
-					fontSize={{ base: "28px", md: "36px" }}
+					fontSize={{ base: "24px", md: "28px" }}
 					fontWeight="600"
 					color="brand.600"
-					mb={6}>
+					mb={4}>
 					Danh sách nhân sự
 				</Text>
 
@@ -155,7 +155,7 @@ const StaffPage = () => {
 						/>
 
 						{/* Pagination */}
-						<Box mt={6}>
+						<Box mt={3}>
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}

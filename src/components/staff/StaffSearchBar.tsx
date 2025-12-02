@@ -20,23 +20,23 @@ const StaffSearchBar = ({
 }: StaffSearchBarProps) => {
 	return (
 		<Flex
-			gap={4}
-			mb={6}
+			gap={3}
+			mb={4}
 			flexDirection={{ base: "column", md: "row" }}
 			alignItems="stretch">
 			{/* Search Input */}
 			<InputGroup
-				size="lg"
+				size="md"
 				flex={1}
 				maxW={{ base: "100%", md: "354px" }}>
 				<InputLeftElement
 					pointerEvents="none"
-					height="47px"
+					height="40px"
 					pl={2}>
 					<Icon
 						viewBox="0 0 24 24"
-						w={6}
-						h={6}
+						w={5}
+						h={5}
 						color="brand.600">
 						<path
 							fill="currentColor"
@@ -51,9 +51,9 @@ const StaffSearchBar = ({
 					bg="brand.50"
 					border="none"
 					borderRadius="10px"
-					height="47px"
-					pl={12}
-					fontSize="16px"
+					height="40px"
+					pl={10}
+					fontSize="15px"
 					fontWeight="400"
 					color="black"
 					_placeholder={{
@@ -70,8 +70,8 @@ const StaffSearchBar = ({
 			<Flex
 				bg="brand.50"
 				borderRadius="10px"
-				height="47px"
-				px={5}
+				height="40px"
+				px={4}
 				cursor="pointer"
 				transition="all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
 				_hover={{
@@ -91,8 +91,8 @@ const StaffSearchBar = ({
 				justifyContent="center">
 				{/* Add Icon */}
 				<Flex
-					w="24px"
-					h="24px"
+					w="20px"
+					h="20px"
 					borderRadius="full"
 					bg="transparent"
 					border="2px solid"
@@ -102,8 +102,8 @@ const StaffSearchBar = ({
 					position="relative">
 					<Icon
 						viewBox="0 0 24 24"
-						w={5}
-						h={5}
+						w={4}
+						h={4}
 						color="brand.600">
 						<path
 							fill="none"
@@ -115,7 +115,7 @@ const StaffSearchBar = ({
 					</Icon>
 				</Flex>
 				<Text
-					fontSize="18px"
+					fontSize="16px"
 					fontWeight="500"
 					color="brand.600"
 					letterSpacing="tight">

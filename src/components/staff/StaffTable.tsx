@@ -82,40 +82,42 @@ const StaffTable = ({
 				boxShadow="sm"
 				overflow="hidden">
 				<Box overflowX="auto">
-					<Table variant="simple">
+					<Table
+						variant="simple"
+						size="sm">
 						<Thead bg="gray.50">
 							<Tr>
 								<Th
-									fontSize="13px"
+									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									py={4}>
+									py={2.5}>
 									STT
 								</Th>
 								<Th
-									fontSize="13px"
+									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none">
 									Tên nhân viên
 								</Th>
 								<Th
-									fontSize="13px"
+									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none">
 									Vị trí
 								</Th>
 								<Th
-									fontSize="13px"
+									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none">
 									Ca làm việc
 								</Th>
 								<Th
-									fontSize="13px"
+									fontSize="12px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
@@ -130,7 +132,7 @@ const StaffTable = ({
 									<Td
 										colSpan={5}
 										textAlign="center"
-										py={10}>
+										py={6}>
 										<Text
 											fontSize="15px"
 											color="gray.500">
@@ -145,13 +147,13 @@ const StaffTable = ({
 										_hover={{ bg: "gray.50" }}
 										transition="background 0.2s">
 										<Td
-											fontSize="14px"
+											fontSize="13px"
 											fontWeight="600"
 											color="gray.700">
 											{index + 1}
 										</Td>
 										<Td
-											fontSize="14px"
+											fontSize="13px"
 											fontWeight="600"
 											color="brand.500"
 											cursor="pointer"
@@ -165,14 +167,14 @@ const StaffTable = ({
 										</Td>
 										<Td>
 											<Text
-												fontSize="14px"
+												fontSize="13px"
 												fontWeight="500"
 												color="gray.800">
 												{staff.position}
 											</Text>
 										</Td>
 										<Td
-											fontSize="14px"
+											fontSize="13px"
 											color="gray.600">
 											{staff.shift}
 										</Td>

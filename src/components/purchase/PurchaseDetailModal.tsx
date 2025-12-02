@@ -105,122 +105,197 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 					<VStack
 						spacing={6}
 						align="stretch">
-						{/* Thông tin chung */}
-						<Box>
-							<Text
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700"
-								mb={3}>
-								Thông tin phiếu nhập
-							</Text>
-							<VStack
-								spacing={3}
-								align="stretch"
-								bg="gray.50"
-								p={4}
-								borderRadius="8px">
-								<HStack justify="space-between">
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Mã phiếu nhập:
-									</Text>
-									<Text
-										fontSize="14px"
-										fontWeight="600"
-										color="brand.500">
-										{purchase.purchaseNumber}
-									</Text>
-								</HStack>
-								<HStack justify="space-between">
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Trạng thái:
-									</Text>
-									{getStatusBadge(purchase.status)}
-								</HStack>
-								<HStack justify="space-between">
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Thanh toán:
-									</Text>
-									{getPaymentStatusBadge(
-										purchase.paymentStatus,
-									)}
-								</HStack>
-								<HStack justify="space-between">
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Kho hàng:
-									</Text>
-									<Text
-										fontSize="14px"
-										fontWeight="500">
-										{purchase.warehouseLocation || "N/A"}
-									</Text>
-								</HStack>
-								<HStack justify="space-between">
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Ngày tạo:
-									</Text>
-									<Text
-										fontSize="14px"
-										fontWeight="500">
-										{formatDate(purchase.createdAt)}
-									</Text>
-								</HStack>
-							</VStack>
-						</Box>
-
-						{/* Thông tin nhà cung cấp */}
-						<Box>
-							<Text
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700"
-								mb={3}>
-								Nhà cung cấp
-							</Text>
-							<VStack
-								spacing={2}
-								align="stretch"
-								bg="gray.50"
-								p={4}
-								borderRadius="8px">
+						{/* Thông tin chung, Nhà cung cấp và Thanh toán - ngang */}
+						<HStack
+							spacing={4}
+							align="start">
+							{/* Thông tin phiếu nhập */}
+							<Box flex={1}>
 								<Text
-									fontSize="15px"
-									fontWeight="600">
-									{purchase.supplier.name}
+									fontSize="16px"
+									fontWeight="600"
+									color="gray.700"
+									mb={3}>
+									Thông tin phiếu nhập
 								</Text>
-								{purchase.supplier.phone && (
+								<VStack
+									spacing={3}
+									align="stretch"
+									bg="gray.50"
+									p={4}
+									borderRadius="8px">
+									<HStack justify="space-between">
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Mã phiếu nhập:
+										</Text>
+										<Text
+											fontSize="14px"
+											fontWeight="600"
+											color="brand.500">
+											{purchase.purchaseNumber}
+										</Text>
+									</HStack>
+									<HStack justify="space-between">
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Trạng thái:
+										</Text>
+										{getStatusBadge(purchase.status)}
+									</HStack>
+									<HStack justify="space-between">
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Thanh toán:
+										</Text>
+										{getPaymentStatusBadge(
+											purchase.paymentStatus,
+										)}
+									</HStack>
+									<HStack justify="space-between">
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Kho hàng:
+										</Text>
+										<Text
+											fontSize="14px"
+											fontWeight="500">
+											{purchase.warehouseLocation ||
+												"N/A"}
+										</Text>
+									</HStack>
+									<HStack justify="space-between">
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Ngày tạo:
+										</Text>
+										<Text
+											fontSize="14px"
+											fontWeight="500">
+											{formatDate(purchase.createdAt)}
+										</Text>
+									</HStack>
+								</VStack>
+							</Box>
+
+							{/* Thông tin nhà cung cấp */}
+							<Box flex={1}>
+								<Text
+									fontSize="16px"
+									fontWeight="600"
+									color="gray.700"
+									mb={3}>
+									Nhà cung cấp
+								</Text>
+								<VStack
+									spacing={2}
+									align="stretch"
+									bg="gray.50"
+									p={4}
+									borderRadius="8px">
 									<Text
-										fontSize="14px"
-										color="gray.600">
-										SĐT: {purchase.supplier.phone}
+										fontSize="15px"
+										fontWeight="600">
+										{purchase.supplier.name}
 									</Text>
-								)}
-								{purchase.supplier.email && (
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Email: {purchase.supplier.email}
-									</Text>
-								)}
-								{purchase.supplier.address && (
-									<Text
-										fontSize="14px"
-										color="gray.600">
-										Địa chỉ: {purchase.supplier.address}
-									</Text>
-								)}
-							</VStack>
-						</Box>
+									{purchase.supplier.phone && (
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											SĐT: {purchase.supplier.phone}
+										</Text>
+									)}
+									{purchase.supplier.email && (
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Email: {purchase.supplier.email}
+										</Text>
+									)}
+									{purchase.supplier.address && (
+										<Text
+											fontSize="14px"
+											color="gray.600">
+											Địa chỉ: {purchase.supplier.address}
+										</Text>
+									)}
+								</VStack>
+							</Box>
+
+							{/* Thông tin thanh toán */}
+							<Box flex={1}>
+								<Text
+									fontSize="16px"
+									fontWeight="600"
+									color="gray.700"
+									mb={3}>
+									Thông tin thanh toán
+								</Text>
+								<VStack
+									spacing={2}
+									align="stretch"
+									bg="gray.50"
+									p={4}
+									borderRadius="8px">
+									<HStack justify="space-between">
+										<Text fontSize="14px">
+											Tổng tiền hàng:
+										</Text>
+										<Text
+											fontSize="14px"
+											fontWeight="600">
+											{formatCurrency(purchase.subtotal)}
+										</Text>
+									</HStack>
+									<HStack justify="space-between">
+										<Text fontSize="14px">Thuế VAT:</Text>
+										<Text fontSize="14px">
+											{formatCurrency(purchase.tax)}
+										</Text>
+									</HStack>
+									<HStack justify="space-between">
+										<Text fontSize="14px">
+											Phí vận chuyển:
+										</Text>
+										<Text fontSize="14px">
+											{formatCurrency(
+												purchase.shippingFee,
+											)}
+										</Text>
+									</HStack>
+									<HStack justify="space-between">
+										<Text fontSize="14px">Giảm giá:</Text>
+										<Text
+											fontSize="14px"
+											color="red.500">
+											-{formatCurrency(purchase.discount)}
+										</Text>
+									</HStack>
+									<Divider
+										borderColor="gray.300"
+										my={2}
+									/>
+									<HStack justify="space-between">
+										<Text
+											fontSize="15px"
+											fontWeight="700">
+											Tổng thanh toán:
+										</Text>
+										<Text
+											fontSize="18px"
+											fontWeight="700"
+											color="brand.500">
+											{formatCurrency(purchase.total)}
+										</Text>
+									</HStack>
+								</VStack>
+							</Box>
+						</HStack>
 
 						{/* Danh sách sản phẩm */}
 						<Box>
@@ -286,85 +361,6 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 										))}
 									</Tbody>
 								</Table>
-							</Box>
-						</Box>
-
-						{/* Thông tin thanh toán */}
-						<Box>
-							<Text
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700"
-								mb={3}>
-								Thông tin thanh toán
-							</Text>
-							<Box
-								bg="gray.50"
-								p={4}
-								borderRadius="8px">
-								<VStack spacing={2}>
-									<HStack
-										justify="space-between"
-										w="full">
-										<Text fontSize="14px">
-											Tổng tiền hàng:
-										</Text>
-										<Text
-											fontSize="14px"
-											fontWeight="600">
-											{formatCurrency(purchase.subtotal)}
-										</Text>
-									</HStack>
-									<HStack
-										justify="space-between"
-										w="full">
-										<Text fontSize="14px">Thuế VAT:</Text>
-										<Text fontSize="14px">
-											{formatCurrency(purchase.tax)}
-										</Text>
-									</HStack>
-									<HStack
-										justify="space-between"
-										w="full">
-										<Text fontSize="14px">
-											Phí vận chuyển:
-										</Text>
-										<Text fontSize="14px">
-											{formatCurrency(
-												purchase.shippingFee,
-											)}
-										</Text>
-									</HStack>
-									<HStack
-										justify="space-between"
-										w="full">
-										<Text fontSize="14px">Giảm giá:</Text>
-										<Text
-											fontSize="14px"
-											color="red.500">
-											-{formatCurrency(purchase.discount)}
-										</Text>
-									</HStack>
-									<Divider
-										borderColor="gray.300"
-										my={2}
-									/>
-									<HStack
-										justify="space-between"
-										w="full">
-										<Text
-											fontSize="16px"
-											fontWeight="700">
-											Tổng thanh toán:
-										</Text>
-										<Text
-											fontSize="20px"
-											fontWeight="700"
-											color="brand.500">
-											{formatCurrency(purchase.total)}
-										</Text>
-									</HStack>
-								</VStack>
 							</Box>
 						</Box>
 

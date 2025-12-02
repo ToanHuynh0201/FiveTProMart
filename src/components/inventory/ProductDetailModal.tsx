@@ -23,6 +23,8 @@ import {
 	Th,
 	Td,
 	Tooltip,
+	Grid,
+	GridItem,
 } from "@chakra-ui/react";
 import type { InventoryProduct } from "../../types/inventory";
 import { inventoryService } from "../../services/inventoryService";
@@ -161,7 +163,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
-			size="xl">
+			size="6xl">
 			<ModalOverlay bg="blackAlpha.600" />
 			<ModalContent>
 				<ModalHeader
@@ -218,101 +220,139 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
 							<Divider />
 
-							<Box>
-								<Text
-									fontSize="16px"
-									fontWeight="700"
-									color="gray.700"
-									mb={2}>
-									Thông tin cơ bản
-								</Text>
-								<InfoRow
-									label="Danh mục"
-									value={product.category}
-								/>
-								<InfoRow
-									label="Đơn vị tính"
-									value={product.unit}
-								/>
-								{product.supplier && (
-									<InfoRow
-										label="Nhà cung cấp"
-										value={product.supplier}
-									/>
-								)}
-							</Box>
+							{/* 3 cột thông tin ngang */}
+							<Grid
+								templateColumns="repeat(3, 1fr)"
+								gap={3}>
+								{/* Thông tin cơ bản */}
+								<GridItem
+									borderRight="1px solid"
+									borderColor="gray.200">
+									<Box
+										pr={5}
+										py={1}>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Thông tin cơ bản
+										</Text>
+										<InfoRow
+											label="Danh mục"
+											value={product.category}
+										/>
+										<InfoRow
+											label="Đơn vị tính"
+											value={product.unit}
+										/>
+										{product.supplier && (
+											<InfoRow
+												label="Nhà cung cấp"
+												value={product.supplier}
+											/>
+										)}
+									</Box>
+								</GridItem>
 
-							<Divider />
+								{/* Giá và tồn kho */}
+								<GridItem
+									borderRight="1px solid"
+									borderColor="gray.200">
+									<Box
+										px={4}
+										py={1}>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Giá và tồn kho
+										</Text>
+										<InfoRow
+											label="Giá bán"
+											value={`${product.price.toLocaleString(
+												"vi-VN",
+											)}đ`}
+										/>
+										<Divider my={2} />
+										<InfoRow
+											label="Tồn kho hiện tại"
+											value={product.stock}
+										/>
+										<InfoRow
+											label="Tồn kho tối thiểu"
+											value={product.minStock}
+										/>
+										<InfoRow
+											label="Tồn kho tối đa"
+											value={product.maxStock}
+										/>
+									</Box>
+								</GridItem>
 
-							<Box>
-								<Text
-									fontSize="16px"
-									fontWeight="700"
-									color="gray.700"
-									mb={2}>
-									Giá và tồn kho
-								</Text>
-								<InfoRow
-									label="Giá vốn"
-									value={`${product.costPrice.toLocaleString(
-										"vi-VN",
-									)}đ`}
-								/>
-								<InfoRow
-									label="Giá bán"
-									value={`${product.price.toLocaleString(
-										"vi-VN",
-									)}đ`}
-								/>
-								<Divider my={2} />
-								<InfoRow
-									label="Tồn kho hiện tại"
-									value={product.stock}
-								/>
-								<InfoRow
-									label="Tồn kho tối thiểu"
-									value={product.minStock}
-								/>
-								<InfoRow
-									label="Tồn kho tối đa"
-									value={product.maxStock}
-								/>
+								{/* Thông tin khác */}
+								<GridItem>
+									<Box
+										pl={5}
+										py={1}>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Thông tin khác
+										</Text>
+										<InfoRow
+											label="Ngày tạo"
+											value={new Date(
+												product.createdAt,
+											).toLocaleDateString("vi-VN")}
+										/>
+										<InfoRow
+											label="Cập nhật lần cuối"
+											value={new Date(
+												product.updatedAt,
+											).toLocaleDateString("vi-VN")}
+										/>
+									</Box>
+								</GridItem>
+							</Grid>
 
-								{/* Stock warning */}
-								{product.stock === 0 && (
+							{/* Stock warning */}
+							{product.stock === 0 && (
+								<Box
+									mt={3}
+									p={3}
+									bg="red.50"
+									borderRadius="8px"
+									border="1px solid"
+									borderColor="red.200">
+									<Text
+										fontSize="14px"
+										color="red.600"
+										fontWeight="600">
+										⚠️ Sản phẩm đã hết hàng
+									</Text>
+								</Box>
+							)}
+							{product.stock > 0 &&
+								product.stock <= product.minStock && (
 									<Box
 										mt={3}
 										p={3}
-										bg="red.50"
+										bg="orange.50"
 										borderRadius="8px"
 										border="1px solid"
-										borderColor="red.200">
+										borderColor="orange.200">
 										<Text
 											fontSize="14px"
-											color="red.600"
+											color="orange.600"
 											fontWeight="600">
-											⚠️ Sản phẩm đã hết hàng
+											⚠️ Sản phẩm sắp hết hàng
 										</Text>
 									</Box>
 								)}
-								{product.stock > 0 &&
-									product.stock <= product.minStock && (
-										<Box
-											mt={3}
-											p={3}
-											bg="orange.50"
-											borderRadius="8px"
-											border="1px solid"
-											borderColor="orange.200">
-											<Text
-												fontSize="14px"
-												color="orange.600"
-												fontWeight="600">
-												⚠️ Sản phẩm sắp hết hàng
-											</Text>
-										</Box>
-									)}
-							</Box>
 
 							{product.description && (
 								<>
@@ -364,6 +404,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 													<Th
 														fontSize="12px"
 														isNumeric>
+														Giá vốn
+													</Th>
+													<Th
+														fontSize="12px"
+														isNumeric>
 														SL
 													</Th>
 													<Th fontSize="12px">
@@ -403,6 +448,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 																	{
 																		batch.batchNumber
 																	}
+																</Td>
+																<Td
+																	fontSize="13px"
+																	isNumeric
+																	fontWeight="600"
+																	color="blue.600">
+																	{batch.costPrice?.toLocaleString(
+																		"vi-VN",
+																	)}
+																	đ
 																</Td>
 																<Td
 																	fontSize="13px"
@@ -498,30 +553,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 										</Text>
 									</Box>
 								)}
-							</Box>
-
-							<Divider />
-
-							<Box>
-								<Text
-									fontSize="16px"
-									fontWeight="700"
-									color="gray.700"
-									mb={2}>
-									Thông tin khác
-								</Text>
-								<InfoRow
-									label="Ngày tạo"
-									value={new Date(
-										product.createdAt,
-									).toLocaleDateString("vi-VN")}
-								/>
-								<InfoRow
-									label="Cập nhật lần cuối"
-									value={new Date(
-										product.updatedAt,
-									).toLocaleDateString("vi-VN")}
-								/>
 							</Box>
 						</VStack>
 					)}

@@ -81,27 +81,27 @@ const CustomerDetailModal = ({
 	}) => (
 		<Flex
 			align="center"
-			gap={3}
-			py={3}
-			px={4}
+			gap={2}
+			py={2}
+			px={3}
 			bg="gray.50"
-			borderRadius="12px">
+			borderRadius="10px">
 			<Icon
 				as={icon}
-				w="20px"
-				h="20px"
+				w="16px"
+				h="16px"
 				color="brand.500"
 			/>
 			<Box flex={1}>
 				<Text
-					fontSize="12px"
+					fontSize="11px"
 					fontWeight="600"
 					color="gray.600"
-					mb={1}>
+					mb={0.5}>
 					{label}
 				</Text>
 				<Text
-					fontSize="14px"
+					fontSize="13px"
 					fontWeight="500"
 					color="brand.600">
 					{value || "N/A"}
@@ -114,7 +114,7 @@ const CustomerDetailModal = ({
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
-			size="2xl"
+			size="5xl"
 			isCentered>
 			<ModalOverlay
 				bg="blackAlpha.600"
@@ -122,8 +122,6 @@ const CustomerDetailModal = ({
 			/>
 			<ModalContent
 				borderRadius="24px"
-				maxH="90vh"
-				overflowY="auto"
 				bg="white"
 				boxShadow="0 20px 60px rgba(22, 31, 112, 0.3)">
 				<ModalHeader
@@ -149,7 +147,7 @@ const CustomerDetailModal = ({
 
 				<ModalBody
 					px={8}
-					py={6}>
+					py={5}>
 					{isLoading ? (
 						<Flex
 							justify="center"
@@ -163,22 +161,22 @@ const CustomerDetailModal = ({
 						</Flex>
 					) : customerDetail ? (
 						<VStack
-							spacing={6}
+							spacing={5}
 							align="stretch">
-							{/* Header Section */}
+							{/* Header Section - Name and Loyalty Points Side by Side */}
 							<Flex
 								gap={6}
-								align="start">
+								align="stretch">
 								{/* Avatar */}
 								<Box
-									w="100px"
-									h="100px"
+									w="80px"
+									h="80px"
 									borderRadius="full"
 									bg="brand.100"
 									display="flex"
 									alignItems="center"
 									justifyContent="center"
-									fontSize="40px"
+									fontSize="32px"
 									fontWeight="700"
 									color="brand.500"
 									flexShrink={0}>
@@ -187,10 +185,10 @@ const CustomerDetailModal = ({
 								{/* Basic Info */}
 								<VStack
 									align="start"
-									spacing={3}
+									spacing={2}
 									flex={1}>
 									<Text
-										fontSize="28px"
+										fontSize="24px"
 										fontWeight="900"
 										color="brand.600">
 										{customerDetail.name}
@@ -207,9 +205,9 @@ const CustomerDetailModal = ({
 													? "pink"
 													: "gray"
 											}
-											fontSize="14px"
+											fontSize="13px"
 											borderRadius="full"
-											px={4}
+											px={3}
 											py={1}>
 											{customerDetail.gender}
 										</Badge>
@@ -221,9 +219,9 @@ const CustomerDetailModal = ({
 														? "green"
 														: "gray"
 												}
-												fontSize="14px"
+												fontSize="13px"
 												borderRadius="full"
-												px={4}
+												px={3}
 												py={1}>
 												{customerDetail.status ===
 												"active"
@@ -233,100 +231,99 @@ const CustomerDetailModal = ({
 										)}
 									</Flex>
 								</VStack>
+								{/* Loyalty Points */}
+								<Box
+									bg="gradient.brand"
+									borderRadius="16px"
+									p={4}
+									textAlign="center"
+									minW="200px">
+									<Flex
+										align="center"
+										justify="center"
+										gap={2}
+										mb={1}>
+										<Icon
+											as={FiStar}
+											w="20px"
+											h="20px"
+											color="orange.400"
+										/>
+										<Text
+											fontSize="14px"
+											fontWeight="600"
+											color="brand.600">
+											Điểm tích lũy
+										</Text>
+									</Flex>
+									<Text
+										fontSize="36px"
+										fontWeight="900"
+										color="brand.600"
+										lineHeight="1">
+										{customerDetail.loyaltyPoints.toLocaleString(
+											"vi-VN",
+										)}
+									</Text>
+									<Text
+										fontSize="12px"
+										fontWeight="400"
+										color="white"
+										opacity={0.9}
+										mt={1}>
+										điểm
+									</Text>
+								</Box>
 							</Flex>
 
 							<Divider />
 
-							{/* Loyalty Points Highlight */}
-							<Box
-								bg="gradient.brand"
-								borderRadius="16px"
-								p={6}
-								textAlign="center">
-								<Flex
-									align="center"
-									justify="center"
-									gap={3}
-									mb={2}>
-									<Icon
-										as={FiStar}
-										w="32px"
-										h="32px"
-										color="orange.400"
-									/>
+							{/* Two Column Layout for Contact and Statistics */}
+							<Grid
+								templateColumns="repeat(2, 1fr)"
+								gap={6}>
+								{/* Contact Information */}
+								<GridItem>
 									<Text
-										fontSize="18px"
-										fontWeight="600"
-										color="white">
-										Điểm tích lũy
+										fontSize="16px"
+										fontWeight="700"
+										color="brand.600"
+										mb={3}>
+										Thông tin liên hệ
 									</Text>
-								</Flex>
-								<Text
-									fontSize="48px"
-									fontWeight="900"
-									color="white"
-									lineHeight="1">
-									{customerDetail.loyaltyPoints.toLocaleString(
-										"vi-VN",
-									)}
-								</Text>
-								<Text
-									fontSize="14px"
-									fontWeight="400"
-									color="white"
-									opacity={0.9}
-									mt={1}>
-									điểm
-								</Text>
-							</Box>
+									<VStack
+										spacing={2}
+										align="stretch">
+										<InfoRow
+											icon={FiPhone}
+											label="Số điện thoại"
+											value={customerDetail.phone}
+										/>
+										<InfoRow
+											icon={FiMail}
+											label="Email"
+											value={customerDetail.email}
+										/>
+										<InfoRow
+											icon={FiMapPin}
+											label="Địa chỉ"
+											value={customerDetail.address}
+										/>
+									</VStack>
+								</GridItem>
 
-							<Divider />
-
-							{/* Contact Information */}
-							<Box>
-								<Text
-									fontSize="18px"
-									fontWeight="700"
-									color="brand.600"
-									mb={4}>
-									Thông tin liên hệ
-								</Text>
-								<VStack
-									spacing={3}
-									align="stretch">
-									<InfoRow
-										icon={FiPhone}
-										label="Số điện thoại"
-										value={customerDetail.phone}
-									/>
-									<InfoRow
-										icon={FiMail}
-										label="Email"
-										value={customerDetail.email}
-									/>
-									<InfoRow
-										icon={FiMapPin}
-										label="Địa chỉ"
-										value={customerDetail.address}
-									/>
-								</VStack>
-							</Box>
-
-							<Divider />
-
-							{/* Customer Statistics */}
-							<Box>
-								<Text
-									fontSize="18px"
-									fontWeight="700"
-									color="brand.600"
-									mb={4}>
-									Thống kê khách hàng
-								</Text>
-								<Grid
-									templateColumns="repeat(2, 1fr)"
-									gap={4}>
-									<GridItem>
+								{/* Customer Statistics */}
+								<GridItem>
+									<Text
+										fontSize="16px"
+										fontWeight="700"
+										color="brand.600"
+										mb={3}>
+										Thống kê khách hàng
+									</Text>
+									<VStack
+										spacing={2}
+										align="stretch">
 										<InfoRow
 											icon={FiCalendar}
 											label="Ngày đăng ký"
@@ -334,45 +331,49 @@ const CustomerDetailModal = ({
 												customerDetail.registeredDate
 											}
 										/>
-									</GridItem>
-									<GridItem>
 										<InfoRow
 											icon={FiCalendar}
 											label="Ngày sinh"
 											value={customerDetail.dateOfBirth}
 										/>
-									</GridItem>
-									<GridItem>
 										<InfoRow
 											icon={FiShoppingBag}
 											label="Số lần mua hàng"
 											value={customerDetail.purchaseCount}
 										/>
-									</GridItem>
-									<GridItem>
-										<InfoRow
-											icon={FiCalendar}
-											label="Lần mua gần nhất"
-											value={
-												customerDetail.lastPurchaseDate
-											}
-										/>
-									</GridItem>
-									<GridItem colSpan={2}>
-										<InfoRow
-											icon={FiDollarSign}
-											label="Tổng chi tiêu"
-											value={
-												customerDetail.totalSpent
-													? `${customerDetail.totalSpent.toLocaleString(
-															"vi-VN",
-													  )} VNĐ`
-													: undefined
-											}
-										/>
-									</GridItem>
-								</Grid>
-							</Box>
+									</VStack>
+								</GridItem>
+
+								{/* Span across both columns */}
+								<GridItem colSpan={2}>
+									<Grid
+										templateColumns="repeat(2, 1fr)"
+										gap={2}>
+										<GridItem>
+											<InfoRow
+												icon={FiCalendar}
+												label="Lần mua gần nhất"
+												value={
+													customerDetail.lastPurchaseDate
+												}
+											/>
+										</GridItem>
+										<GridItem>
+											<InfoRow
+												icon={FiDollarSign}
+												label="Tổng chi tiêu"
+												value={
+													customerDetail.totalSpent
+														? `${customerDetail.totalSpent.toLocaleString(
+																"vi-VN",
+														  )} VNĐ`
+														: undefined
+												}
+											/>
+										</GridItem>
+									</Grid>
+								</GridItem>
+							</Grid>
 						</VStack>
 					) : (
 						<Box

@@ -12,13 +12,15 @@ import {
 	Divider,
 	Badge,
 } from "@chakra-ui/react";
+import { useState, useEffect } from "react";
 import type { ShiftAssignment } from "@/types";
+import { scheduleService } from "@/services/scheduleService";
 
 interface ViewShiftDetailModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	date: string;
-	shift: "morning" | "afternoon";
+	shift: string; // Changed from "morning" | "afternoon" to string (shift ID)
 	assignments: ShiftAssignment[];
 }
 
@@ -29,6 +31,8 @@ const ViewShiftDetailModal = ({
 	shift,
 	assignments,
 }: ViewShiftDetailModalProps) => {
+	const [shiftName, setShiftName] = useState<string>("");
+
 	// Format date for display
 	const formatDateDisplay = (dateStr: string) => {
 		const date = new Date(dateStr);
@@ -46,6 +50,22 @@ const ViewShiftDetailModal = ({
 		const month = (date.getMonth() + 1).toString().padStart(2, "0");
 		const year = date.getFullYear();
 		return `${dayOfWeek}, ${day}/${month}/${year}`;
+	};
+
+	useEffect(() => {
+		if (isOpen) {
+			loadShiftName();
+		}
+	}, [isOpen, shift]);
+
+	const loadShiftName = async () => {
+		try {
+			const config = await scheduleService.getShiftConfig();
+			const shiftTemplate = config.shifts.find((s) => s.id === shift);
+			setShiftName(shiftTemplate?.name || "");
+		} catch (error) {
+			console.error("Error loading shift name:", error);
+		}
 	};
 
 	// Separate assignments by position
@@ -75,8 +95,7 @@ const ViewShiftDetailModal = ({
 						fontWeight="400"
 						color="gray.600"
 						mt={1}>
-						{formatDateDisplay(date)} - Ca{" "}
-						{shift === "morning" ? "sáng" : "chiều"}
+						{formatDateDisplay(date)} - {shiftName}
 					</Text>
 				</ModalHeader>
 				<ModalCloseButton />

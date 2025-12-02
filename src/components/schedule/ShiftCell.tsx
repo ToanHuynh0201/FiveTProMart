@@ -1,12 +1,13 @@
-import { Box, Text, VStack, HStack } from "@chakra-ui/react";
-import type { ShiftAssignment } from "@/types";
+import { Box, Text, VStack, HStack, Tooltip } from "@chakra-ui/react";
+import type { ShiftAssignment, ShiftTemplate } from "@/types";
 
 interface ShiftCellProps {
 	assignments: ShiftAssignment[];
+	shift: ShiftTemplate;
 	onClick?: () => void;
 }
 
-const ShiftCell = ({ assignments, onClick }: ShiftCellProps) => {
+const ShiftCell = ({ assignments, shift, onClick }: ShiftCellProps) => {
 	// Separate assignments by position
 	const warehouseStaff = assignments.filter(
 		(a) => a.staffPosition === "Nhân viên kho",
@@ -14,6 +15,11 @@ const ShiftCell = ({ assignments, onClick }: ShiftCellProps) => {
 	const salesStaff = assignments.filter(
 		(a) => a.staffPosition === "Nhân viên bán hàng",
 	);
+
+	const warehouseCount = warehouseStaff.length;
+	const salesCount = salesStaff.length;
+	const isWarehouseShort = warehouseCount < shift.requiredWarehouseStaff;
+	const isSalesShort = salesCount < shift.requiredSalesStaff;
 
 	return (
 		<Box
@@ -50,20 +56,46 @@ const ShiftCell = ({ assignments, onClick }: ShiftCellProps) => {
 						<Box>
 							<HStack
 								spacing={1}
-								mb={1}>
-								<Box
-									w="3px"
-									h="14px"
-									bg="blue.500"
-									borderRadius="1px"
-								/>
-								<Text
-									fontSize="11px"
-									fontWeight="700"
-									color="blue.600"
-									textTransform="uppercase">
-									Kho
-								</Text>
+								mb={1}
+								justify="space-between">
+								<HStack spacing={1}>
+									<Box
+										w="3px"
+										h="14px"
+										bg="blue.500"
+										borderRadius="1px"
+									/>
+									<Text
+										fontSize="11px"
+										fontWeight="700"
+										color="blue.600"
+										textTransform="uppercase">
+										Kho
+									</Text>
+								</HStack>
+								<Tooltip
+									label={`Cần ${shift.requiredWarehouseStaff} người`}
+									fontSize="xs">
+									<Text
+										fontSize="10px"
+										fontWeight="600"
+										color={
+											isWarehouseShort
+												? "red.500"
+												: "green.600"
+										}
+										bg={
+											isWarehouseShort
+												? "red.50"
+												: "green.50"
+										}
+										px={1.5}
+										py={0.5}
+										borderRadius="4px">
+										{warehouseCount}/
+										{shift.requiredWarehouseStaff}
+									</Text>
+								</Tooltip>
 							</HStack>
 							{warehouseStaff.length > 0 ? (
 								<VStack
@@ -103,20 +135,43 @@ const ShiftCell = ({ assignments, onClick }: ShiftCellProps) => {
 						<Box>
 							<HStack
 								spacing={1}
-								mb={1}>
-								<Box
-									w="3px"
-									h="14px"
-									bg="green.500"
-									borderRadius="1px"
-								/>
-								<Text
-									fontSize="11px"
-									fontWeight="700"
-									color="green.600"
-									textTransform="uppercase">
-									Bán hàng
-								</Text>
+								mb={1}
+								justify="space-between">
+								<HStack spacing={1}>
+									<Box
+										w="3px"
+										h="14px"
+										bg="green.500"
+										borderRadius="1px"
+									/>
+									<Text
+										fontSize="11px"
+										fontWeight="700"
+										color="green.600"
+										textTransform="uppercase">
+										Bán hàng
+									</Text>
+								</HStack>
+								<Tooltip
+									label={`Cần ${shift.requiredSalesStaff} người`}
+									fontSize="xs">
+									<Text
+										fontSize="10px"
+										fontWeight="600"
+										color={
+											isSalesShort
+												? "red.500"
+												: "green.600"
+										}
+										bg={
+											isSalesShort ? "red.50" : "green.50"
+										}
+										px={1.5}
+										py={0.5}
+										borderRadius="4px">
+										{salesCount}/{shift.requiredSalesStaff}
+									</Text>
+								</Tooltip>
 							</HStack>
 							{salesStaff.length > 0 ? (
 								<VStack

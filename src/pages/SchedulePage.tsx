@@ -6,10 +6,24 @@ import {
 	ViewShiftDetailModal,
 	WeekSelector,
 	MonthSelector,
+	ShiftConfigModal,
 } from "@/components/schedule";
-import { Box, Text, HStack, Button, Flex, Spinner } from "@chakra-ui/react";
-import { EditIcon } from "@chakra-ui/icons";
-import type { DaySchedule, ShiftAssignment, WeekRange } from "@/types";
+import {
+	Box,
+	Text,
+	HStack,
+	Button,
+	Flex,
+	Spinner,
+	IconButton,
+} from "@chakra-ui/react";
+import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
+import type {
+	DaySchedule,
+	ShiftAssignment,
+	WeekRange,
+	ShiftConfig,
+} from "@/types";
 import { scheduleService } from "@/services/scheduleService";
 
 const SchedulePage = () => {
@@ -23,27 +37,29 @@ const SchedulePage = () => {
 	const [weekData, setWeekData] = useState<DaySchedule[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isEditMode, setIsEditMode] = useState(false);
+	const [shiftConfig, setShiftConfig] = useState<ShiftConfig | null>(null);
+	const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 	const [editModalData, setEditModalData] = useState<{
 		isOpen: boolean;
 		date: string;
-		shift: "morning" | "afternoon";
+		shift: string;
 		assignments: ShiftAssignment[];
 	}>({
 		isOpen: false,
 		date: "",
-		shift: "morning",
+		shift: "",
 		assignments: [],
 	});
 
 	const [viewModalData, setViewModalData] = useState<{
 		isOpen: boolean;
 		date: string;
-		shift: "morning" | "afternoon";
+		shift: string;
 		assignments: ShiftAssignment[];
 	}>({
 		isOpen: false,
 		date: "",
-		shift: "morning",
+		shift: "",
 		assignments: [],
 	});
 
@@ -54,10 +70,24 @@ const SchedulePage = () => {
 
 	// Load schedule when week changes
 	useEffect(() => {
-		if (weeks.length > 0) {
+		if (weeks.length > 0 && shiftConfig) {
 			loadWeekSchedule();
 		}
-	}, [selectedWeekIndex, weeks]);
+	}, [selectedWeekIndex, weeks, shiftConfig]);
+
+	// Load shift config on mount
+	useEffect(() => {
+		loadShiftConfig();
+	}, []);
+
+	const loadShiftConfig = async () => {
+		try {
+			const config = await scheduleService.getShiftConfig();
+			setShiftConfig(config);
+		} catch (error) {
+			console.error("Error loading shift config:", error);
+		}
+	};
 
 	const loadMonthData = async () => {
 		try {
@@ -105,6 +135,8 @@ const SchedulePage = () => {
 	};
 
 	const loadWeekSchedule = async () => {
+		if (!shiftConfig) return;
+
 		setIsLoading(true);
 		try {
 			const week = weeks[selectedWeekIndex];
@@ -136,15 +168,18 @@ const SchedulePage = () => {
 					"Thứ 7",
 				];
 
+				// Group assignments by shift ID
+				const shifts: { [shiftId: string]: ShiftAssignment[] } = {};
+				shiftConfig.shifts.forEach((shift) => {
+					shifts[shift.id] = dayAssignments.filter(
+						(a) => a.shift === shift.id,
+					);
+				});
+
 				days.push({
 					date: dateStr,
 					dayOfWeek: dayNames[currentDate.getDay()],
-					morning: dayAssignments.filter(
-						(a) => a.shift === "morning",
-					),
-					afternoon: dayAssignments.filter(
-						(a) => a.shift === "afternoon",
-					),
+					shifts,
 				});
 			}
 
@@ -156,24 +191,24 @@ const SchedulePage = () => {
 		}
 	};
 
-	const handleCellClick = (date: string, shift: "morning" | "afternoon") => {
+	const handleCellClick = (date: string, shiftId: string) => {
 		const day = weekData.find((d) => d.date === date);
 		if (!day) return;
 
-		const assignments = shift === "morning" ? day.morning : day.afternoon;
+		const assignments = day.shifts[shiftId] || [];
 
 		if (isEditMode) {
 			setEditModalData({
 				isOpen: true,
 				date,
-				shift,
+				shift: shiftId,
 				assignments,
 			});
 		} else {
 			setViewModalData({
 				isOpen: true,
 				date,
-				shift,
+				shift: shiftId,
 				assignments,
 			});
 		}
@@ -193,9 +228,62 @@ const SchedulePage = () => {
 		});
 	};
 
-	const handleScheduleUpdate = () => {
-		loadWeekSchedule(); // Reload schedule after update
+	const handleScheduleUpdate = async () => {
+		// Reload schedule after update
+		await loadWeekSchedule();
+
+		// Update modal data if edit modal is open
+		if (editModalData.isOpen && shiftConfig) {
+			try {
+				const week = weeks[selectedWeekIndex];
+				const schedule = await scheduleService.getWeekSchedule(
+					week.start,
+					week.end,
+				);
+
+				const dayAssignments = schedule.assignments.filter(
+					(a) =>
+						a.date === editModalData.date &&
+						a.shift === editModalData.shift,
+				);
+
+				setEditModalData({
+					...editModalData,
+					assignments: dayAssignments,
+				});
+			} catch (error) {
+				console.error("Error updating modal data:", error);
+			}
+		}
 	};
+
+	const handleSaveShiftConfig = async (config: ShiftConfig) => {
+		try {
+			await scheduleService.updateShiftConfig(config);
+			setShiftConfig(config);
+			// Reload schedule to reflect new shift configuration
+			loadWeekSchedule();
+		} catch (error) {
+			console.error("Error saving shift config:", error);
+		}
+	};
+
+	if (!shiftConfig) {
+		return (
+			<MainLayout>
+				<Flex
+					justify="center"
+					align="center"
+					minH="400px">
+					<Spinner
+						size="xl"
+						color="brand.500"
+						thickness="4px"
+					/>
+				</Flex>
+			</MainLayout>
+		);
+	}
 
 	return (
 		<MainLayout>
@@ -225,14 +313,23 @@ const SchedulePage = () => {
 						)}
 					</HStack>
 
-					<Button
-						leftIcon={<EditIcon />}
-						colorScheme={isEditMode ? "green" : "blue"}
-						onClick={() => setIsEditMode(!isEditMode)}
-						size="md"
-						px={6}>
-						{isEditMode ? "Hoàn tất" : "Chỉnh sửa"}
-					</Button>
+					<HStack spacing={2}>
+						<IconButton
+							aria-label="Cấu hình ca làm việc"
+							icon={<SettingsIcon />}
+							colorScheme="purple"
+							onClick={() => setIsConfigModalOpen(true)}
+							size="md"
+						/>
+						<Button
+							leftIcon={<EditIcon />}
+							colorScheme={isEditMode ? "green" : "blue"}
+							onClick={() => setIsEditMode(!isEditMode)}
+							size="md"
+							px={6}>
+							{isEditMode ? "Hoàn tất" : "Chỉnh sửa"}
+						</Button>
+					</HStack>
 				</Flex>
 
 				{/* Info message */}
@@ -267,6 +364,7 @@ const SchedulePage = () => {
 				) : (
 					<ScheduleGrid
 						weekData={weekData}
+						shifts={shiftConfig.shifts}
 						onCellClick={handleCellClick}
 					/>
 				)}
@@ -329,6 +427,14 @@ const SchedulePage = () => {
 				date={viewModalData.date}
 				shift={viewModalData.shift}
 				assignments={viewModalData.assignments}
+			/>
+
+			{/* Shift Config Modal */}
+			<ShiftConfigModal
+				isOpen={isConfigModalOpen}
+				onClose={() => setIsConfigModalOpen(false)}
+				currentConfig={shiftConfig}
+				onSave={handleSaveShiftConfig}
 			/>
 		</MainLayout>
 	);

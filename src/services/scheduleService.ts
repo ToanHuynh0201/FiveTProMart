@@ -5,8 +5,65 @@ import type {
 	UpdateShiftAssignment,
 	WeekRange,
 	MonthData,
+	ShiftConfig,
 } from "@/types";
 import { staffService } from "./staffService";
+
+// Default shift configuration
+const defaultShiftConfig: ShiftConfig = {
+	shifts: [
+		{
+			id: "shift-morning",
+			name: "Ca Sáng",
+			startTime: "08:00",
+			endTime: "12:00",
+			requiredWarehouseStaff: 1,
+			requiredSalesStaff: 2,
+			order: 0,
+		},
+		{
+			id: "shift-afternoon",
+			name: "Ca Chiều",
+			startTime: "13:00",
+			endTime: "17:00",
+			requiredWarehouseStaff: 1,
+			requiredSalesStaff: 2,
+			order: 1,
+		},
+	],
+	maxShiftsPerWeek: 6, // Mặc định mỗi nhân viên làm tối đa 6 ca/tuần
+	updatedAt: new Date().toISOString(),
+};
+
+// Store shift configuration in localStorage
+let currentShiftConfig: ShiftConfig = defaultShiftConfig;
+
+// Load shift config from localStorage on initialization
+const loadShiftConfig = (): ShiftConfig => {
+	try {
+		const stored = localStorage.getItem("shiftConfig");
+		if (stored) {
+			const config = JSON.parse(stored);
+			return config;
+		}
+	} catch (error) {
+		console.error("Failed to load shift config:", error);
+	}
+	return defaultShiftConfig;
+};
+
+// Save shift config to localStorage
+const saveShiftConfig = (config: ShiftConfig): void => {
+	try {
+		localStorage.setItem("shiftConfig", JSON.stringify(config));
+		currentShiftConfig = config;
+	} catch (error) {
+		console.error("Failed to save shift config:", error);
+	}
+};
+
+// Initialize shift config
+currentShiftConfig = loadShiftConfig();
 
 // Helper function to format date as YYYY-MM-DD (using local time)
 const formatDate = (date: Date): string => {
@@ -59,7 +116,7 @@ const getWeeksInMonth = (month: number, year: number): WeekRange[] => {
 	return weeks;
 };
 
-// Mock data storage
+// Mock data storage - Updated for new shift system
 let mockScheduleData: ShiftAssignment[] = [
 	// Week 17/11 - 23/11/2025
 	// Monday 17/11
@@ -69,7 +126,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-17",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -79,7 +137,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Trần Thị Bé",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-17",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -89,7 +148,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-17",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -99,7 +159,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn An",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-17",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -110,7 +171,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-18",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -120,7 +182,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Minh Tuấn",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-18",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -130,7 +193,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-18",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -140,7 +204,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Hoàng Thu Hà",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-18",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -151,7 +216,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-19",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -161,7 +227,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Ngô Thị Lan",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-19",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -171,7 +238,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-19",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -181,7 +249,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn An",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-19",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -192,7 +261,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-20",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -202,7 +272,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Lý Văn Minh",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-20",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -212,7 +283,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-20",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -222,7 +294,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Hoàng Thu Hà",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-20",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -233,7 +306,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-21",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -243,7 +317,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Trần Thị Bé",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-21",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -253,7 +328,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-21",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -263,7 +339,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn An",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-21",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -274,7 +351,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-22",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -284,7 +362,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Dương Thị Kim",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-22",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "completed",
 	},
@@ -294,7 +373,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-22",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "late",
 		notes: "Đến muộn 15 phút",
@@ -305,7 +385,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Bùi Văn Đức",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-22",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Partime",
 		status: "completed",
 	},
@@ -316,7 +397,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-23",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -326,7 +408,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Trần Thị Bé",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-23",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -336,7 +419,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-23",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -346,7 +430,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn An",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-23",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -358,7 +443,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-24",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -368,7 +454,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Minh Tuấn",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-24",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -378,7 +465,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-24",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -388,7 +476,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Hoàng Thu Hà",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-24",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -399,7 +488,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-25",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -409,7 +499,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Ngô Thị Lan",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-25",
-		shift: "morning",
+		shift: "shift-morning",
+		shiftName: "Ca Sáng",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -419,7 +510,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Phạm Thị Kho",
 		staffPosition: "Nhân viên kho",
 		date: "2025-11-25",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -429,7 +521,8 @@ let mockScheduleData: ShiftAssignment[] = [
 		staffName: "Nguyễn Văn An",
 		staffPosition: "Nhân viên bán hàng",
 		date: "2025-11-25",
-		shift: "afternoon",
+		shift: "shift-afternoon",
+		shiftName: "Ca Chiều",
 		employmentType: "Fulltime",
 		status: "scheduled",
 	},
@@ -475,6 +568,11 @@ const scheduleService = {
 			throw new Error("Staff not found");
 		}
 
+		// Get shift template info
+		const shiftTemplate = currentShiftConfig.shifts.find(
+			(s) => s.id === data.shift,
+		);
+
 		const newAssignment: ShiftAssignment = {
 			id: `sch-${Date.now()}`,
 			staffId: data.staffId,
@@ -482,6 +580,7 @@ const scheduleService = {
 			staffPosition: staff.position,
 			date: data.date,
 			shift: data.shift,
+			shiftName: shiftTemplate?.name,
 			employmentType: staff.employmentType,
 			status: "scheduled",
 			notes: data.notes,
@@ -549,7 +648,7 @@ const scheduleService = {
 	},
 
 	// Get available staff for a specific date and shift
-	getAvailableStaff: async (date: string, shift: "morning" | "afternoon") => {
+	getAvailableStaff: async (date: string, shiftId: string) => {
 		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		// Get all staff
@@ -557,12 +656,57 @@ const scheduleService = {
 
 		// Get existing assignments for this date and shift
 		const existingAssignments = mockScheduleData.filter(
-			(a) => a.date === date && a.shift === shift,
+			(a) => a.date === date && a.shift === shiftId,
 		);
 		const assignedStaffIds = existingAssignments.map((a) => a.staffId);
 
-		// Return staff not yet assigned
-		return allStaff.filter((staff) => !assignedStaffIds.includes(staff.id));
+		// Calculate week range for the given date
+		const currentDate = new Date(date);
+		const dayOfWeek = currentDate.getDay();
+		const monday = new Date(currentDate);
+		monday.setDate(
+			currentDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
+		);
+		const sunday = new Date(monday);
+		sunday.setDate(monday.getDate() + 6);
+
+		const weekStart = formatDate(monday);
+		const weekEnd = formatDate(sunday);
+
+		// Count shifts per staff in this week
+		const staffShiftCounts: { [staffId: string]: number } = {};
+		mockScheduleData.forEach((assignment) => {
+			if (assignment.date >= weekStart && assignment.date <= weekEnd) {
+				staffShiftCounts[assignment.staffId] =
+					(staffShiftCounts[assignment.staffId] || 0) + 1;
+			}
+		});
+
+		// Filter staff: not assigned to this shift AND not exceeded max shifts per week
+		return allStaff.filter((staff) => {
+			const isAssigned = assignedStaffIds.includes(staff.id);
+			const currentShifts = staffShiftCounts[staff.id] || 0;
+			const maxShifts = currentShiftConfig.maxShiftsPerWeek;
+			return !isAssigned && currentShifts < maxShifts;
+		});
+	},
+
+	// Get staff shift count for a specific week
+	getStaffShiftCount: async (
+		staffId: string,
+		weekStart: string,
+		weekEnd: string,
+	): Promise<number> => {
+		await new Promise((resolve) => setTimeout(resolve, 100));
+
+		const count = mockScheduleData.filter(
+			(a) =>
+				a.staffId === staffId &&
+				a.date >= weekStart &&
+				a.date <= weekEnd,
+		).length;
+
+		return count;
 	},
 
 	// Bulk create assignments (for copying schedules)
@@ -576,6 +720,9 @@ const scheduleService = {
 		for (const data of assignments) {
 			const staff = await staffService.getStaffById(data.staffId);
 			if (staff) {
+				const shiftTemplate = currentShiftConfig.shifts.find(
+					(s) => s.id === data.shift,
+				);
 				const newAssignment: ShiftAssignment = {
 					id: `sch-${Date.now()}-${Math.random()}`,
 					staffId: data.staffId,
@@ -583,6 +730,7 @@ const scheduleService = {
 					staffPosition: staff.position,
 					date: data.date,
 					shift: data.shift,
+					shiftName: shiftTemplate?.name,
 					employmentType: staff.employmentType,
 					status: "scheduled",
 					notes: data.notes,
@@ -593,6 +741,26 @@ const scheduleService = {
 		}
 
 		return newAssignments;
+	},
+
+	// Get shift configuration
+	getShiftConfig: async (): Promise<ShiftConfig> => {
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		return currentShiftConfig;
+	},
+
+	// Update shift configuration
+	updateShiftConfig: async (config: ShiftConfig): Promise<ShiftConfig> => {
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		saveShiftConfig(config);
+		return currentShiftConfig;
+	},
+
+	// Reset shift configuration to default
+	resetShiftConfig: async (): Promise<ShiftConfig> => {
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		saveShiftConfig(defaultShiftConfig);
+		return defaultShiftConfig;
 	},
 };
 

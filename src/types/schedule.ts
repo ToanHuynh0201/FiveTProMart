@@ -1,10 +1,28 @@
+export interface ShiftTemplate {
+	id: string;
+	name: string; // "Ca Sáng", "Ca Chiều", "Ca Tối", etc.
+	startTime: string; // "08:00"
+	endTime: string; // "12:00"
+	requiredWarehouseStaff: number; // Số lượng nhân viên kho cần thiết
+	requiredSalesStaff: number; // Số lượng nhân viên bán hàng cần thiết
+	color?: string; // Màu sắc hiển thị trên lịch
+	order: number; // Thứ tự hiển thị
+}
+
+export interface ShiftConfig {
+	shifts: ShiftTemplate[];
+	maxShiftsPerWeek: number; // Số ca tối đa mỗi nhân viên có thể làm trong 1 tuần
+	updatedAt: string;
+}
+
 export interface ShiftAssignment {
 	id: string;
 	staffId: string;
 	staffName: string;
 	staffPosition?: string; // "Nhân viên kho" or "Nhân viên bán hàng"
 	date: string; // ISO date string (YYYY-MM-DD)
-	shift: "morning" | "afternoon";
+	shift: string; // Shift template ID
+	shiftName?: string; // Display name
 	employmentType: "Fulltime" | "Partime";
 	status: "scheduled" | "completed" | "absent" | "late";
 	notes?: string;
@@ -25,14 +43,13 @@ export interface ScheduleFilter {
 export interface DaySchedule {
 	date: string;
 	dayOfWeek: string; // "Thứ 2", "Thứ 3", etc.
-	morning: ShiftAssignment[];
-	afternoon: ShiftAssignment[];
+	shifts: { [shiftId: string]: ShiftAssignment[] }; // Dynamic shifts
 }
 
 export interface CreateShiftAssignment {
 	staffId: string;
 	date: string;
-	shift: "morning" | "afternoon";
+	shift: string; // Shift template ID
 	notes?: string;
 }
 

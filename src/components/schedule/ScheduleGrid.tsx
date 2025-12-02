@@ -1,13 +1,14 @@
 import { Grid, GridItem, Box, Text } from "@chakra-ui/react";
-import type { DaySchedule } from "@/types";
+import type { DaySchedule, ShiftTemplate } from "@/types";
 import ShiftCell from "./ShiftCell";
 
 interface ScheduleGridProps {
 	weekData: DaySchedule[];
-	onCellClick?: (date: string, shift: "morning" | "afternoon") => void;
+	shifts: ShiftTemplate[];
+	onCellClick?: (date: string, shiftId: string) => void;
 }
 
-const ScheduleGrid = ({ weekData, onCellClick }: ScheduleGridProps) => {
+const ScheduleGrid = ({ weekData, shifts, onCellClick }: ScheduleGridProps) => {
 	const daysOfWeek = [
 		"Thứ 2",
 		"Thứ 3",
@@ -59,69 +60,49 @@ const ScheduleGrid = ({ weekData, onCellClick }: ScheduleGridProps) => {
 				))}
 			</Grid>
 
-			{/* Morning Shift Row */}
-			<Grid
-				templateColumns="100px repeat(7, 1fr)"
-				bg="white"
-				borderBottom="1px solid"
-				borderColor="rgba(0, 0, 0, 0.4)">
-				<GridItem
-					p={4}
-					borderRight="1px solid"
-					borderColor="rgba(0, 0, 0, 0.1)"
-					display="flex"
-					alignItems="center"
-					justifyContent="center">
-					<Text
-						fontSize="20px"
-						fontWeight="700"
-						color="brand.600">
-						SÁNG
-					</Text>
-				</GridItem>
-				{weekData.map((day) => (
+			{/* Dynamic Shift Rows */}
+			{shifts.map((shift) => (
+				<Grid
+					key={shift.id}
+					templateColumns="100px repeat(7, 1fr)"
+					bg="white"
+					borderBottom="1px solid"
+					borderColor="rgba(0, 0, 0, 0.4)">
 					<GridItem
-						key={`morning-${day.date}`}
-						p={0}>
-						<ShiftCell
-							assignments={day.morning}
-							onClick={() => onCellClick?.(day.date, "morning")}
-						/>
+						p={4}
+						borderRight="1px solid"
+						borderColor="rgba(0, 0, 0, 0.1)"
+						display="flex"
+						flexDirection="column"
+						alignItems="center"
+						justifyContent="center">
+						<Text
+							fontSize="18px"
+							fontWeight="700"
+							color="brand.600">
+							{shift.name.toUpperCase()}
+						</Text>
+						<Text
+							fontSize="12px"
+							color="gray.600">
+							{shift.startTime} - {shift.endTime}
+						</Text>
 					</GridItem>
-				))}
-			</Grid>
-
-			{/* Afternoon Shift Row */}
-			<Grid
-				templateColumns="100px repeat(7, 1fr)"
-				bg="white"
-				borderBottom="1px solid"
-				borderColor="rgba(0, 0, 0, 0.4)">
-				<GridItem
-					p={4}
-					borderRight="1px solid"
-					borderColor="rgba(0, 0, 0, 0.1)"
-					display="flex"
-					alignItems="center"
-					justifyContent="center">
-					<Text
-						fontSize="20px"
-						fontWeight="700"
-						color="brand.600">
-						CHIỀU
-					</Text>
-				</GridItem>
-				{weekData.map((day) => (
-					<GridItem
-						key={`afternoon-${day.date}`}
-						p={0}>
-						<ShiftCell
-							assignments={day.afternoon}
-							onClick={() => onCellClick?.(day.date, "afternoon")}
-						/>
-					</GridItem>
-				))}
-			</Grid>
+					{weekData.map((day) => (
+						<GridItem
+							key={`${shift.id}-${day.date}`}
+							p={0}>
+							<ShiftCell
+								assignments={day.shifts[shift.id] || []}
+								shift={shift}
+								onClick={() =>
+									onCellClick?.(day.date, shift.id)
+								}
+							/>
+						</GridItem>
+					))}
+				</Grid>
+			))}
 		</Box>
 	);
 };

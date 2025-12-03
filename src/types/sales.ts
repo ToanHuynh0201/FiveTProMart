@@ -1,6 +1,6 @@
 export interface ProductBatch {
 	id: string;
-	batchNumber: string; // Số lô
+	batchNumber: string; // Số lô (cũng là mã vạch của lô)
 	quantity: number; // Số lượng trong lô
 	expiryDate: Date; // Hạn sử dụng
 	importDate: Date; // Ngày nhập

@@ -19,7 +19,11 @@ import { salesService } from "../../services/salesService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductSearchBarProps {
-	onProductSelect: (product: Product) => void;
+	onProductSelect: (
+		product: Product,
+		batchId?: string,
+		batchNumber?: string,
+	) => void;
 	onOpenBarcodeScanner?: () => void;
 }
 
@@ -32,7 +36,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 	const [searchResults, setSearchResults] = useState<Product[]>([]);
 	const [showResults, setShowResults] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
-	const searchTimeoutRef = useRef<NodeJS.Timeout>();
+	const searchTimeoutRef = useRef<number>(0);
 
 	// Auto-detect barcode input (fast typing pattern)
 	useEffect(() => {
@@ -59,24 +63,10 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		if (query.trim()) {
 			// Debounce search for better performance
 			searchTimeoutRef.current = setTimeout(async () => {
+				// Tìm theo tên/mã sản phẩm
 				const results = await salesService.searchProducts(query);
 				setSearchResults(results);
 				setShowResults(true);
-
-				// Auto-select if exact barcode match
-				const exactBarcodeMatch = results.find(
-					(p) => p.barcode === query.trim(),
-				);
-				if (exactBarcodeMatch && results.length === 1) {
-					handleSelectProduct(exactBarcodeMatch);
-					toast({
-						title: "Quét mã vạch thành công!",
-						description: `Đã thêm: ${exactBarcodeMatch.name}`,
-						status: "success",
-						duration: 2000,
-						position: "top",
-					});
-				}
 			}, 300);
 		} else {
 			setSearchResults([]);
@@ -84,18 +74,30 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		}
 	};
 
-	const handleSelectProduct = (product: Product) => {
-		onProductSelect(product);
+	const handleSelectBatch = (
+		product: Product,
+		batchId: string,
+		batchNumber: string,
+	) => {
+		// Thêm sản phẩm với lô đã chọn vào giỏ
+		onProductSelect(product, batchId, batchNumber);
 		setSearchQuery("");
 		setSearchResults([]);
 		setShowResults(false);
+		toast({
+			title: "Đã thêm vào giỏ hàng",
+			description: `${product.name} - Lô ${batchNumber}`,
+			status: "success",
+			duration: 2000,
+			position: "top",
+		});
 	};
 
 	return (
 		<Box
 			position="relative"
 			flex="1"
-			maxW="600px">
+			maxW="100%">
 			<InputGroup>
 				<InputLeftElement
 					pointerEvents="none"
@@ -109,7 +111,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="Tìm kiếm hoặc quét mã vạch (Ctrl+B)..."
+					placeholder="Tìm theo tên sản phẩm hoặc mã lô (VD: Bánh, LOT001)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>
@@ -158,7 +160,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="1px solid"
 					borderColor="gray.200"
 					borderRadius="10px"
-					maxH="400px"
+					maxH="500px"
 					overflowY="auto"
 					boxShadow="0 4px 12px rgba(0, 0, 0, 0.15)"
 					zIndex={1000}
@@ -179,60 +181,28 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							},
 						},
 					}}>
-					{searchResults.map((product) => {
-						const expiryStatus = getExpiryStatus(
-							product.expiryDate,
-						);
-						const isProductExpired = isExpired(product.expiryDate);
-
-						return (
+					{searchResults.map((product) => (
+						<Box
+							key={product.id}
+							borderBottom="1px solid"
+							borderColor="gray.100"
+							_last={{ borderBottom: "none" }}>
+							{/* Thông tin sản phẩm */}
 							<Box
-								key={product.id}
 								p={3.5}
-								cursor="pointer"
+								bg="gray.50"
 								borderBottom="1px solid"
-								borderColor="gray.100"
-								_hover={{ bg: "gray.50" }}
-								_last={{ borderBottom: "none" }}
-								onClick={() => handleSelectProduct(product)}
-								transition="all 0.2s"
-								bg={
-									isProductExpired ? "red.50" : "transparent"
-								}>
+								borderColor="gray.200">
 								<Flex
 									justify="space-between"
 									align="start"
 									mb={1.5}>
 									<Text
 										fontSize="15px"
-										fontWeight="600"
+										fontWeight="700"
 										color="gray.800">
 										{product.name}
 									</Text>
-									{product.expiryDate && (
-										<Badge
-											colorScheme={
-												isProductExpired
-													? "red"
-													: expiryStatus.status ===
-													  "critical"
-													? "red"
-													: expiryStatus.status ===
-													  "warning"
-													? "orange"
-													: "green"
-											}
-											fontSize="10px"
-											px={1.5}
-											py={0.5}
-											borderRadius="md"
-											ml={2}
-											flexShrink={0}>
-											{isProductExpired
-												? "Hết hạn"
-												: expiryStatus.text}
-										</Badge>
-									)}
 								</Flex>
 								<Flex
 									fontSize="13px"
@@ -247,8 +217,130 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									<Text>Tồn: {product.stock}</Text>
 								</Flex>
 							</Box>
-						);
-					})}
+
+							{/* Danh sách lô hàng */}
+							{product.batches && product.batches.length > 0 ? (
+								<Box bg="white">
+									<Text
+										px={3.5}
+										pt={2}
+										pb={1}
+										fontSize="12px"
+										fontWeight="600"
+										color="gray.500"
+										textTransform="uppercase">
+										Chọn lô hàng:
+									</Text>
+									{product.batches.map((batch) => {
+										const batchExpired = isExpired(
+											batch.expiryDate,
+										);
+										const expiryStatus = getExpiryStatus(
+											batch.expiryDate,
+										);
+
+										return (
+											<Box
+												key={batch.id}
+												px={3.5}
+												py={2.5}
+												cursor="pointer"
+												borderTop="1px solid"
+												borderColor="gray.100"
+												_hover={{
+													bg: "blue.50",
+												}}
+												transition="all 0.2s"
+												onClick={() =>
+													handleSelectBatch(
+														product,
+														batch.id,
+														batch.batchNumber,
+													)
+												}>
+												<Flex
+													justify="space-between"
+													align="center"
+													gap={3}>
+													<Box flex={1}>
+														<Flex
+															align="center"
+															gap={2}
+															mb={1}>
+															<Text
+																fontSize="14px"
+																fontWeight="600"
+																color="gray.800">
+																Lô{" "}
+																{
+																	batch.batchNumber
+																}
+															</Text>
+															{batchExpired && (
+																<Badge
+																	colorScheme="red"
+																	fontSize="10px">
+																	Hết hạn
+																</Badge>
+															)}
+														</Flex>
+														<Flex
+															fontSize="12px"
+															color="gray.600"
+															gap={3}
+															flexWrap="wrap">
+															<Text>
+																Tồn:{" "}
+																{batch.quantity}
+															</Text>
+															<Text>
+																HSD:{" "}
+																{new Date(
+																	batch.expiryDate,
+																).toLocaleDateString(
+																	"vi-VN",
+																)}
+															</Text>
+														</Flex>
+													</Box>
+													<Badge
+														colorScheme={
+															batchExpired
+																? "red"
+																: expiryStatus.status ===
+																  "critical"
+																? "red"
+																: expiryStatus.status ===
+																  "warning"
+																? "orange"
+																: "green"
+														}
+														fontSize="11px"
+														px={2}
+														py={1}
+														borderRadius="md"
+														flexShrink={0}>
+														{batchExpired
+															? "Hết hạn"
+															: expiryStatus.text}
+													</Badge>
+												</Flex>
+											</Box>
+										);
+									})}
+								</Box>
+							) : (
+								<Box
+									px={3.5}
+									py={2}
+									fontSize="13px"
+									color="gray.500"
+									fontStyle="italic">
+									Không có lô hàng
+								</Box>
+							)}
+						</Box>
+					))}
 				</Box>
 			)}
 		</Box>

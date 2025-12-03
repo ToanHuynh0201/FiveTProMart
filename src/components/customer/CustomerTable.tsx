@@ -8,10 +8,6 @@ import {
 	Box,
 	Badge,
 	IconButton,
-	Menu,
-	MenuButton,
-	MenuList,
-	MenuItem,
 	Modal,
 	ModalOverlay,
 	ModalContent,
@@ -25,20 +21,21 @@ import {
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import { ViewIcon, DeleteIcon } from "@chakra-ui/icons";
-import { BsThreeDotsVertical } from "react-icons/bs";
+import { ViewIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import type { Customer } from "@/types";
 import { useState } from "react";
 
 interface CustomerTableProps {
 	customerList: Customer[];
 	onViewDetails?: (id: string) => void;
+	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
 }
 
 const CustomerTable = ({
 	customerList,
 	onViewDetails,
+	onEdit,
 	onDelete,
 }: CustomerTableProps) => {
 	const { isOpen, onOpen, onClose } = useDisclosure();
@@ -230,7 +227,7 @@ const CustomerTable = ({
 										<Td py={2}>
 											<Flex
 												justify="center"
-												gap={1}>
+												gap={2}>
 												<Tooltip label="Xem chi tiết">
 													<IconButton
 														aria-label="View detail"
@@ -246,34 +243,37 @@ const CustomerTable = ({
 													/>
 												</Tooltip>
 
-												<Menu>
-													<MenuButton
-														as={IconButton}
-														aria-label="More actions"
-														icon={
-															<BsThreeDotsVertical />
-														}
-														size="sm"
-														variant="ghost"
-														colorScheme="gray"
-													/>
-													<MenuList>
-														{onDelete && (
-															<MenuItem
-																icon={
-																	<DeleteIcon />
-																}
-																color="red.500"
-																onClick={() =>
-																	handleDeleteClick(
-																		customer,
-																	)
-																}>
-																Xóa khách hàng
-															</MenuItem>
-														)}
-													</MenuList>
-												</Menu>
+												{onEdit && (
+													<Tooltip label="Chỉnh sửa">
+														<IconButton
+															aria-label="Edit customer"
+															icon={<EditIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="orange"
+															onClick={() =>
+																onEdit(customer.id)
+															}
+														/>
+													</Tooltip>
+												)}
+
+												{onDelete && (
+													<Tooltip label="Xóa">
+														<IconButton
+															aria-label="Delete customer"
+															icon={<DeleteIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="red"
+															onClick={() =>
+																handleDeleteClick(
+																	customer,
+																)
+															}
+														/>
+													</Tooltip>
+												)}
 											</Flex>
 										</Td>
 									</Tr>

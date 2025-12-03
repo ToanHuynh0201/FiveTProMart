@@ -4,3 +4,4 @@ export { default as CustomerSearchBar } from "./CustomerSearchBar";
 export { default as CustomerFilterBar } from "./CustomerFilterBar";
 export { default as CustomerDetailModal } from "./CustomerDetailModal";
 export { default as AddCustomerModal } from "./AddCustomerModal";
+export { EditCustomerModal } from "./EditCustomerModal";

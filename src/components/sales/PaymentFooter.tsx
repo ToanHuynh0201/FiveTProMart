@@ -43,6 +43,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 }) => {
 	const [phoneInput, setPhoneInput] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
+	const [cashReceived, setCashReceived] = useState<string>("");
 
 	const handlePhoneSearch = async () => {
 		if (!phoneInput.trim()) {
@@ -92,6 +93,11 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		}
 	}, [customer]);
 
+	// Calculate change
+	const cashReceivedNumber = parseFloat(cashReceived) || 0;
+	const change = cashReceivedNumber - total;
+	const hasEnoughCash = cashReceivedNumber >= total;
+
 	return (
 		<Box
 			position="fixed"
@@ -109,14 +115,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 				py={{ base: 4, md: 5 }}>
 				{/* Desktop Layout */}
 				<Box display={{ base: "none", xl: "block" }}>
-					<Grid
-						templateColumns="200px 1fr 200px 240px"
-						gap={5}
-						alignItems="center">
-						{/* Customer Phone */}
-						<VStack
-							align="stretch"
-							spacing={2}>
+					<VStack spacing={3} align="stretch">
+						<Grid
+							templateColumns="200px 1fr 240px"
+							gap={5}
+							alignItems="center">
+							{/* Customer Phone */}
+							<VStack
+								align="stretch"
+								spacing={2}>
 							<Text
 								fontSize="xs"
 								fontWeight="600"
@@ -174,48 +181,6 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 							/>
 						</Box>
 
-						{/* Total */}
-						<VStack
-							align="flex-end"
-							spacing={1}
-							pr={4}>
-							<Text
-								fontSize="xs"
-								fontWeight="600"
-								color="gray.500"
-								textTransform="uppercase"
-								letterSpacing="wide">
-								TỔNG TIỀN
-							</Text>
-							<HStack spacing={2}>
-								<Text
-									fontSize="3xl"
-									fontWeight="800"
-									color="#161f70"
-									lineHeight="1"
-									letterSpacing="tight">
-									{total.toLocaleString("vi-VN")}
-								</Text>
-								<Text
-									fontSize="xl"
-									fontWeight="700"
-									color="#161f70">
-									đ
-								</Text>
-							</HStack>
-							{loyaltyPoints && loyaltyPoints > 0 && (
-								<Badge
-									colorScheme="green"
-									fontSize="xs"
-									px={3}
-									py={1}
-									borderRadius="full"
-									fontWeight="600">
-									+{loyaltyPoints}đ tích lũy
-								</Badge>
-							)}
-						</VStack>
-
 						{/* Print Button */}
 						<Button
 							h="60px"
@@ -239,10 +204,137 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								opacity: 0.6,
 							}}
 							onClick={onPrint}
-							isDisabled={isDisabled || total === 0}>
+							isDisabled={
+								isDisabled ||
+								total === 0 ||
+								(paymentMethod === "cash" && !hasEnoughCash)
+							}>
 							In hóa đơn
 						</Button>
 					</Grid>
+
+					{/* Cash Input Row - Only show when payment method is cash */}
+					{paymentMethod === "cash" && (
+						<Grid
+							templateColumns="1fr 1fr 1fr"
+							gap={5}
+							alignItems="center"
+							mt={-2}>
+							<VStack
+								align="stretch"
+								spacing={1}>
+								<Text
+									fontSize="xs"
+									fontWeight="600"
+									color="gray.500"
+									textTransform="uppercase"
+									letterSpacing="wide">
+									Tiền khách đưa
+								</Text>
+								<Input
+									placeholder="0"
+									type="number"
+									value={cashReceived}
+									onChange={(e) => setCashReceived(e.target.value)}
+									size="md"
+									fontSize="sm"
+									borderRadius="md"
+									borderColor={
+										cashReceived && !hasEnoughCash
+											? "red.300"
+											: "gray.300"
+									}
+									_hover={{ borderColor: "gray.400" }}
+									_focus={{
+										borderColor: "#161f70",
+										boxShadow: "0 0 0 1px #161f70",
+									}}
+								/>
+							</VStack>
+							<VStack
+								align="stretch"
+								spacing={1}>
+								<Text
+									fontSize="xs"
+									fontWeight="600"
+									color="gray.500"
+									textTransform="uppercase"
+									letterSpacing="wide">
+									Tiền thối
+								</Text>
+								<Box
+									p={2.5}
+									bg={
+										cashReceived && change >= 0
+											? "green.50"
+											: "gray.50"
+									}
+									borderRadius="md"
+									border="2px solid"
+									borderColor={
+										cashReceived && change >= 0
+											? "green.200"
+											: "gray.200"
+									}>
+									<Text
+										fontSize="md"
+										fontWeight="700"
+										color={
+											cashReceived && change >= 0
+												? "green.700"
+												: "gray.500"
+										}
+										textAlign="center">
+										{cashReceived && change >= 0
+											? change.toLocaleString("vi-VN") + "đ"
+											: cashReceived && change < 0
+											? "Chưa đủ tiền!"
+											: "0đ"}
+									</Text>
+								</Box>
+							</VStack>
+							<VStack
+								align="flex-end"
+								spacing={1}>
+								<Text
+									fontSize="xs"
+									fontWeight="600"
+									color="gray.500"
+									textTransform="uppercase"
+									letterSpacing="wide">
+									TỔNG TIỀN
+								</Text>
+								<HStack spacing={2}>
+									<Text
+										fontSize="2xl"
+										fontWeight="800"
+										color="#161f70"
+										lineHeight="1"
+										letterSpacing="tight">
+										{total.toLocaleString("vi-VN")}
+									</Text>
+									<Text
+										fontSize="lg"
+										fontWeight="700"
+										color="#161f70">
+										đ
+									</Text>
+								</HStack>
+								{loyaltyPoints && loyaltyPoints > 0 && (
+									<Badge
+										colorScheme="green"
+										fontSize="xs"
+										px={3}
+										py={1}
+										borderRadius="full"
+										fontWeight="600">
+										+{loyaltyPoints}đ tích lũy
+									</Badge>
+								)}
+							</VStack>
+						</Grid>
+					)}
+				</VStack>
 				</Box>
 
 				{/* Tablet/Medium Desktop Layout */}
@@ -340,6 +432,89 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								/>
 							</Box>
 
+							{/* Cash Input - Only show when payment method is cash */}
+							{paymentMethod === "cash" && (
+								<Grid
+									templateColumns="1fr 1fr"
+									gap={3}>
+									<VStack
+										align="stretch"
+										spacing={1}>
+										<Text
+											fontSize="xs"
+											fontWeight="600"
+											color="gray.500"
+											textTransform="uppercase">
+											Tiền khách đưa
+										</Text>
+										<Input
+											placeholder="0"
+											type="number"
+											value={cashReceived}
+											onChange={(e) =>
+												setCashReceived(e.target.value)
+											}
+											size="md"
+											fontSize="sm"
+											borderRadius="md"
+											borderColor={
+												cashReceived && !hasEnoughCash
+													? "red.300"
+													: "gray.300"
+											}
+											_focus={{
+												borderColor: "#161f70",
+												boxShadow:
+													"0 0 0 1px #161f70",
+											}}
+										/>
+									</VStack>
+									<VStack
+										align="stretch"
+										spacing={1}>
+										<Text
+											fontSize="xs"
+											fontWeight="600"
+											color="gray.500"
+											textTransform="uppercase">
+											Tiền thối
+										</Text>
+										<Box
+											p={2}
+											bg={
+												cashReceived && change >= 0
+													? "green.50"
+													: "gray.50"
+											}
+											borderRadius="md"
+											border="1px solid"
+											borderColor={
+												cashReceived && change >= 0
+													? "green.200"
+													: "gray.200"
+											}>
+											<Text
+												fontSize="md"
+												fontWeight="700"
+												color={
+													cashReceived && change >= 0
+														? "green.700"
+														: "gray.500"
+												}>
+												{cashReceived && change >= 0
+													? change.toLocaleString(
+															"vi-VN",
+													  ) + "đ"
+													: cashReceived &&
+													  change < 0
+													? "Chưa đủ tiền!"
+													: "0đ"}
+											</Text>
+										</Box>
+									</VStack>
+								</Grid>
+							)}
+
 							{/* Print Button - Full Width */}
 							<Button
 								h="52px"
@@ -352,7 +527,11 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								boxShadow="0 4px 12px rgba(22, 31, 112, 0.25)"
 								leftIcon={<Text fontSize="lg">🖨️</Text>}
 								onClick={onPrint}
-								isDisabled={isDisabled || total === 0}
+								isDisabled={
+									isDisabled ||
+									total === 0 ||
+									(paymentMethod === "cash" && !hasEnoughCash)
+								}
 								_hover={{
 									transform: "translateY(-1px)",
 									boxShadow:
@@ -415,6 +594,88 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 							/>
 						</Box>
 
+						{/* Cash Input - Only show when payment method is cash */}
+						{paymentMethod === "cash" && (
+							<VStack
+								spacing={2}
+								align="stretch">
+								<VStack
+									align="stretch"
+									spacing={1}>
+									<Text
+										fontSize="xs"
+										fontWeight="600"
+										color="gray.500"
+										textTransform="uppercase">
+										Tiền khách đưa
+									</Text>
+									<Input
+										placeholder="0"
+										type="number"
+										value={cashReceived}
+										onChange={(e) =>
+											setCashReceived(e.target.value)
+										}
+										size="md"
+										fontSize="sm"
+										borderRadius="md"
+										borderColor={
+											cashReceived && !hasEnoughCash
+												? "red.300"
+												: "gray.300"
+										}
+										_focus={{
+											borderColor: "#161f70",
+											boxShadow: "0 0 0 1px #161f70",
+										}}
+									/>
+								</VStack>
+								<VStack
+									align="stretch"
+									spacing={1}>
+									<Text
+										fontSize="xs"
+										fontWeight="600"
+										color="gray.500"
+										textTransform="uppercase">
+										Tiền thối
+									</Text>
+									<Box
+										p={2.5}
+										bg={
+											cashReceived && change >= 0
+												? "green.50"
+												: "gray.50"
+										}
+										borderRadius="md"
+										border="2px solid"
+										borderColor={
+											cashReceived && change >= 0
+												? "green.200"
+												: "gray.200"
+										}>
+										<Text
+											fontSize="lg"
+											fontWeight="700"
+											color={
+												cashReceived && change >= 0
+													? "green.700"
+													: "gray.500"
+											}
+											textAlign="center">
+											{cashReceived && change >= 0
+												? change.toLocaleString(
+														"vi-VN",
+												  ) + "đ"
+												: cashReceived && change < 0
+												? "Chưa đủ tiền!"
+												: "0đ"}
+										</Text>
+									</Box>
+								</VStack>
+							</VStack>
+						)}
+
 						{/* Total & Print */}
 						<Grid
 							templateColumns="1fr auto"
@@ -457,7 +718,11 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								borderRadius="lg"
 								boxShadow="0 4px 12px rgba(22, 31, 112, 0.25)"
 								onClick={onPrint}
-								isDisabled={isDisabled || total === 0}
+								isDisabled={
+									isDisabled ||
+									total === 0 ||
+									(paymentMethod === "cash" && !hasEnoughCash)
+								}
 								_active={{ transform: "scale(0.98)" }}>
 								<VStack spacing={0.5}>
 									<Text fontSize="xl">🖨️</Text>

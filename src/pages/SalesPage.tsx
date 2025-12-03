@@ -15,14 +15,12 @@ import {
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ProductSearchBar,
-	AddProductButton,
 	OrderItemsTable,
 	OrderHeader,
 	PaymentFooter,
 	OrderHistoryTable,
 	OrderDetailModal,
 	OrderFilterBar,
-	BatchSelectionModal,
 	PendingOrdersList,
 	BarcodeScanner,
 } from "../components/sales";
@@ -60,9 +58,6 @@ const SalesPage = () => {
 		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
 	);
 	const [createdAt] = useState(new Date());
-	const [showProductList, setShowProductList] = useState(false);
-	const [selectedProductForBatch, setSelectedProductForBatch] =
-		useState<Product | null>(null);
 	// Pending orders state
 	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
 
@@ -82,11 +77,6 @@ const SalesPage = () => {
 	});
 
 	const { isOpen, onOpen, onClose } = useDisclosure();
-	const {
-		isOpen: isBatchModalOpen,
-		onOpen: onBatchModalOpen,
-		onClose: onBatchModalClose,
-	} = useDisclosure();
 
 	const {
 		isOpen: isBarcodeScannerOpen,
@@ -139,56 +129,43 @@ const SalesPage = () => {
 		onOpen();
 	};
 
-	const handleProductSelect = (product: Product) => {
-		// Nếu sản phẩm có nhiều lô hàng, mở modal chọn lô
-		if (product.batches && product.batches.length > 0) {
-			setSelectedProductForBatch(product);
-			onBatchModalOpen();
-		} else {
-			// Xử lý như cũ cho sản phẩm không có lô
-			addProductToCart(product, 1);
+	const handleProductSelect = (
+		product: Product,
+		batchId?: string,
+		batchNumber?: string,
+	) => {
+		// Chỉ chấp nhận khi có thông tin lô hàng (từ quét mã lô)
+		if (batchId && batchNumber) {
+			const batch = product.batches?.find((b) => b.id === batchId);
+			if (batch) {
+				// Cảnh báo nếu lô đã hết hạn
+				if (isExpired(batch.expiryDate)) {
+					toast({
+						title: "Cảnh báo lô hàng hết hạn",
+						description: `Lô ${batch.batchNumber} đã hết hạn sử dụng. Không nên bán!`,
+						status: "error",
+						duration: 5000,
+						isClosable: true,
+						position: "top",
+					});
+				}
+
+				// Cảnh báo nếu lô sắp hết hạn
+				if (isExpiringSoon(batch.expiryDate, 7)) {
+					toast({
+						title: "Lô hàng sắp hết hạn",
+						description: `Lô ${batch.batchNumber} sắp hết hạn. Nên ưu tiên bán lô này.`,
+						status: "warning",
+						duration: 4000,
+						isClosable: true,
+						position: "top",
+					});
+				}
+
+				addProductToCart(product, 1, batchId, batchNumber);
+			}
 		}
-	};
-
-	const handleBatchSelect = (batchId: string, quantity: number) => {
-		if (!selectedProductForBatch) return;
-
-		const batch = selectedProductForBatch.batches?.find(
-			(b) => b.id === batchId,
-		);
-		if (!batch) return;
-
-		// Cảnh báo nếu lô đã hết hạn
-		if (isExpired(batch.expiryDate)) {
-			toast({
-				title: "Cảnh báo lô hàng hết hạn",
-				description: `Lô ${batch.batchNumber} đã hết hạn sử dụng. Không nên bán!`,
-				status: "error",
-				duration: 5000,
-				isClosable: true,
-				position: "top",
-			});
-		}
-
-		// Cảnh báo nếu lô sắp hết hạn
-		if (isExpiringSoon(batch.expiryDate, 7)) {
-			toast({
-				title: "Lô hàng sắp hết hạn",
-				description: `Lô ${batch.batchNumber} sắp hết hạn. Nên ưu tiên bán lô này.`,
-				status: "warning",
-				duration: 4000,
-				isClosable: true,
-				position: "top",
-			});
-		}
-
-		addProductToCart(
-			selectedProductForBatch,
-			quantity,
-			batchId,
-			batch.batchNumber,
-		);
-		setSelectedProductForBatch(null);
+		// Không làm gì nếu không có mã lô - bắt buộc phải quét mã lô hàng
 	};
 
 	const addProductToCart = (
@@ -244,11 +221,6 @@ const SalesPage = () => {
 
 	const handleRemoveItem = (itemId: string) => {
 		setOrderItems(orderItems.filter((item) => item.id !== itemId));
-	};
-
-	const handleShowProductList = () => {
-		setShowProductList(!showProductList);
-		// TODO: Implement modal to show all products
 	};
 
 	const calculateTotal = () => {
@@ -491,32 +463,25 @@ const SalesPage = () => {
 							{/* Tab: Lập hóa đơn */}
 							<TabPanel px={0}>
 								<Box
-									pt={4}
-									pb="100px">
-									<Box mb={5}>
+									pt={1}
+									pb="50px">
+									<Box
+										mb={2}
+										flex={1}
+										maxW="100%">
 										<Box
 											bg="white"
 											borderRadius="xl"
-											p={6}
+											p={3}
 											boxShadow="sm">
-											<Flex
-												gap={3}
-												align="center"
-												wrap="wrap">
-												<AddProductButton
-													onClick={
-														handleShowProductList
-													}
-												/>
-												<ProductSearchBar
-													onProductSelect={
-														handleProductSelect
-													}
-													onOpenBarcodeScanner={
-														onBarcodeScannerOpen
-													}
-												/>
-											</Flex>
+											<ProductSearchBar
+												onProductSelect={
+													handleProductSelect
+												}
+												onOpenBarcodeScanner={
+													onBarcodeScannerOpen
+												}
+											/>
 										</Box>
 									</Box>
 
@@ -524,7 +489,7 @@ const SalesPage = () => {
 										<Box
 											bg="white"
 											borderRadius="xl"
-											p={6}
+											p={3}
 											boxShadow="sm">
 											<OrderItemsTable
 												items={orderItems}
@@ -541,13 +506,6 @@ const SalesPage = () => {
 										pendingOrders={pendingOrders}
 										onRestore={handleRestoreOrder}
 										onDelete={handleDeletePendingOrder}
-									/>
-
-									<BatchSelectionModal
-										isOpen={isBatchModalOpen}
-										onClose={onBatchModalClose}
-										product={selectedProductForBatch}
-										onConfirm={handleBatchSelect}
 									/>
 
 									<BarcodeScanner

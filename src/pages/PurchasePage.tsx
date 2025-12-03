@@ -14,7 +14,12 @@ import {
 	Icon,
 	HStack,
 } from "@chakra-ui/react";
-import { AddIcon, DownloadIcon, ChevronDownIcon, RepeatIcon } from "@chakra-ui/icons";
+import {
+	AddIcon,
+	DownloadIcon,
+	ChevronDownIcon,
+	RepeatIcon,
+} from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsFileEarmarkExcel } from "react-icons/bs";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -362,8 +367,6 @@ const PurchasePage = () => {
 							<Box
 								flex={1}
 								width="100%">
-								{" "}
-								{/* Wrap PurchaseFilterBar trong Box với flex={1} */}
 								<PurchaseFilterBar
 									filters={filters}
 									suppliers={suppliers}

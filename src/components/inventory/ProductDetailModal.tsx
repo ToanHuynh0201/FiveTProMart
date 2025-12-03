@@ -163,7 +163,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
-			size="6xl">
+			size="3xl">
 			<ModalOverlay bg="blackAlpha.600" />
 			<ModalContent>
 				<ModalHeader
@@ -191,6 +191,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 						<VStack
 							spacing={4}
 							align="stretch">
+							{/* Header: Tên sản phẩm và trạng thái */}
 							<Box>
 								<Flex
 									justify="space-between"
@@ -204,183 +205,55 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 									</Text>
 									{getStatusBadge(product.status)}
 								</Flex>
-								<Text
-									fontSize="14px"
-									color="gray.600">
-									Mã hàng: {product.code}
-								</Text>
-								{product.barcode && (
+								<Flex
+									gap={4}
+									flexWrap="wrap">
 									<Text
 										fontSize="14px"
 										color="gray.600">
-										Mã vạch: {product.barcode}
+										<Text
+											as="span"
+											fontWeight="600">
+											Mã hàng:
+										</Text>{" "}
+										{product.code}
 									</Text>
-								)}
+									<Text
+										fontSize="14px"
+										color="gray.600">
+										<Text
+											as="span"
+											fontWeight="600">
+											Danh mục:
+										</Text>{" "}
+										{product.category}
+									</Text>
+									<Text
+										fontSize="14px"
+										color="gray.600">
+										<Text
+											as="span"
+											fontWeight="600">
+											Giá bán:
+										</Text>{" "}
+										<Text
+											as="span"
+											color="blue.600"
+											fontWeight="700">
+											{product.price.toLocaleString(
+												"vi-VN",
+											)}
+											đ
+										</Text>
+									</Text>
+								</Flex>
 							</Box>
 
 							<Divider />
 
-							{/* 3 cột thông tin ngang */}
-							<Grid
-								templateColumns="repeat(3, 1fr)"
-								gap={3}>
-								{/* Thông tin cơ bản */}
-								<GridItem
-									borderRight="1px solid"
-									borderColor="gray.200">
-									<Box
-										pr={5}
-										py={1}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Thông tin cơ bản
-										</Text>
-										<InfoRow
-											label="Danh mục"
-											value={product.category}
-										/>
-										<InfoRow
-											label="Đơn vị tính"
-											value={product.unit}
-										/>
-										{product.supplier && (
-											<InfoRow
-												label="Nhà cung cấp"
-												value={product.supplier}
-											/>
-										)}
-									</Box>
-								</GridItem>
-
-								{/* Giá và tồn kho */}
-								<GridItem
-									borderRight="1px solid"
-									borderColor="gray.200">
-									<Box
-										px={4}
-										py={1}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Giá và tồn kho
-										</Text>
-										<InfoRow
-											label="Giá bán"
-											value={`${product.price.toLocaleString(
-												"vi-VN",
-											)}đ`}
-										/>
-										<Divider my={2} />
-										<InfoRow
-											label="Tồn kho hiện tại"
-											value={product.stock}
-										/>
-										<InfoRow
-											label="Tồn kho tối thiểu"
-											value={product.minStock}
-										/>
-										<InfoRow
-											label="Tồn kho tối đa"
-											value={product.maxStock}
-										/>
-									</Box>
-								</GridItem>
-
-								{/* Thông tin khác */}
-								<GridItem>
-									<Box
-										pl={5}
-										py={1}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Thông tin khác
-										</Text>
-										<InfoRow
-											label="Ngày tạo"
-											value={new Date(
-												product.createdAt,
-											).toLocaleDateString("vi-VN")}
-										/>
-										<InfoRow
-											label="Cập nhật lần cuối"
-											value={new Date(
-												product.updatedAt,
-											).toLocaleDateString("vi-VN")}
-										/>
-									</Box>
-								</GridItem>
-							</Grid>
-
-							{/* Stock warning */}
-							{product.stock === 0 && (
-								<Box
-									mt={3}
-									p={3}
-									bg="red.50"
-									borderRadius="8px"
-									border="1px solid"
-									borderColor="red.200">
-									<Text
-										fontSize="14px"
-										color="red.600"
-										fontWeight="600">
-										⚠️ Sản phẩm đã hết hàng
-									</Text>
-								</Box>
-							)}
-							{product.stock > 0 &&
-								product.stock <= product.minStock && (
-									<Box
-										mt={3}
-										p={3}
-										bg="orange.50"
-										borderRadius="8px"
-										border="1px solid"
-										borderColor="orange.200">
-										<Text
-											fontSize="14px"
-											color="orange.600"
-											fontWeight="600">
-											⚠️ Sản phẩm sắp hết hàng
-										</Text>
-									</Box>
-								)}
-
-							{product.description && (
-								<>
-									<Divider />
-									<Box>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Mô tả
-										</Text>
-										<Text
-											fontSize="14px"
-											color="gray.600"
-											lineHeight="1.6">
-											{product.description}
-										</Text>
-									</Box>
-								</>
-							)}
-
-							<Divider />
-
-							{/* Batch Information */}
 							<Box>
 								<Text
-									fontSize="16px"
+									fontSize="18px"
 									fontWeight="700"
 									color="gray.700"
 									mb={3}>
@@ -394,8 +267,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 										border="1px solid"
 										borderColor="gray.200"
 										borderRadius="8px"
-										overflow="hidden">
-										<Table size="sm">
+										overflow="hidden"
+										boxShadow="sm">
+										<Table size="md">
 											<Thead bg="gray.50">
 												<Tr>
 													<Th fontSize="12px">
@@ -545,7 +419,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 										p={4}
 										bg="gray.50"
 										borderRadius="8px"
-										textAlign="center">
+										textAlign="center"
+										border="1px solid"
+										borderColor="gray.200">
 										<Text
 											fontSize="14px"
 											color="gray.500">
@@ -554,6 +430,130 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 									</Box>
 								)}
 							</Box>
+
+							<Divider />
+
+							{/* Stock warning */}
+							{product.stock === 0 && (
+								<Box
+									p={2}
+									bg="red.50"
+									borderRadius="8px"
+									border="1px solid"
+									borderColor="red.200">
+									<Text
+										fontSize="14px"
+										color="red.600"
+										fontWeight="600">
+										⚠️ Sản phẩm đã hết hàng
+									</Text>
+								</Box>
+							)}
+							{product.stock > 0 &&
+								product.stock <= product.minStock && (
+									<Box
+										p={2}
+										bg="orange.50"
+										borderRadius="8px"
+										border="1px solid"
+										borderColor="orange.200">
+										<Text
+											fontSize="14px"
+											color="orange.600"
+											fontWeight="600">
+											⚠️ Sản phẩm sắp hết hàng
+										</Text>
+									</Box>
+								)}
+
+							{/* 2 cột thông tin chi tiết */}
+							<Grid
+								templateColumns="repeat(2, 1fr)"
+								gap={4}>
+								{/* Cột 1: Thông tin tồn kho */}
+								<GridItem
+									borderRight="1px solid"
+									borderColor="gray.200">
+									<Box pr={4}>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Thông tin tồn kho
+										</Text>
+										<InfoRow
+											label="Tồn kho hiện tại"
+											value={product.stock}
+										/>
+										<InfoRow
+											label="Tồn kho tối thiểu"
+											value={product.minStock}
+										/>
+										<InfoRow
+											label="Tồn kho tối đa"
+											value={product.maxStock}
+										/>
+										<Divider my={2} />
+										<InfoRow
+											label="Đơn vị tính"
+											value={product.unit}
+										/>
+										{product.supplier && (
+											<InfoRow
+												label="Nhà cung cấp"
+												value={product.supplier}
+											/>
+										)}
+									</Box>
+								</GridItem>
+
+								{/* Cột 2: Thông tin khác */}
+								<GridItem>
+									<Box pl={4}>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Thông tin khác
+										</Text>
+										<InfoRow
+											label="Ngày tạo"
+											value={new Date(
+												product.createdAt,
+											).toLocaleDateString("vi-VN")}
+										/>
+										<InfoRow
+											label="Cập nhật lần cuối"
+											value={new Date(
+												product.updatedAt,
+											).toLocaleDateString("vi-VN")}
+										/>
+									</Box>
+								</GridItem>
+							</Grid>
+
+							{product.description && (
+								<>
+									<Divider />
+									<Box>
+										<Text
+											fontSize="16px"
+											fontWeight="700"
+											color="gray.700"
+											mb={2}>
+											Mô tả
+										</Text>
+										<Text
+											fontSize="14px"
+											color="gray.600"
+											lineHeight="1.6">
+											{product.description}
+										</Text>
+									</Box>
+								</>
+							)}
 						</VStack>
 					)}
 

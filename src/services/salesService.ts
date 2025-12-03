@@ -430,7 +430,7 @@ export const salesService = {
 		});
 	},
 
-	// Tìm kiếm sản phẩm
+	// Tìm kiếm sản phẩm (theo tên, mã sản phẩm, hoặc mã lô hàng)
 	searchProducts: async (query: string): Promise<Product[]> => {
 		await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API delay
 
@@ -439,12 +439,43 @@ export const salesService = {
 		}
 
 		const lowerQuery = query.toLowerCase();
-		return mockProducts.filter(
-			(p) =>
+		const trimmedQuery = query.trim();
+
+		return mockProducts.filter((p) => {
+			// Tìm theo tên hoặc mã sản phẩm
+			const matchesProduct =
 				p.name.toLowerCase().includes(lowerQuery) ||
 				p.code.toLowerCase().includes(lowerQuery) ||
-				(p.barcode && p.barcode.includes(query.trim())), // Search by barcode (exact match)
-		);
+				(p.barcode && p.barcode.includes(trimmedQuery));
+
+			// Tìm theo mã lô hàng
+			const matchesBatch =
+				p.batches &&
+				p.batches.some((b) =>
+					b.batchNumber.toLowerCase().includes(lowerQuery),
+				);
+
+			return matchesProduct || matchesBatch;
+		});
+	},
+
+	// Tìm sản phẩm theo mã lô hàng (batch code)
+	searchProductByBatchCode: async (
+		batchCode: string,
+	): Promise<{ product: Product; batch: import("../types/sales").ProductBatch } | null> => {
+		await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API delay
+
+		for (const product of mockProducts) {
+			if (product.batches) {
+				const batch = product.batches.find(
+					(b) => b.batchNumber === batchCode.trim(),
+				);
+				if (batch) {
+					return { product, batch };
+				}
+			}
+		}
+		return null;
 	},
 
 	// Lấy sản phẩm theo ID

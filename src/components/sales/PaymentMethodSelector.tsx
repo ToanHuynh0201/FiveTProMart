@@ -1,4 +1,4 @@
-import { Box, Heading, SimpleGrid, Button, Text } from "@chakra-ui/react";
+import { Box, SimpleGrid, Button, Text } from "@chakra-ui/react";
 import type { PaymentMethod } from "../../types/sales";
 
 interface PaymentMethodSelectorProps {
@@ -24,7 +24,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					alignItems="center"
 					justifyContent="center"
 					gap={compact ? 1.5 : 2}
-					py={compact ? 2.5 : 4}
+					py={compact ? 2 : 4}
 					px={compact ? 2 : 3}
 					bg={selected === "cash" ? "#161f70" : "gray.50"}
 					color={selected === "cash" ? "white" : "gray.600"}
@@ -33,8 +33,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					borderRadius="lg"
 					fontSize={compact ? "11px" : "sm"}
 					fontWeight="600"
-					minH={compact ? "50px" : "90px"}
-					h={compact ? "50px" : "auto"}
+					minH={compact ? "42px" : "90px"}
+					h={compact ? "42px" : "auto"}
 					w="100%"
 					transition="all 0.2s"
 					_hover={{
@@ -79,7 +79,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					alignItems="center"
 					justifyContent="center"
 					gap={compact ? 1.5 : 2}
-					py={compact ? 2.5 : 4}
+					py={compact ? 2 : 4}
 					px={compact ? 2 : 3}
 					bg={selected === "card" ? "#161f70" : "gray.50"}
 					color={selected === "card" ? "white" : "gray.600"}
@@ -88,8 +88,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					borderRadius="lg"
 					fontSize={compact ? "11px" : "sm"}
 					fontWeight="600"
-					minH={compact ? "50px" : "90px"}
-					h={compact ? "50px" : "auto"}
+					minH={compact ? "42px" : "90px"}
+					h={compact ? "42px" : "auto"}
 					w="100%"
 					transition="all 0.2s"
 					_hover={{
@@ -143,7 +143,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					alignItems="center"
 					justifyContent="center"
 					gap={compact ? 1 : 2}
-					py={compact ? 2.5 : 4}
+					py={compact ? 2 : 4}
 					px={compact ? 1.5 : 3}
 					bg={selected === "transfer" ? "#161f70" : "gray.50"}
 					color={selected === "transfer" ? "white" : "gray.600"}
@@ -154,8 +154,8 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 					borderRadius="lg"
 					fontSize={compact ? "10px" : "sm"}
 					fontWeight="600"
-					minH={compact ? "50px" : "90px"}
-					h={compact ? "50px" : "auto"}
+					minH={compact ? "42px" : "90px"}
+					h={compact ? "42px" : "auto"}
 					w="100%"
 					transition="all 0.2s"
 					_hover={{

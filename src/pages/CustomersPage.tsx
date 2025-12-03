@@ -6,6 +6,7 @@ import {
 	CustomerFilterBar,
 	CustomerDetailModal,
 	AddCustomerModal,
+	EditCustomerModal,
 } from "@/components/customer";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
@@ -45,6 +46,11 @@ const CustomersPage = () => {
 		isOpen: isAddModalOpen,
 		onOpen: onAddModalOpen,
 		onClose: onAddModalClose,
+	} = useDisclosure();
+	const {
+		isOpen: isEditModalOpen,
+		onOpen: onEditModalOpen,
+		onClose: onEditModalClose,
 	} = useDisclosure();
 
 	// Load customer data on mount
@@ -157,6 +163,11 @@ const CustomersPage = () => {
 		setSelectedCustomerId(null);
 	};
 
+	const handleEdit = (id: string) => {
+		setSelectedCustomerId(id);
+		onEditModalOpen();
+	};
+
 	const handleDeleteCustomer = async (id: string) => {
 		try {
 			const success = await customerService.deleteCustomer(id);
@@ -177,6 +188,27 @@ const CustomersPage = () => {
 			setCustomerList((prev) => [...prev, newCustomer]);
 		} catch (error) {
 			console.error("Error adding customer:", error);
+			throw error;
+		}
+	};
+
+	const handleUpdateCustomer = async (
+		id: string,
+		updates: Partial<Customer>,
+	) => {
+		try {
+			const success = await customerService.updateCustomer(id, updates);
+			if (success) {
+				setCustomerList((prev) =>
+					prev.map((customer) =>
+						customer.id === id
+							? { ...customer, ...updates }
+							: customer,
+					),
+				);
+			}
+		} catch (error) {
+			console.error("Error updating customer:", error);
 			throw error;
 		}
 	};
@@ -257,6 +289,7 @@ const CustomersPage = () => {
 						<CustomerTable
 							customerList={currentCustomers}
 							onViewDetails={handleViewDetails}
+							onEdit={handleEdit}
 							onDelete={handleDeleteCustomer}
 						/>
 
@@ -309,6 +342,14 @@ const CustomersPage = () => {
 				isOpen={isAddModalOpen}
 				onClose={onAddModalClose}
 				onAdd={handleAddCustomer}
+			/>
+
+			{/* Edit Customer Modal */}
+			<EditCustomerModal
+				isOpen={isEditModalOpen}
+				onClose={onEditModalClose}
+				customerId={selectedCustomerId}
+				onUpdate={handleUpdateCustomer}
 			/>
 		</MainLayout>
 	);

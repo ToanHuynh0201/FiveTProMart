@@ -7,3 +7,4 @@ export * from "./purchase";
 export * from "./promotion";
 export * from "./reports";
 export * from "./customer";
+export * from "./supplier";

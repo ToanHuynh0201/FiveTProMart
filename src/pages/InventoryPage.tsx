@@ -19,6 +19,7 @@ import {
 	StatsCard,
 	EditProductModal,
 	ProductDetailModal,
+	BatchListModal,
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
@@ -28,6 +29,7 @@ import type {
 	ProductFilter,
 	InventoryCategory,
 	InventoryStats,
+	ProductBatch,
 } from "@/types";
 
 const ITEMS_PER_PAGE = 10;
@@ -62,6 +64,8 @@ const InventoryPage = () => {
 	const [selectedProductId, setSelectedProductId] = useState<string | null>(
 		null,
 	);
+	const [selectedProduct, setSelectedProduct] =
+		useState<InventoryProduct | null>(null);
 	const {
 		isOpen: isEditModalOpen,
 		onOpen: onEditModalOpen,
@@ -71,6 +75,11 @@ const InventoryPage = () => {
 		isOpen: isDetailModalOpen,
 		onOpen: onDetailModalOpen,
 		onClose: onDetailModalClose,
+	} = useDisclosure();
+	const {
+		isOpen: isBatchModalOpen,
+		onOpen: onBatchModalOpen,
+		onClose: onBatchModalClose,
 	} = useDisclosure();
 
 	// Load initial data
@@ -180,6 +189,54 @@ const InventoryPage = () => {
 	const handleDelete = async (id: string) => {
 		if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
 			await handleDeleteProduct(id);
+		}
+	};
+
+	const handleManageBatches = (id: string) => {
+		const product = products.find((p) => p.id === id);
+		if (product) {
+			setSelectedProduct(product);
+			onBatchModalOpen();
+		}
+	};
+
+	const handleUpdateBatch = async (
+		batchId: string,
+		updates: Partial<ProductBatch>,
+	) => {
+		if (!selectedProduct) return;
+
+		try {
+			await inventoryService.updateBatch(
+				selectedProduct.id,
+				batchId,
+				updates,
+			);
+			await loadData();
+
+			// Update selected product for the modal
+			const updatedProduct = products.find(
+				(p) => p.id === selectedProduct.id,
+			);
+			if (updatedProduct) {
+				setSelectedProduct(updatedProduct);
+			}
+
+			toast({
+				title: "Thành công",
+				description: "Đã cập nhật lô hàng",
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error updating batch:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể cập nhật lô hàng",
+				status: "error",
+				duration: 3000,
+			});
+			throw error;
 		}
 	};
 
@@ -403,6 +460,15 @@ const InventoryPage = () => {
 				productId={selectedProductId}
 				onEdit={handleEdit}
 				onDelete={handleDeleteProduct}
+				onManageBatches={handleManageBatches}
+			/>
+
+			{/* Batch List Modal */}
+			<BatchListModal
+				isOpen={isBatchModalOpen}
+				onClose={onBatchModalClose}
+				product={selectedProduct}
+				onUpdateBatch={handleUpdateBatch}
 			/>
 		</MainLayout>
 	);

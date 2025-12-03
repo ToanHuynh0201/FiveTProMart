@@ -17,6 +17,7 @@ import PurchasePage from "./pages/PurchasePage";
 import PromotionPage from "./pages/PromotionPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import CustomersPage from "./pages/CustomersPage";
+import SupplierPage from "./pages/SupplierPage";
 
 function App() {
 	return (
@@ -67,10 +68,14 @@ function App() {
 					element={<CustomersPage />}
 				/>
 				<Route
-					path="/"
+					path={ROUTES.SUPPLIERS}
+					element={<SupplierPage />}
+				/>
+				<Route
+					path="*"
 					element={
 						<Navigate
-							to={ROUTES.LOGIN}
+							to={ROUTES.HOME}
 							replace
 						/>
 					}

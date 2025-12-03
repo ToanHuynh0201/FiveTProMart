@@ -368,46 +368,6 @@ const SchedulePage = () => {
 						onCellClick={handleCellClick}
 					/>
 				)}
-
-				{/* Legend */}
-				<Box
-					mt={6}
-					p={4}
-					bg="gray.50"
-					borderRadius="8px">
-					<HStack
-						spacing={6}
-						align="center">
-						<HStack spacing={2}>
-							<Box
-								w="3px"
-								h="16px"
-								bg="blue.500"
-								borderRadius="1px"
-							/>
-							<Text
-								fontSize="14px"
-								fontWeight="600"
-								color="blue.600">
-								Nhân viên kho
-							</Text>
-						</HStack>
-						<HStack spacing={2}>
-							<Box
-								w="3px"
-								h="16px"
-								bg="green.500"
-								borderRadius="1px"
-							/>
-							<Text
-								fontSize="14px"
-								fontWeight="600"
-								color="green.600">
-								Nhân viên bán hàng
-							</Text>
-						</HStack>
-					</HStack>
-				</Box>
 			</Box>
 
 			{/* Edit Modal */}

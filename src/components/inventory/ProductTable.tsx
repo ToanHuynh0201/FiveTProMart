@@ -321,7 +321,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												}
 											/>
 										</Tooltip>
-
 										<Menu>
 											<MenuButton
 												as={IconButton}

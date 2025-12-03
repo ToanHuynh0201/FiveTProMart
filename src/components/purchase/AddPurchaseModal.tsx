@@ -29,10 +29,12 @@ import {
 	Flex,
 	Text,
 	Divider,
+	Spinner,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Purchase, PurchaseItem, Supplier } from "../../types/purchase";
 import { purchaseService } from "../../services/purchaseService";
+import { supplierService } from "../../services/supplierService";
 
 interface AddPurchaseModalProps {
 	isOpen: boolean;
@@ -54,6 +56,8 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
 	const [items, setItems] = useState<PurchaseItem[]>([]);
+	const [supplierProducts, setSupplierProducts] = useState<any[]>([]);
+	const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 	const [formData, setFormData] = useState({
 		purchaseNumber: "",
 		supplierId: "",
@@ -61,18 +65,12 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 		shippingFee: 0,
 		discount: 0,
 		notes: "",
-		warehouseLocation: "Kho A",
-		status: "draft" as const,
 	});
 
 	// New item form
 	const [newItem, setNewItem] = useState({
-		productCode: "",
-		productName: "",
-		category: "",
-		unit: "",
+		productId: "",
 		quantity: 0,
-		unitPrice: 0,
 	});
 
 	useEffect(() => {
@@ -94,50 +92,86 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 				shippingFee: 0,
 				discount: 0,
 				notes: "",
-				warehouseLocation: "Kho A",
-				status: "draft",
 			});
 			setItems([]);
+			setSupplierProducts([]);
 			resetNewItem();
 		}
 	}, [isOpen, initialItems]);
 
 	const resetNewItem = () => {
 		setNewItem({
-			productCode: "",
-			productName: "",
-			category: "",
-			unit: "",
+			productId: "",
 			quantity: 0,
-			unitPrice: 0,
 		});
 	};
 
-	const handleAddItem = () => {
-		if (!newItem.productName.trim()) {
+	const handleSupplierChange = async (supplierId: string) => {
+		setFormData({ ...formData, supplierId });
+
+		if (!supplierId) {
+			setSupplierProducts([]);
+			return;
+		}
+
+		// Load supplier's products
+		setIsLoadingProducts(true);
+		try {
+			const supplierDetail = await supplierService.getSupplierById(
+				supplierId,
+			);
+			if (supplierDetail?.products) {
+				setSupplierProducts(supplierDetail.products);
+			}
+		} catch (error) {
+			console.error("Error loading supplier products:", error);
 			toast({
 				title: "Lỗi",
-				description: "Vui lòng nhập tên sản phẩm",
+				description: "Không thể tải danh sách sản phẩm",
+				status: "error",
+				duration: 2000,
+			});
+		} finally {
+			setIsLoadingProducts(false);
+		}
+	};
+
+	const handleAddItem = () => {
+		if (!newItem.productId) {
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng chọn sản phẩm",
 				status: "error",
 				duration: 2000,
 			});
 			return;
 		}
 
-		if (newItem.quantity <= 0 || newItem.unitPrice <= 0) {
+		if (newItem.quantity <= 0) {
 			toast({
 				title: "Lỗi",
-				description: "Số lượng và đơn giá phải lớn hơn 0",
+				description: "Số lượng phải lớn hơn 0",
 				status: "error",
 				duration: 2000,
 			});
 			return;
 		}
+
+		// Find selected product
+		const product = supplierProducts.find(
+			(p) => p.id === newItem.productId,
+		);
+		if (!product) return;
 
 		const item: PurchaseItem = {
 			id: `temp_${Date.now()}`,
-			...newItem,
-			totalPrice: newItem.quantity * newItem.unitPrice,
+			productCode: product.productCode,
+			productName: product.productName,
+			category: product.category,
+			unit: product.unit,
+			quantity: newItem.quantity,
+			unitPrice: product.lastPurchasePrice || 0,
+			totalPrice: newItem.quantity * (product.lastPurchasePrice || 0),
 		};
 
 		setItems([...items, item]);
@@ -196,8 +230,8 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 				paymentStatus: "unpaid",
 				paidAmount: 0,
 				notes: formData.notes,
-				warehouseLocation: formData.warehouseLocation,
-				status: formData.status,
+				warehouseLocation: "Kho A",
+				status: "ordered",
 				staff: {
 					id: "staff_1",
 					name: "Nguyễn Văn A",
@@ -280,10 +314,9 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 										<Select
 											value={formData.supplierId}
 											onChange={(e) =>
-												setFormData({
-													...formData,
-													supplierId: e.target.value,
-												})
+												handleSupplierChange(
+													e.target.value,
+												)
 											}
 											placeholder="Chọn nhà cung cấp">
 											{suppliers.map((supplier) => (
@@ -296,155 +329,131 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 										</Select>
 									</FormControl>
 								</HStack>
-
-								<HStack
-									spacing={4}
-									w="full">
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Kho hàng
-										</FormLabel>
-										<Select
-											value={formData.warehouseLocation}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													warehouseLocation:
-														e.target.value,
-												})
-											}>
-											<option value="Kho A">Kho A</option>
-											<option value="Kho B">Kho B</option>
-											<option value="Kho C">Kho C</option>
-										</Select>
-									</FormControl>
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Trạng thái
-										</FormLabel>
-										<Select
-											value={formData.status}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													status: e.target
-														.value as any,
-												})
-											}>
-											<option value="draft">Nháp</option>
-											<option value="ordered">
-												Đã đặt
-											</option>
-										</Select>
-									</FormControl>
-								</HStack>
 							</VStack>
 						</Box>
-
 						<Divider />
-
 						{/* Thêm sản phẩm */}
-						<Box>
-							<Text
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700"
-								mb={4}>
-								Thêm sản phẩm
-							</Text>
-							<VStack spacing={3}>
-								<HStack
-									spacing={3}
-									w="full">
-									<FormControl flex={1}>
-										<Input
-											placeholder="Mã sản phẩm"
-											value={newItem.productCode}
-											onChange={(e) =>
-												setNewItem({
-													...newItem,
-													productCode: e.target.value,
-												})
-											}
+						{formData.supplierId && (
+							<Box>
+								<Text
+									fontSize="16px"
+									fontWeight="600"
+									color="gray.700"
+									mb={4}>
+									Thêm sản phẩm
+								</Text>
+								{isLoadingProducts ? (
+									<Flex
+										justify="center"
+										py={4}>
+										<Spinner
+											size="md"
+											color="brand.500"
 										/>
-									</FormControl>
-									<FormControl flex={2}>
-										<Input
-											placeholder="Tên sản phẩm *"
-											value={newItem.productName}
-											onChange={(e) =>
-												setNewItem({
-													...newItem,
-													productName: e.target.value,
-												})
-											}
-										/>
-									</FormControl>
-									<FormControl flex={1}>
-										<Input
-											placeholder="Đơn vị"
-											value={newItem.unit}
-											onChange={(e) =>
-												setNewItem({
-													...newItem,
-													unit: e.target.value,
-												})
-											}
-										/>
-									</FormControl>
-								</HStack>
-
-								<HStack
-									spacing={3}
-									w="full">
-									<FormControl flex={1}>
-										<NumberInput
-											value={newItem.quantity}
-											onChange={(_, val) =>
-												setNewItem({
-													...newItem,
-													quantity: val,
-												})
-											}
-											min={0}>
-											<NumberInputField placeholder="Số lượng *" />
-										</NumberInput>
-									</FormControl>
-									<FormControl flex={1}>
-										<NumberInput
-											value={newItem.unitPrice}
-											onChange={(_, val) =>
-												setNewItem({
-													...newItem,
-													unitPrice: val,
-												})
-											}
-											min={0}>
-											<NumberInputField placeholder="Đơn giá *" />
-										</NumberInput>
-									</FormControl>
-									<FormControl flex={1}>
-										<Input
-											value={formatCurrency(
-												newItem.quantity *
-													newItem.unitPrice,
-											)}
-											isReadOnly
-											bg="gray.50"
-											placeholder="Thành tiền"
-										/>
-									</FormControl>
-									<Button
-										colorScheme="brand"
-										leftIcon={<AddIcon />}
-										onClick={handleAddItem}
-										flexShrink={0}>
-										Thêm
-									</Button>
-								</HStack>
-							</VStack>
-						</Box>
-
+									</Flex>
+								) : supplierProducts.length === 0 ? (
+									<Text
+										color="gray.500"
+										textAlign="center"
+										py={4}>
+										Nhà cung cấp này chưa có sản phẩm nào
+									</Text>
+								) : (
+									<VStack spacing={3}>
+										<HStack
+											spacing={3}
+											w="full">
+											<FormControl flex={2}>
+												<Select
+													placeholder="Chọn sản phẩm *"
+													value={newItem.productId}
+													onChange={(e) =>
+														setNewItem({
+															...newItem,
+															productId:
+																e.target.value,
+														})
+													}>
+													{supplierProducts.map(
+														(product) => (
+															<option
+																key={product.id}
+																value={
+																	product.id
+																}>
+																{
+																	product.productName
+																}{" "}
+																-{" "}
+																{
+																	product.productCode
+																}{" "}
+																({product.unit})
+															</option>
+														),
+													)}
+												</Select>
+											</FormControl>
+											<FormControl flex={1}>
+												<NumberInput
+													value={newItem.quantity}
+													onChange={(_, val) =>
+														setNewItem({
+															...newItem,
+															quantity: val,
+														})
+													}
+													min={0}>
+													<NumberInputField placeholder="Số lượng *" />
+												</NumberInput>
+											</FormControl>
+											<Button
+												colorScheme="brand"
+												leftIcon={<AddIcon />}
+												onClick={handleAddItem}
+												flexShrink={0}
+												isDisabled={
+													!newItem.productId ||
+													newItem.quantity <= 0
+												}>
+												Thêm
+											</Button>
+										</HStack>
+										{newItem.productId && (
+											<Box
+												w="full"
+												bg="blue.50"
+												p={3}
+												borderRadius="md">
+												<Text
+													fontSize="13px"
+													color="gray.700">
+													<strong>
+														Giá nhập gần nhất:
+													</strong>{" "}
+													{formatCurrency(
+														supplierProducts.find(
+															(p) =>
+																p.id ===
+																newItem.productId,
+														)?.lastPurchasePrice ||
+															0,
+													)}
+													đ/
+													{
+														supplierProducts.find(
+															(p) =>
+																p.id ===
+																newItem.productId,
+														)?.unit
+													}
+												</Text>
+											</Box>
+										)}
+									</VStack>
+								)}
+							</Box>
+						)}{" "}
 						{/* Danh sách sản phẩm */}
 						{items.length > 0 && (
 							<Box>
@@ -527,9 +536,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 								</Box>
 							</Box>
 						)}
-
 						<Divider />
-
 						{/* Thông tin thanh toán */}
 						<Box>
 							<Text

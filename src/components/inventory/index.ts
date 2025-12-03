@@ -5,3 +5,5 @@ export { StatsCard } from "./StatsCard";
 export { AddProductModal } from "./AddProductModal";
 export { EditProductModal } from "./EditProductModal";
 export { ProductDetailModal } from "./ProductDetailModal";
+export { default as BatchListModal } from "./BatchListModal";
+export { default as EditBatchModal } from "./EditBatchModal";

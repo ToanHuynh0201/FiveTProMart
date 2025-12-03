@@ -8,6 +8,7 @@ import {
 	FiBarChart2,
 	FiUserCheck,
 	FiGift,
+	FiBox,
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
@@ -25,6 +26,11 @@ export const navItems: NavItem[] = [
 		label: "Nhập hàng",
 		path: "/purchase",
 		icon: FiTruck,
+	},
+	{
+		label: "Nhà cung cấp",
+		path: "/suppliers",
+		icon: FiBox,
 	},
 	{
 		label: "Khuyến mãi",

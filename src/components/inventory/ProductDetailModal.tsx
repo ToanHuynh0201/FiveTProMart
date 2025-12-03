@@ -26,6 +26,7 @@ import {
 	Grid,
 	GridItem,
 } from "@chakra-ui/react";
+import { FiPackage } from "react-icons/fi";
 import type { InventoryProduct } from "../../types/inventory";
 import { inventoryService } from "../../services/inventoryService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
@@ -36,6 +37,7 @@ interface ProductDetailModalProps {
 	productId: string | null;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
+	onManageBatches?: (id: string) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -44,6 +46,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	productId,
 	onEdit,
 	onDelete,
+	onManageBatches,
 }) => {
 	const toast = useToast();
 	const [product, setProduct] = useState<InventoryProduct | null>(null);
@@ -567,7 +570,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 						</Text>
 					)}
 				</ModalBody>
-
 				<ModalFooter gap={3}>
 					<Button
 						variant="ghost"
@@ -577,6 +579,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 						isDisabled={isLoading}>
 						Xóa
 					</Button>
+					{onManageBatches && (
+						<Button
+							leftIcon={<FiPackage />}
+							colorScheme="purple"
+							variant="outline"
+							onClick={() => {
+								if (product) {
+									onManageBatches(product.id);
+									onClose();
+								}
+							}}
+							isDisabled={isLoading || !product}>
+							Quản lý lô hàng
+						</Button>
+					)}
 					<Button
 						variant="outline"
 						colorScheme="blue"

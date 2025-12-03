@@ -1,3 +1,4 @@
+import type { ProductBatch } from "@/types";
 import type {
 	InventoryProduct,
 	InventoryCategory,
@@ -5,450 +6,619 @@ import type {
 	StockMovement,
 	ProductFilter,
 } from "../types/inventory";
+import { mockSupplierData } from "./supplierService";
 
 // Mock data cho danh mục sản phẩm
 const mockCategories: InventoryCategory[] = [
 	{
 		id: "cat_1",
-		name: "Snack",
-		description: "Bánh snack các loại",
+		name: "Rau củ",
+		description: "Rau củ tươi sạch",
 		productCount: 15,
 	},
 	{
 		id: "cat_2",
-		name: "Rau củ",
-		description: "Rau củ tươi sạch",
-		productCount: 24,
+		name: "Thịt",
+		description: "Thịt tươi sống",
+		productCount: 3,
 	},
 	{
 		id: "cat_3",
-		name: "Nước uống",
-		description: "Nước giải khát",
-		productCount: 18,
+		name: "Hải sản",
+		description: "Hải sản tươi sống",
+		productCount: 2,
 	},
 	{
 		id: "cat_4",
-		name: "Thực phẩm khô",
-		description: "Thực phẩm khô bảo quản",
-		productCount: 12,
+		name: "Sữa",
+		description: "Sản phẩm từ sữa",
+		productCount: 3,
 	},
 	{
 		id: "cat_5",
-		name: "Đồ ăn nhanh",
-		description: "Đồ ăn nhanh tiện lợi",
+		name: "Bánh",
+		description: "Bánh mì và bánh ngọt",
+		productCount: 2,
+	},
+	{
+		id: "cat_6",
+		name: "Gia vị",
+		description: "Gia vị và đồ khô",
+		productCount: 3,
+	},
+	{
+		id: "cat_7",
+		name: "Nước giải khát",
+		description: "Nước uống các loại",
 		productCount: 8,
+	},
+	{
+		id: "cat_8",
+		name: "Bánh kẹo",
+		description: "Bánh kẹo các loại",
+		productCount: 4,
+	},
+	{
+		id: "cat_9",
+		name: "Mì ăn liền",
+		description: "Mì ăn liền các loại",
+		productCount: 4,
+	},
+	{
+		id: "cat_10",
+		name: "Đồ đông lạnh",
+		description: "Thực phẩm đông lạnh",
+		productCount: 4,
 	},
 ];
 
+// Generate products from suppliers
+const generateProductsFromSuppliers = (): InventoryProduct[] => {
+	const products: InventoryProduct[] = [];
+	let productCounter = 1;
+
+	// Supplier 1: Thực phẩm Sạch Việt Nam - Rau củ
+	const supplier1Products = [
+		{
+			code: "TP001",
+			name: "Rau cải xanh hữu cơ",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 25000,
+			price: 35000,
+		},
+		{
+			code: "TP002",
+			name: "Rau muống hữu cơ",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 20000,
+			price: 28000,
+		},
+		{
+			code: "TP003",
+			name: "Cà chua bi",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 35000,
+			price: 48000,
+		},
+		{
+			code: "TP004",
+			name: "Dưa leo",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 18000,
+			price: 25000,
+		},
+		{
+			code: "TP005",
+			name: "Ớt chuông",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 45000,
+			price: 62000,
+		},
+	];
+
+	// Supplier 2: Nông sản Đà Lạt - Rau củ
+	const supplier2Products = [
+		{
+			code: "DL001",
+			name: "Cà rót Đà Lạt",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 30000,
+			price: 42000,
+		},
+		{
+			code: "DL002",
+			name: "Súp lơ xanh",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 40000,
+			price: 55000,
+		},
+		{
+			code: "DL003",
+			name: "Cải thảo",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 22000,
+			price: 30000,
+		},
+		{
+			code: "DL004",
+			name: "Bí đỏ",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 28000,
+			price: 38000,
+		},
+		{
+			code: "DL005",
+			name: "Khoai tây",
+			category: "Rau củ",
+			unit: "kg",
+			costPrice: 25000,
+			price: 34000,
+		},
+	];
+
+	// Supplier 3: Thịt & Hải sản An Phát
+	const supplier3Products = [
+		{
+			code: "TS001",
+			name: "Thịt ba chỉ",
+			category: "Thịt",
+			unit: "kg",
+			costPrice: 120000,
+			price: 165000,
+		},
+		{
+			code: "TS002",
+			name: "Thịt nạc vai",
+			category: "Thịt",
+			unit: "kg",
+			costPrice: 140000,
+			price: 190000,
+		},
+		{
+			code: "TS003",
+			name: "Sườn non",
+			category: "Thịt",
+			unit: "kg",
+			costPrice: 150000,
+			price: 205000,
+		},
+		{
+			code: "TS004",
+			name: "Cá diêu hồng",
+			category: "Hải sản",
+			unit: "kg",
+			costPrice: 180000,
+			price: 245000,
+		},
+		{
+			code: "TS005",
+			name: "Tôm sú",
+			category: "Hải sản",
+			unit: "kg",
+			costPrice: 350000,
+			price: 480000,
+		},
+	];
+
+	// Supplier 4: Sữa & Bánh Việt
+	const supplier4Products = [
+		{
+			code: "SB001",
+			name: "Sữa tươi không đường",
+			category: "Sữa",
+			unit: "hộp",
+			costPrice: 35000,
+			price: 48000,
+		},
+		{
+			code: "SB002",
+			name: "Sữa chua uống",
+			category: "Sữa",
+			unit: "chai",
+			costPrice: 8000,
+			price: 11000,
+		},
+		{
+			code: "SB003",
+			name: "Bánh mì sandwich",
+			category: "Bánh",
+			unit: "gói",
+			costPrice: 15000,
+			price: 20000,
+		},
+		{
+			code: "SB004",
+			name: "Bánh croissant",
+			category: "Bánh",
+			unit: "cái",
+			costPrice: 25000,
+			price: 34000,
+		},
+		{
+			code: "SB005",
+			name: "Phô mai lát",
+			category: "Sữa",
+			unit: "gói",
+			costPrice: 45000,
+			price: 62000,
+		},
+	];
+
+	// Supplier 5: Gia vị & Đồ khô
+	const supplier5Products = [
+		{
+			code: "GV001",
+			name: "Nước mắm",
+			category: "Gia vị",
+			unit: "chai",
+			costPrice: 35000,
+			price: 48000,
+		},
+		{
+			code: "GV002",
+			name: "Dầu ăn",
+			category: "Gia vị",
+			unit: "chai",
+			costPrice: 45000,
+			price: 62000,
+		},
+		{
+			code: "GV003",
+			name: "Hạt nêm",
+			category: "Gia vị",
+			unit: "gói",
+			costPrice: 25000,
+			price: 34000,
+		},
+		{
+			code: "GV004",
+			name: "Mì gói",
+			category: "Mì ăn liền",
+			unit: "thùng",
+			costPrice: 120000,
+			price: 165000,
+		},
+		{
+			code: "GV005",
+			name: "Hạt điều rang",
+			category: "Gia vị",
+			unit: "kg",
+			costPrice: 250000,
+			price: 340000,
+		},
+	];
+
+	// Supplier 6: Tân Hiệp Phát
+	const supplier6Products = [
+		{
+			code: "THP001",
+			name: "Trà xanh không độ",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 85000,
+			price: 115000,
+		},
+		{
+			code: "THP002",
+			name: "Number 1",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 90000,
+			price: 122000,
+		},
+		{
+			code: "THP003",
+			name: "Dr Thanh",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 95000,
+			price: 129000,
+		},
+		{
+			code: "THP004",
+			name: "Nước suối",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 50000,
+			price: 68000,
+		},
+	];
+
+	// Supplier 7: Kinh Đô
+	const supplier7Products = [
+		{
+			code: "KD001",
+			name: "Bánh quy Cosy",
+			category: "Bánh kẹo",
+			unit: "hộp",
+			costPrice: 35000,
+			price: 48000,
+		},
+		{
+			code: "KD002",
+			name: "Kẹo mút Chupa Chups",
+			category: "Bánh kẹo",
+			unit: "gói",
+			costPrice: 45000,
+			price: 62000,
+		},
+		{
+			code: "KD003",
+			name: "Bánh AFC",
+			category: "Bánh kẹo",
+			unit: "hộp",
+			costPrice: 40000,
+			price: 55000,
+		},
+		{
+			code: "KD004",
+			name: "Socola Merci",
+			category: "Bánh kẹo",
+			unit: "hộp",
+			costPrice: 150000,
+			price: 205000,
+		},
+	];
+
+	// Supplier 8: Coca Cola
+	const supplier8Products = [
+		{
+			code: "CC001",
+			name: "Coca Cola",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 120000,
+			price: 165000,
+		},
+		{
+			code: "CC002",
+			name: "Sprite",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 115000,
+			price: 157000,
+		},
+		{
+			code: "CC003",
+			name: "Fanta",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 115000,
+			price: 157000,
+		},
+		{
+			code: "CC004",
+			name: "Aquarius",
+			category: "Nước giải khát",
+			unit: "thùng",
+			costPrice: 100000,
+			price: 136000,
+		},
+	];
+
+	// Supplier 9: Acecook
+	const supplier9Products = [
+		{
+			code: "AC001",
+			name: "Hảo Hảo tôm chua cay",
+			category: "Mì ăn liền",
+			unit: "thùng",
+			costPrice: 95000,
+			price: 129000,
+		},
+		{
+			code: "AC002",
+			name: "Hảo Hảo sườn heo",
+			category: "Mì ăn liền",
+			unit: "thùng",
+			costPrice: 95000,
+			price: 129000,
+		},
+		{
+			code: "AC003",
+			name: "Mì Kokomi",
+			category: "Mì ăn liền",
+			unit: "thùng",
+			costPrice: 110000,
+			price: 150000,
+		},
+		{
+			code: "AC004",
+			name: "Phở ăn liền",
+			category: "Mì ăn liền",
+			unit: "thùng",
+			costPrice: 120000,
+			price: 164000,
+		},
+	];
+
+	// Supplier 10: Đồ đông lạnh
+	const supplier10Products = [
+		{
+			code: "TN001",
+			name: "Gà công nghiệp đông lạnh",
+			category: "Đồ đông lạnh",
+			unit: "kg",
+			costPrice: 85000,
+			price: 116000,
+		},
+		{
+			code: "TN002",
+			name: "Cá phi lê đông lạnh",
+			category: "Đồ đông lạnh",
+			unit: "kg",
+			costPrice: 120000,
+			price: 164000,
+		},
+		{
+			code: "TN003",
+			name: "Rau củ đông lạnh",
+			category: "Đồ đông lạnh",
+			unit: "kg",
+			costPrice: 35000,
+			price: 48000,
+		},
+		{
+			code: "TN004",
+			name: "Khoai tây đông lạnh",
+			category: "Đồ đông lạnh",
+			unit: "kg",
+			costPrice: 40000,
+			price: 55000,
+		},
+	];
+
+	const allSupplierProducts = [
+		{
+			supplierId: "1",
+			supplierName: mockSupplierData[0].name,
+			products: supplier1Products,
+		},
+		{
+			supplierId: "2",
+			supplierName: mockSupplierData[1].name,
+			products: supplier2Products,
+		},
+		{
+			supplierId: "3",
+			supplierName: mockSupplierData[2].name,
+			products: supplier3Products,
+		},
+		{
+			supplierId: "4",
+			supplierName: mockSupplierData[3].name,
+			products: supplier4Products,
+		},
+		{
+			supplierId: "5",
+			supplierName: mockSupplierData[4].name,
+			products: supplier5Products,
+		},
+		{
+			supplierId: "6",
+			supplierName: mockSupplierData[5].name,
+			products: supplier6Products,
+		},
+		{
+			supplierId: "7",
+			supplierName: mockSupplierData[6].name,
+			products: supplier7Products,
+		},
+		{
+			supplierId: "8",
+			supplierName: mockSupplierData[7]?.name || "Coca Cola",
+			products: supplier8Products,
+		},
+		{
+			supplierId: "9",
+			supplierName: mockSupplierData[8]?.name || "Acecook",
+			products: supplier9Products,
+		},
+		{
+			supplierId: "10",
+			supplierName: mockSupplierData[9]?.name || "Đồ đông lạnh",
+			products: supplier10Products,
+		},
+	];
+
+	allSupplierProducts.forEach((supplierData) => {
+		supplierData.products.forEach((p) => {
+			const stock = Math.floor(Math.random() * 150) + 50;
+			const product: InventoryProduct = {
+				id: `p${productCounter}`,
+				code: p.code,
+				name: p.name,
+				category: p.category,
+				unit: p.unit,
+				price: p.price,
+				costPrice: p.costPrice,
+				stock: stock,
+				minStock: 20,
+				maxStock: 300,
+				supplier: supplierData.supplierName,
+				barcode: `89345678901${String(productCounter).padStart(
+					2,
+					"0",
+				)}`,
+				batches: [
+					{
+						id: `batch_p${productCounter}_1`,
+						productId: `p${productCounter}`,
+						batchNumber: `LOT${String(productCounter).padStart(
+							3,
+							"0",
+						)}`,
+						quantity: stock,
+						costPrice: p.costPrice,
+						expiryDate: new Date(
+							Date.now() +
+								Math.random() * 365 * 24 * 60 * 60 * 1000,
+						),
+						importDate: new Date(
+							Date.now() -
+								Math.random() * 30 * 24 * 60 * 60 * 1000,
+						),
+						supplier: supplierData.supplierName,
+						status: "active",
+					},
+				],
+				status: "active",
+				createdAt: new Date(
+					Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
+				),
+				updatedAt: new Date(
+					Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000,
+				),
+			};
+			products.push(product);
+			productCounter++;
+		});
+	});
+
+	return products;
+};
+
 // Mock data cho sản phẩm
-let mockProducts: InventoryProduct[] = [
-	{
-		id: "p1",
-		code: "SN00000001",
-		name: "Bánh snack bắp cải trộn",
-		category: "Snack",
-		unit: "gói",
-		price: 50000,
-		costPrice: 35000,
-		stock: 100,
-		minStock: 20,
-		maxStock: 300,
-		supplier: "Công ty TNHH ABC",
-		barcode: "8934567890123",
-		batches: [
-			{
-				id: "batch_p1_1",
-				productId: "p1",
-				batchNumber: "LOT001",
-				quantity: 60,
-				costPrice: 35000,
-				expiryDate: new Date("2025-12-31"),
-				importDate: new Date("2025-10-01"),
-				supplier: "Công ty TNHH ABC",
-				status: "active",
-			},
-			{
-				id: "batch_p1_2",
-				productId: "p1",
-				batchNumber: "LOT002",
-				quantity: 40,
-				costPrice: 35000,
-				expiryDate: new Date("2026-01-15"),
-				importDate: new Date("2025-11-10"),
-				supplier: "Công ty TNHH ABC",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-01-15"),
-		updatedAt: new Date("2025-11-20"),
-	},
-	{
-		id: "p2",
-		code: "SN00000002",
-		name: "Bánh snack củ cải trộn",
-		category: "Snack",
-		unit: "gói",
-		price: 80000,
-		costPrice: 55000,
-		stock: 50,
-		minStock: 15,
-		maxStock: 200,
-		supplier: "Công ty TNHH ABC",
-		barcode: "8934567890124",
-		batches: [
-			{
-				id: "batch_p2_1",
-				productId: "p2",
-				batchNumber: "LOT003",
-				quantity: 50,
-				costPrice: 55000,
-				expiryDate: new Date("2025-11-28"), // Sắp hết hạn
-				importDate: new Date("2025-09-15"),
-				supplier: "Công ty TNHH ABC",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-01-15"),
-		updatedAt: new Date("2025-11-20"),
-	},
-	{
-		id: "p3",
-		code: "CN00000002",
-		name: "Củ cải vàng",
-		category: "Rau củ",
-		unit: "kg",
-		price: 40000,
-		costPrice: 25000,
-		stock: 200,
-		minStock: 30,
-		maxStock: 500,
-		supplier: "Nông trại XYZ",
-		batches: [
-			{
-				id: "batch_p3_1",
-				productId: "p3",
-				batchNumber: "LOT004",
-				quantity: 120,
-				costPrice: 25000,
-				expiryDate: new Date("2025-12-05"),
-				importDate: new Date("2025-11-15"),
-				supplier: "Nông trại XYZ",
-				status: "active",
-			},
-			{
-				id: "batch_p3_2",
-				productId: "p3",
-				batchNumber: "LOT005",
-				quantity: 80,
-				costPrice: 25000,
-				expiryDate: new Date("2025-12-20"),
-				importDate: new Date("2025-11-22"),
-				supplier: "Nông trại XYZ",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-02-10"),
-		updatedAt: new Date("2025-11-22"),
-	},
-	{
-		id: "p4",
-		code: "CN00000004",
-		name: "Củ cải xanh",
-		category: "Rau củ",
-		unit: "kg",
-		price: 40000,
-		costPrice: 26000,
-		stock: 150,
-		minStock: 30,
-		maxStock: 400,
-		supplier: "Nông trại XYZ",
-		batches: [
-			{
-				id: "batch_p4_1",
-				productId: "p4",
-				batchNumber: "LOT006",
-				quantity: 150,
-				costPrice: 26000,
-				expiryDate: new Date("2025-12-10"),
-				importDate: new Date("2025-11-18"),
-				supplier: "Nông trại XYZ",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-02-10"),
-		updatedAt: new Date("2025-11-23"),
-	},
-	{
-		id: "p5",
-		code: "NC00000001",
-		name: "Nước ngọt Coca Cola",
-		category: "Nước uống",
-		unit: "lon",
-		price: 12000,
-		costPrice: 8000,
-		stock: 300,
-		minStock: 50,
-		maxStock: 1000,
-		supplier: "Công ty Coca Cola VN",
-		barcode: "8934567890125",
-		batches: [
-			{
-				id: "batch_p5_1",
-				productId: "p5",
-				batchNumber: "LOT007",
-				quantity: 100,
-				costPrice: 8000,
-				expiryDate: new Date("2025-11-29"), // Sắp hết hạn
-				importDate: new Date("2025-05-15"),
-				supplier: "Công ty Coca Cola VN",
-				status: "active",
-			},
-			{
-				id: "batch_p5_2",
-				productId: "p5",
-				batchNumber: "LOT008",
-				quantity: 200,
-				costPrice: 8000,
-				expiryDate: new Date("2025-12-25"),
-				importDate: new Date("2025-10-20"),
-				supplier: "Công ty Coca Cola VN",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-03-01"),
-		updatedAt: new Date("2025-11-24"),
-	},
-	{
-		id: "p6",
-		code: "NC00000002",
-		name: "Nước suối Lavie",
-		category: "Nước uống",
-		unit: "chai",
-		price: 5000,
-		costPrice: 3000,
-		stock: 500,
-		minStock: 100,
-		maxStock: 1500,
-		supplier: "Công ty Lavie",
-		barcode: "8934567890126",
-		batches: [
-			{
-				id: "batch_p6_1",
-				productId: "p6",
-				batchNumber: "LOT009",
-				quantity: 500,
-				costPrice: 3000,
-				expiryDate: new Date("2026-08-20"),
-				importDate: new Date("2025-11-01"),
-				supplier: "Công ty Lavie",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-03-01"),
-		updatedAt: new Date("2025-11-24"),
-	},
-	{
-		id: "p7",
-		code: "TP00000001",
-		name: "Mì gói Hảo Hảo",
-		category: "Thực phẩm khô",
-		unit: "gói",
-		price: 4000,
-		costPrice: 2500,
-		stock: 18,
-		minStock: 50,
-		maxStock: 800,
-		supplier: "Acecook Việt Nam",
-		barcode: "8934567890127",
-		batches: [
-			{
-				id: "batch_p7_1",
-				productId: "p7",
-				batchNumber: "LOT010",
-				quantity: 18,
-				costPrice: 2500,
-				expiryDate: new Date("2026-03-10"),
-				importDate: new Date("2025-10-15"),
-				supplier: "Acecook Việt Nam",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-04-05"),
-		updatedAt: new Date("2025-11-23"),
-	},
-	{
-		id: "p8",
-		code: "TP00000002",
-		name: "Mì ly Kokomi",
-		category: "Thực phẩm khô",
-		unit: "ly",
-		price: 7000,
-		costPrice: 5000,
-		stock: 180,
-		minStock: 40,
-		maxStock: 600,
-		supplier: "Acecook Việt Nam",
-		barcode: "8934567890128",
-		batches: [
-			{
-				id: "batch_p8_1",
-				productId: "p8",
-				batchNumber: "LOT011",
-				quantity: 180,
-				costPrice: 5000,
-				expiryDate: new Date("2026-04-25"),
-				importDate: new Date("2025-10-20"),
-				supplier: "Acecook Việt Nam",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-04-05"),
-		updatedAt: new Date("2025-11-23"),
-	},
-	{
-		id: "p9",
-		code: "DA00000001",
-		name: "Hamburger bò",
-		category: "Đồ ăn nhanh",
-		unit: "cái",
-		price: 35000,
-		costPrice: 20000,
-		stock: 0,
-		minStock: 10,
-		maxStock: 100,
-		supplier: "Nhà cung cấp thực phẩm DEF",
-		batches: [],
-		status: "out-of-stock",
-		createdAt: new Date("2024-05-15"),
-		updatedAt: new Date("2025-11-24"),
-	},
-	{
-		id: "p10",
-		code: "DA00000002",
-		name: "Gà rán KFC",
-		category: "Đồ ăn nhanh",
-		unit: "phần",
-		price: 45000,
-		costPrice: 28000,
-		stock: 8,
-		minStock: 15,
-		maxStock: 80,
-		supplier: "Nhà cung cấp thực phẩm DEF",
-		batches: [
-			{
-				id: "batch_p10_1",
-				productId: "p10",
-				batchNumber: "LOT012",
-				quantity: 8,
-				costPrice: 28000,
-				expiryDate: new Date("2025-11-29"),
-				importDate: new Date("2025-11-22"),
-				supplier: "Nhà cung cấp thực phẩm DEF",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-05-15"),
-		updatedAt: new Date("2025-11-24"),
-	},
-	{
-		id: "p11",
-		code: "SN00000003",
-		name: "Snack khoai tây Lays",
-		category: "Snack",
-		unit: "gói",
-		price: 25000,
-		costPrice: 18000,
-		stock: 95,
-		minStock: 25,
-		maxStock: 300,
-		supplier: "Frito-Lay",
-		barcode: "8934567890129",
-		batches: [
-			{
-				id: "batch_p11_1",
-				productId: "p11",
-				batchNumber: "LOT013",
-				quantity: 95,
-				costPrice: 18000,
-				expiryDate: new Date("2026-01-30"),
-				importDate: new Date("2025-11-01"),
-				supplier: "Frito-Lay",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-06-01"),
-		updatedAt: new Date("2025-11-22"),
-	},
-	{
-		id: "p12",
-		code: "CN00000005",
-		name: "Cà rốt",
-		category: "Rau củ",
-		unit: "kg",
-		price: 35000,
-		costPrice: 22000,
-		stock: 12,
-		minStock: 25,
-		maxStock: 350,
-		supplier: "Nông trại XYZ",
-		batches: [
-			{
-				id: "batch_p12_1",
-				productId: "p12",
-				batchNumber: "LOT014",
-				quantity: 12,
-				costPrice: 22000,
-				expiryDate: new Date("2025-12-01"),
-				importDate: new Date("2025-11-20"),
-				supplier: "Nông trại XYZ",
-				status: "active",
-			},
-		],
-		status: "active",
-		createdAt: new Date("2024-02-20"),
-		updatedAt: new Date("2025-11-24"),
-	},
-];
+let mockProducts: InventoryProduct[] = generateProductsFromSuppliers();
 
 // Mock stock movements
 const mockStockMovements: StockMovement[] = [
 	{
 		id: "sm_1",
-		productId: "p1",
-		productName: "Bánh snack bắp cải trộn",
+		productId: "prod_1",
+		productName: "Cà chua",
 		type: "import",
 		quantity: 50,
-		beforeStock: 50,
-		afterStock: 100,
+		beforeStock: 100,
+		afterStock: 150,
 		reason: "Nhập hàng từ nhà cung cấp",
 		createdBy: "staff_1",
 		createdAt: new Date("2025-11-20"),
 	},
 	{
 		id: "sm_2",
-		productId: "p3",
-		productName: "Củ cải vàng",
+		productId: "prod_6",
+		productName: "Bơ sữa",
 		type: "export",
-		quantity: 30,
-		beforeStock: 230,
-		afterStock: 200,
+		quantity: 20,
+		beforeStock: 100,
+		afterStock: 80,
 		reason: "Bán hàng",
 		createdBy: "staff_1",
 		createdAt: new Date("2025-11-22"),
 	},
 ];
 
-let productIdCounter = 13;
+let productIdCounter = 48;
 
 export const inventoryService = {
 	// Lấy tất cả sản phẩm
@@ -731,5 +901,65 @@ export const inventoryService = {
 
 		const nextNumber = maxCode + 1;
 		return `${categoryPrefix}${String(nextNumber).padStart(8, "0")}`;
+	},
+
+	// Cập nhật thông tin lô hàng
+	updateBatch: async (
+		productId: string,
+		batchId: string,
+		updates: Partial<ProductBatch>,
+	): Promise<InventoryProduct> => {
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		const product = mockProducts.find((p) => p.id === productId);
+		if (!product) {
+			throw new Error("Không tìm thấy sản phẩm");
+		}
+
+		if (!product.batches) {
+			throw new Error("Sản phẩm không có lô hàng");
+		}
+
+		const batchIndex = product.batches.findIndex((b) => b.id === batchId);
+		if (batchIndex === -1) {
+			throw new Error("Không tìm thấy lô hàng");
+		}
+
+		const oldQuantity = product.batches[batchIndex].quantity;
+
+		// Update batch
+		product.batches[batchIndex] = {
+			...product.batches[batchIndex],
+			...updates,
+		};
+
+		// Recalculate product stock if quantity changed
+		if (
+			updates.quantity !== undefined &&
+			updates.quantity !== oldQuantity
+		) {
+			product.stock = product.batches.reduce(
+				(total, batch) => total + batch.quantity,
+				0,
+			);
+
+			// Update product status based on new stock
+			if (product.stock === 0) {
+				product.status = "out-of-stock";
+			} else if (product.status === "out-of-stock") {
+				product.status = "active";
+			}
+		}
+
+		// Recalculate average cost price
+		const totalCost = product.batches.reduce(
+			(total, batch) => total + batch.quantity * batch.costPrice,
+			0,
+		);
+		product.costPrice = product.stock > 0 ? totalCost / product.stock : 0;
+
+		product.updatedAt = new Date();
+
+		return product;
 	},
 };

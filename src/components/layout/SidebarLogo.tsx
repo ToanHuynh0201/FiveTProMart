@@ -42,7 +42,7 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
 					whiteSpace="nowrap"
 					opacity={isCollapsed ? 0 : 1}
 					transition="opacity 0.2s">
-					5T Mart
+					5TProMart
 				</Text>
 			)}
 		</Flex>

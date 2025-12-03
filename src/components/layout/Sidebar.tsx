@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flex, VStack, IconButton, Tooltip } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
@@ -9,10 +9,19 @@ import { SidebarUserProfile } from "./SidebarUserProfile";
 import { navItems } from "./sidebarConfig";
 import { useAuth } from "@/hooks/useAuth";
 
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+
 function Sidebar() {
 	const location = useLocation();
 	const { user, logout } = useAuth();
-	const [isCollapsed, setIsCollapsed] = useState(false);
+	const [isCollapsed, setIsCollapsed] = useState(() => {
+		const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+		return saved ? JSON.parse(saved) : false;
+	});
+
+	useEffect(() => {
+		localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(isCollapsed));
+	}, [isCollapsed]);
 
 	const isActivePath = (path: string) => location.pathname === path;
 

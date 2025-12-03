@@ -462,16 +462,37 @@ const SalesPage = () => {
 
 	// Khôi phục hóa đơn tạm dừng
 	const handleRestoreOrder = (order: PendingOrder) => {
-		// Nếu đang có hóa đơn, hỏi có muốn tạm dừng không
+		// Nếu đang có hóa đơn, tự động lưu vào danh sách pending
 		if (orderItems.length > 0) {
-			const shouldPause = window.confirm(
-				"Bạn đang có hóa đơn chưa hoàn thành. Bạn có muốn tạm dừng hóa đơn hiện tại không?",
-			);
-			if (shouldPause) {
-				handlePauseOrder();
-			} else {
-				return;
-			}
+			const currentPendingOrder: PendingOrder = {
+				id: `pending_${Date.now()}`,
+				orderNumber,
+				items: [...orderItems],
+				customer: customer ? { ...customer } : null,
+				paymentMethod,
+				createdAt,
+				pausedAt: new Date(),
+			};
+
+			// Thêm giỏ hàng hiện tại vào danh sách pending (nhưng chưa cập nhật state)
+			// Sẽ cập nhật cùng lúc với việc xóa đơn hàng được khôi phục
+			const updatedPendingOrders = [
+				...pendingOrders.filter((po) => po.id !== order.id), // Xóa đơn hàng sẽ khôi phục
+				currentPendingOrder, // Thêm giỏ hàng hiện tại
+			];
+			setPendingOrders(updatedPendingOrders);
+
+			toast({
+				title: "Đã lưu hóa đơn hiện tại",
+				description: `Hóa đơn ${orderNumber} đã được lưu vào danh sách chờ`,
+				status: "info",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		} else {
+			// Nếu giỏ hàng trống, chỉ xóa đơn hàng được khôi phục khỏi pending
+			setPendingOrders(pendingOrders.filter((po) => po.id !== order.id));
 		}
 
 		// Khôi phục dữ liệu từ pending order
@@ -493,8 +514,14 @@ const SalesPage = () => {
 		}
 		setPaymentMethod(order.paymentMethod);
 
-		// Xóa khỏi danh sách pending
-		setPendingOrders(pendingOrders.filter((po) => po.id !== order.id));
+		toast({
+			title: "Đã khôi phục hóa đơn",
+			description: `Hóa đơn ${order.orderNumber} đã được khôi phục`,
+			status: "success",
+			duration: 3000,
+			isClosable: true,
+			position: "top",
+		});
 	};
 
 	// Xóa hóa đơn tạm dừng

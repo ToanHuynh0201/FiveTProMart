@@ -260,7 +260,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 										py={5}
 										textAlign="center">
 										<NumberInput
-											defaultValue={item.quantity}
+											value={item.quantity}
 											min={1}
 											max={item.product.stock}
 											w="90px"

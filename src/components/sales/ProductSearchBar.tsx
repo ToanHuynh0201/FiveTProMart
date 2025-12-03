@@ -117,7 +117,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					onFocus={() =>
 						searchResults.length > 0 && setShowResults(true)
 					}
-					onBlur={() => setTimeout(() => setShowResults(false), 200)}
+					onBlur={() => setTimeout(() => setShowResults(false), 300)}
 					_placeholder={{ color: "gray.500" }}
 					_focus={{
 						bg: "white",
@@ -251,13 +251,14 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 													bg: "blue.50",
 												}}
 												transition="all 0.2s"
-												onClick={() =>
+												onMouseDown={(e) => {
+													e.preventDefault();
 													handleSelectBatch(
 														product,
 														batch.id,
 														batch.batchNumber,
-													)
-												}>
+													);
+												}}>
 												<Flex
 													justify="space-between"
 													align="center"

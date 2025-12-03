@@ -58,8 +58,24 @@ const SalesPage = () => {
 		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
 	);
 	const [createdAt] = useState(new Date());
-	// Pending orders state
-	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+	// Pending orders state - Load from localStorage
+	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
+		try {
+			const saved = localStorage.getItem("salesPage_pendingOrders");
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				// Convert date strings back to Date objects
+				return parsed.map((order: PendingOrder) => ({
+					...order,
+					createdAt: new Date(order.createdAt),
+					pausedAt: new Date(order.pausedAt),
+				}));
+			}
+		} catch (error) {
+			console.error("Error loading pending orders:", error);
+		}
+		return [];
+	});
 
 	// Tab state
 	const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -92,12 +108,64 @@ const SalesPage = () => {
 
 		// Load orders for history
 		loadOrders();
+
+		// Restore current order state from localStorage
+		try {
+			const saved = localStorage.getItem("salesPage_currentOrder");
+			if (saved && orderItems.length === 0) {
+				const currentOrderState = JSON.parse(saved);
+				setOrderItems(currentOrderState.orderItems || []);
+				setPaymentMethod(currentOrderState.paymentMethod);
+				if (currentOrderState.customer) {
+					setCustomer(currentOrderState.customer);
+				}
+			}
+		} catch (error) {
+			console.error("Error restoring current order:", error);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
 		// Apply filters when filters change
 		applyFilters();
 	}, [filters, orders]);
+
+	// Save pending orders to localStorage whenever they change
+	useEffect(() => {
+		try {
+			localStorage.setItem(
+				"salesPage_pendingOrders",
+				JSON.stringify(pendingOrders),
+			);
+		} catch (error) {
+			console.error("Error saving pending orders:", error);
+		}
+	}, [pendingOrders]);
+
+	// Save current order state to localStorage whenever it changes
+	useEffect(() => {
+		try {
+			if (orderItems.length > 0 || paymentMethod || customer?.phone) {
+				const currentState = {
+					orderItems,
+					paymentMethod,
+					customer,
+					orderNumber,
+					createdAt,
+				};
+				localStorage.setItem(
+					"salesPage_currentOrder",
+					JSON.stringify(currentState),
+				);
+			} else {
+				// Clear localStorage if order is empty
+				localStorage.removeItem("salesPage_currentOrder");
+			}
+		} catch (error) {
+			console.error("Error saving current order:", error);
+		}
+	}, [orderItems, paymentMethod, customer, orderNumber, createdAt]);
 
 	const loadOrders = async () => {
 		const allOrders = await salesService.getAllOrders();
@@ -174,40 +242,73 @@ const SalesPage = () => {
 		batchId?: string,
 		batchNumber?: string,
 	) => {
-		// Check if same product and batch already exists
-		const existingItem = orderItems.find(
-			(item) =>
-				item.product.id === product.id && item.batchId === batchId,
-		);
-
-		if (existingItem) {
-			// Increase quantity
-			handleUpdateQuantity(
-				existingItem.id,
-				existingItem.quantity + quantity,
+		setOrderItems((prevItems) => {
+			// Check if same product and batch already exists
+			const existingItem = prevItems.find(
+				(item) =>
+					item.product.id === product.id && item.batchId === batchId,
 			);
-		} else {
-			// Add new item
-			const newItem: OrderItem = {
-				id: `item_${Date.now()}_${Math.random()}`,
-				product,
-				quantity,
-				unitPrice: product.price,
-				totalPrice: product.price * quantity,
-				batchId,
-				batchNumber,
-			};
-			setOrderItems([...orderItems, newItem]);
-		}
+
+			if (existingItem) {
+				// Increase quantity - tìm số lượng tồn kho của lô
+				let maxQuantity = existingItem.product.stock;
+				if (existingItem.batchId) {
+					const batch = existingItem.product.batches?.find(
+						(b) => b.id === existingItem.batchId,
+					);
+					if (batch) {
+						maxQuantity = batch.quantity;
+					}
+				}
+
+				const newQuantity = Math.min(
+					existingItem.quantity + quantity,
+					maxQuantity,
+				);
+
+				return prevItems.map((item) =>
+					item.id === existingItem.id
+						? {
+								...item,
+								quantity: newQuantity,
+								totalPrice: item.unitPrice * newQuantity,
+						  }
+						: item,
+				);
+			} else {
+				// Add new item
+				const newItem: OrderItem = {
+					id: `item_${Date.now()}_${Math.random()}`,
+					product,
+					quantity,
+					unitPrice: product.price,
+					totalPrice: product.price * quantity,
+					batchId,
+					batchNumber,
+				};
+				return [...prevItems, newItem];
+			}
+		});
 	};
 
 	const handleUpdateQuantity = (itemId: string, quantity: number) => {
 		if (quantity < 1) return;
 
-		setOrderItems(
-			orderItems.map((item) => {
+		setOrderItems((prevItems) =>
+			prevItems.map((item) => {
 				if (item.id === itemId) {
-					const newQuantity = Math.min(quantity, item.product.stock);
+					// Tìm số lượng tồn kho của lô hàng cụ thể
+					let maxQuantity = item.product.stock;
+					if (item.batchId) {
+						const batch = item.product.batches?.find(
+							(b) => b.id === item.batchId,
+						);
+						if (batch) {
+							maxQuantity = batch.quantity;
+						}
+					}
+
+					const newQuantity = Math.min(quantity, maxQuantity);
 					return {
 						...item,
 						quantity: newQuantity,
@@ -285,6 +386,9 @@ const SalesPage = () => {
 				)}đ`,
 			);
 
+			// Clear localStorage
+			localStorage.removeItem("salesPage_currentOrder");
+
 			// Reset form
 			setOrderItems([]);
 			setPaymentMethod(undefined);
@@ -332,6 +436,9 @@ const SalesPage = () => {
 		};
 
 		setPendingOrders([...pendingOrders, pendingOrder]);
+
+		// Clear current order from localStorage
+		localStorage.removeItem("salesPage_currentOrder");
 
 		// Reset form để tạo hóa đơn mới
 		setOrderItems([]);

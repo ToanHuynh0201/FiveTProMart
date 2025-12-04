@@ -16,6 +16,7 @@ import {
 	FiTrendingUp,
 	FiUsers,
 	FiCreditCard,
+	FiAlertCircle,
 } from "react-icons/fi";
 import {
 	MetricCard,
@@ -28,6 +29,8 @@ import {
 	OrdersDetailModal,
 	ProductsDetailModal,
 	CategoryDetailModal,
+	ExpenseChart,
+	ExpenseDetailModal,
 } from "@/components/reports";
 import { LoadingSpinner } from "@/components/common";
 import {
@@ -37,6 +40,7 @@ import {
 	getCategoryReport,
 	getCustomerStats,
 } from "@/services/reportService";
+import { getExpenseReport } from "@/services/expenseService";
 import type {
 	DateRange,
 	DateRangeFilter,
@@ -45,6 +49,7 @@ import type {
 	ProductsReport,
 	CategoryReport,
 	CustomerStats,
+	ExpenseReport,
 } from "@/types/reports";
 import MainLayout from "@/components/layout/MainLayout";
 
@@ -65,6 +70,7 @@ export const ReportsPage: React.FC = () => {
 	const [customerData, setCustomerData] = useState<CustomerStats | null>(
 		null,
 	);
+	const [expenseData, setExpenseData] = useState<ExpenseReport | null>(null);
 
 	// Modal states
 	const {
@@ -91,6 +97,12 @@ export const ReportsPage: React.FC = () => {
 		onClose: onCategoryModalClose,
 	} = useDisclosure();
 
+	const {
+		isOpen: isExpenseModalOpen,
+		onOpen: onExpenseModalOpen,
+		onClose: onExpenseModalClose,
+	} = useDisclosure();
+
 	// Fetch data
 	const fetchData = async () => {
 		setLoading(true);
@@ -99,13 +111,14 @@ export const ReportsPage: React.FC = () => {
 				type: dateRange,
 			};
 
-			const [revenue, orders, products, category, customer] =
+			const [revenue, orders, products, category, customer, expense] =
 				await Promise.all([
 					getRevenueReport(period),
 					getOrdersReport(period),
 					getProductsReport(period),
 					getCategoryReport(period),
 					getCustomerStats(period),
+					getExpenseReport(period),
 				]);
 
 			setRevenueData(revenue);
@@ -113,6 +126,7 @@ export const ReportsPage: React.FC = () => {
 			setProductsData(products);
 			setCategoryData(category);
 			setCustomerData(customer);
+			setExpenseData(expense);
 		} catch (error) {
 			toast({
 				title: "Lỗi tải dữ liệu",
@@ -267,6 +281,15 @@ export const ReportsPage: React.FC = () => {
 							icon={FiUsers}
 							bgGradient="linear(to-br, cyan.500, cyan.600)"
 						/>
+						<MetricCard
+							title="Chi phí phát sinh"
+							value={`${formatCurrency(expenseData?.totalExpense || 0)}`}
+							suffix=" đ"
+							icon={FiAlertCircle}
+							bgGradient="linear(to-br, red.500, red.600)"
+							growth={expenseData?.growth}
+							onClick={onExpenseModalOpen}
+						/>
 					</Grid>
 
 					{/* Charts Section */}
@@ -309,6 +332,15 @@ export const ReportsPage: React.FC = () => {
 						)}
 					</Box>
 
+					<Box mb={{ base: 4, md: 6 }}>
+						{expenseData && (
+							<ExpenseChart
+								data={expenseData}
+								onExpand={onExpenseModalOpen}
+							/>
+						)}
+					</Box>
+
 					{/* Detail Modals */}
 					{revenueData && (
 						<RevenueDetailModal
@@ -336,6 +368,13 @@ export const ReportsPage: React.FC = () => {
 							isOpen={isCategoryModalOpen}
 							onClose={onCategoryModalClose}
 							data={categoryData}
+						/>
+					)}
+					{expenseData && (
+						<ExpenseDetailModal
+							isOpen={isExpenseModalOpen}
+							onClose={onExpenseModalClose}
+							data={expenseData}
 						/>
 					)}
 				</Container>

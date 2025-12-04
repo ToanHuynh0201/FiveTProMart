@@ -18,6 +18,7 @@ import PromotionPage from "./pages/PromotionPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import CustomersPage from "./pages/CustomersPage";
 import SupplierPage from "./pages/SupplierPage";
+import ExpensesPage from "./pages/ExpensesPage";
 
 function App() {
 	return (
@@ -70,6 +71,10 @@ function App() {
 				<Route
 					path={ROUTES.SUPPLIERS}
 					element={<SupplierPage />}
+				/>
+				<Route
+					path={ROUTES.EXPENSES}
+					element={<ExpensesPage />}
 				/>
 				<Route
 					path="*"

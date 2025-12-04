@@ -141,6 +141,49 @@ export interface DashboardStats {
 	payments: PaymentReport;
 }
 
+// Expense Types
+export type ExpenseCategory =
+	| "electricity"
+	| "water"
+	| "supplies"
+	| "repairs"
+	| "other";
+
+export interface Expense {
+	id: string;
+	category: ExpenseCategory;
+	description: string;
+	amount: number;
+	date: Date;
+	createdBy?: string;
+	notes?: string;
+}
+
+export interface ExpenseDataPoint {
+	date: string;
+	electricity: number;
+	water: number;
+	supplies: number;
+	repairs: number;
+	other: number;
+	total: number;
+}
+
+export interface ExpenseReport {
+	period: DateRangeFilter;
+	totalExpense: number;
+	byCategory: {
+		electricity: number;
+		water: number;
+		supplies: number;
+		repairs: number;
+		other: number;
+	};
+	data: ExpenseDataPoint[];
+	growth: number; // percentage
+	expenses: Expense[];
+}
+
 // Report Detail Types
 export interface ReportDetail {
 	id: string;

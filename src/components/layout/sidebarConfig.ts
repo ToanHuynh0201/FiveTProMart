@@ -9,6 +9,7 @@ import {
 	FiUserCheck,
 	FiGift,
 	FiBox,
+	FiAlertCircle,
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
@@ -51,6 +52,11 @@ export const navItems: NavItem[] = [
 		label: "Báo cáo",
 		path: "/reports",
 		icon: FiBarChart2,
+	},
+	{
+		label: "Chi phí",
+		path: "/expenses",
+		icon: FiAlertCircle,
 	},
 	{
 		label: "Khách hàng",

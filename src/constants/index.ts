@@ -40,6 +40,7 @@ export const ROUTES = {
 	REPORTS: "/reports",
 	CUSTOMERS: "/customers",
 	SUPPLIERS: "/suppliers",
+	EXPENSES: "/expenses",
 };
 
 // Form Validation

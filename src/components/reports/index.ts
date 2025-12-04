@@ -9,3 +9,4 @@ export { PaymentChart } from "./PaymentChart";
 export { RevenueDetailModal } from "./RevenueDetailModal";
 export { OrdersDetailModal } from "./OrdersDetailModal";
 export { ProductsDetailModal } from "./ProductsDetailModal";
+export { CategoryDetailModal } from "./CategoryDetailModal";

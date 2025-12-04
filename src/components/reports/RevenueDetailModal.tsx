@@ -14,9 +14,12 @@ import {
 	StatNumber,
 	StatHelpText,
 	StatArrow,
+	Progress,
 } from "@chakra-ui/react";
 import { RevenueChart } from "./RevenueChart";
-import type { RevenueReport } from "@/types/reports";
+import type { RevenueReport, CategoryReport } from "@/types/reports";
+import { useEffect, useState } from "react";
+import { getCategoryReport } from "@/services/reportService";
 
 interface RevenueDetailModalProps {
 	isOpen: boolean;
@@ -29,6 +32,14 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
 	onClose,
 	data,
 }) => {
+	const [categoryData, setCategoryData] = useState<CategoryReport | null>(null);
+
+	useEffect(() => {
+		if (isOpen) {
+			getCategoryReport(data.period).then(setCategoryData);
+		}
+	}, [isOpen, data.period]);
+
 	const formatCurrency = (value: number) => {
 		return new Intl.NumberFormat("vi-VN", {
 			style: "currency",
@@ -164,6 +175,149 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
 					<RevenueChart data={data} />
 
 					<Divider my={6} />
+
+					{/* Category Revenue Breakdown */}
+					{categoryData && (
+						<>
+							<Box mb={6}>
+								<Text
+									fontSize="18px"
+									fontWeight="700"
+									mb={4}>
+									Doanh thu theo danh mục
+								</Text>
+								<Box
+									overflowX="auto"
+									border="1px solid"
+									borderColor="gray.200"
+									borderRadius="lg">
+									<Box
+										as="table"
+										w="full"
+										fontSize="sm">
+										<Box
+											as="thead"
+											bg="gray.50">
+											<Box as="tr">
+												<Box
+													as="th"
+													p={3}
+													textAlign="left"
+													fontWeight="600"
+													borderBottom="1px solid"
+													borderColor="gray.200">
+													Danh mục
+												</Box>
+												<Box
+													as="th"
+													p={3}
+													textAlign="right"
+													fontWeight="600"
+													borderBottom="1px solid"
+													borderColor="gray.200">
+													Doanh thu
+												</Box>
+												<Box
+													as="th"
+													p={3}
+													textAlign="right"
+													fontWeight="600"
+													borderBottom="1px solid"
+													borderColor="gray.200">
+													Số lượng bán
+												</Box>
+												<Box
+													as="th"
+													p={3}
+													textAlign="right"
+													fontWeight="600"
+													borderBottom="1px solid"
+													borderColor="gray.200">
+													Số sản phẩm
+												</Box>
+												<Box
+													as="th"
+													p={3}
+													textAlign="left"
+													fontWeight="600"
+													borderBottom="1px solid"
+													borderColor="gray.200"
+													minW="200px">
+													Tỷ trọng
+												</Box>
+											</Box>
+										</Box>
+										<Box as="tbody">
+											{categoryData.categories.map((category, index) => (
+												<Box
+													as="tr"
+													key={index}
+													_hover={{ bg: "gray.50" }}>
+													<Box
+														as="td"
+														p={3}
+														fontWeight="600"
+														borderBottom="1px solid"
+														borderColor="gray.100">
+														{category.category}
+													</Box>
+													<Box
+														as="td"
+														p={3}
+														textAlign="right"
+														fontWeight="600"
+														color="blue.600"
+														borderBottom="1px solid"
+														borderColor="gray.100">
+														{formatCurrency(category.revenue)}
+													</Box>
+													<Box
+														as="td"
+														p={3}
+														textAlign="right"
+														borderBottom="1px solid"
+														borderColor="gray.100">
+														{category.quantitySold.toLocaleString()}
+													</Box>
+													<Box
+														as="td"
+														p={3}
+														textAlign="right"
+														borderBottom="1px solid"
+														borderColor="gray.100">
+														{category.productCount}
+													</Box>
+													<Box
+														as="td"
+														p={3}
+														borderBottom="1px solid"
+														borderColor="gray.100">
+														<Box>
+															<Text
+																fontSize="xs"
+																fontWeight="600"
+																color="purple.600"
+																mb={1}>
+																{category.percentage}%
+															</Text>
+															<Progress
+																value={category.percentage}
+																size="sm"
+																colorScheme="purple"
+																borderRadius="full"
+															/>
+														</Box>
+													</Box>
+												</Box>
+											))}
+										</Box>
+									</Box>
+								</Box>
+							</Box>
+
+							<Divider my={6} />
+						</>
+					)}
 
 					{/* Detailed Table */}
 					<Box>

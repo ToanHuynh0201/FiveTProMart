@@ -27,6 +27,7 @@ import {
 	RevenueDetailModal,
 	OrdersDetailModal,
 	ProductsDetailModal,
+	CategoryDetailModal,
 } from "@/components/reports";
 import { LoadingSpinner } from "@/components/common";
 import {
@@ -82,6 +83,12 @@ export const ReportsPage: React.FC = () => {
 		isOpen: isProductsModalOpen,
 		onOpen: onProductsModalOpen,
 		onClose: onProductsModalClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isCategoryModalOpen,
+		onOpen: onCategoryModalOpen,
+		onClose: onCategoryModalClose,
 	} = useDisclosure();
 
 	// Fetch data
@@ -240,13 +247,6 @@ export const ReportsPage: React.FC = () => {
 						gap={{ base: 4, md: 6 }}
 						mb={{ base: 6, md: 8 }}>
 						<MetricCard
-							title="Tỷ lệ hoàn thành"
-							value={ordersData?.completionRate.toFixed(1) || 0}
-							suffix="%"
-							icon={FiShoppingCart}
-							bgGradient="linear(to-br, blue.400, blue.500)"
-						/>
-						<MetricCard
 							title="Giá trị đơn TB"
 							value={`${formatCurrency(
 								ordersData?.averageOrderValue || 0,
@@ -292,7 +292,12 @@ export const ReportsPage: React.FC = () => {
 								onExpand={onOrdersModalOpen}
 							/>
 						)}
-						{categoryData && <CategoryChart data={categoryData} />}
+						{categoryData && (
+							<CategoryChart
+								data={categoryData}
+								onExpand={onCategoryModalOpen}
+							/>
+						)}
 					</Grid>
 
 					<Box mb={{ base: 4, md: 6 }}>
@@ -324,6 +329,13 @@ export const ReportsPage: React.FC = () => {
 							isOpen={isProductsModalOpen}
 							onClose={onProductsModalClose}
 							data={productsData}
+						/>
+					)}
+					{categoryData && (
+						<CategoryDetailModal
+							isOpen={isCategoryModalOpen}
+							onClose={onCategoryModalClose}
+							data={categoryData}
 						/>
 					)}
 				</Container>

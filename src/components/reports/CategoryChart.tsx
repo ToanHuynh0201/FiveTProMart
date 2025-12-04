@@ -24,11 +24,32 @@ export const CategoryChart: React.FC<CategoryChartProps> = ({
 		return value.toString();
 	};
 
-	const chartData = data.categories.map((cat) => ({
-		name: cat.category,
-		value: cat.revenue,
-		percentage: cat.percentage,
-	}));
+	// Take top 4 categories and group the rest as "Khác"
+	const top4Categories = data.categories.slice(0, 4);
+	const otherCategories = data.categories.slice(4);
+
+	const chartData = [
+		...top4Categories.map((cat) => ({
+			name: cat.category,
+			value: cat.revenue,
+			percentage: cat.percentage,
+		})),
+		...(otherCategories.length > 0
+			? [
+					{
+						name: "Khác",
+						value: otherCategories.reduce(
+							(sum, cat) => sum + cat.revenue,
+							0,
+						),
+						percentage: otherCategories.reduce(
+							(sum, cat) => sum + cat.percentage,
+							0,
+						),
+					},
+			  ]
+			: []),
+	];
 
 	const CustomTooltip = ({ active, payload }: any) => {
 		if (active && payload && payload.length) {
@@ -138,9 +159,9 @@ export const CategoryChart: React.FC<CategoryChartProps> = ({
 				<Box
 					flex={1}
 					w="full">
-					{data.categories.map((cat, index) => (
+					{chartData.map((cat, index) => (
 						<Flex
-							key={cat.category}
+							key={cat.name}
 							justify="space-between"
 							align="center"
 							p={3}
@@ -160,14 +181,33 @@ export const CategoryChart: React.FC<CategoryChartProps> = ({
 									<Text
 										fontSize="sm"
 										fontWeight="600">
-										{cat.category}
+										{cat.name}
 									</Text>
-									<Text
-										fontSize="xs"
-										color="gray.500">
-										{cat.productCount} sản phẩm •{" "}
-										{cat.quantitySold} đã bán
-									</Text>
+									{cat.name !== "Khác" && (
+										<Text
+											fontSize="xs"
+											color="gray.500">
+											{
+												data.categories.find(
+													(c) => c.category === cat.name,
+												)?.productCount
+											}{" "}
+											sản phẩm •{" "}
+											{
+												data.categories.find(
+													(c) => c.category === cat.name,
+												)?.quantitySold
+											}{" "}
+											đã bán
+										</Text>
+									)}
+									{cat.name === "Khác" && (
+										<Text
+											fontSize="xs"
+											color="gray.500">
+											{otherCategories.length} danh mục
+										</Text>
+									)}
 								</Box>
 							</Flex>
 							<Box textAlign="right">
@@ -175,12 +215,12 @@ export const CategoryChart: React.FC<CategoryChartProps> = ({
 									fontSize="sm"
 									fontWeight="700"
 									color="brand.500">
-									{formatCurrency(cat.revenue)} đ
+									{formatCurrency(cat.value)} đ
 								</Text>
 								<Text
 									fontSize="xs"
 									color="gray.500">
-									{cat.percentage}%
+									{cat.percentage.toFixed(1)}%
 								</Text>
 							</Box>
 						</Flex>

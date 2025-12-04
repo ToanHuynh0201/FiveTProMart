@@ -6,7 +6,6 @@ import {
 	YAxis,
 	CartesianGrid,
 	Tooltip,
-	Legend,
 	ResponsiveContainer,
 } from "recharts";
 import { ChartCard } from "./ChartCard";
@@ -59,7 +58,7 @@ export const OrdersChart: React.FC<OrdersChartProps> = ({ data, onExpand }) => {
 	return (
 		<ChartCard
 			title="Biểu đồ Đơn hàng"
-			subtitle={`Tổng: ${data.totalOrders} đơn | Hoàn thành: ${data.completedOrders} | Hủy: ${data.cancelledOrders}`}
+			subtitle={`Tổng: ${data.totalOrders} đơn`}
 			onExpand={onExpand}>
 			<ResponsiveContainer
 				width="100%"
@@ -80,20 +79,11 @@ export const OrdersChart: React.FC<OrdersChartProps> = ({ data, onExpand }) => {
 						fontSize={12}
 					/>
 					<Tooltip content={<CustomTooltip />} />
-					<Legend wrapperStyle={{ fontSize: "14px" }} />
 					<Bar
 						dataKey="completedOrders"
-						name="Hoàn thành"
+						name="Đơn hàng"
 						fill="#009781"
 						radius={[8, 8, 0, 0]}
-						stackId="a"
-					/>
-					<Bar
-						dataKey="cancelledOrders"
-						name="Đã hủy"
-						fill="#C90003"
-						radius={[8, 8, 0, 0]}
-						stackId="a"
 					/>
 				</BarChart>
 			</ResponsiveContainer>

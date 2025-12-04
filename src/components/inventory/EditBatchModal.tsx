@@ -44,6 +44,8 @@ const EditBatchModal = ({
 	const [formData, setFormData] = useState({
 		batchNumber: "",
 		quantity: 0,
+		quantityInStock: 0,
+		quantityOnDisplay: 0,
 		costPrice: 0,
 		expiryDate: "",
 		importDate: "",
@@ -57,6 +59,8 @@ const EditBatchModal = ({
 			setFormData({
 				batchNumber: batch.batchNumber,
 				quantity: batch.quantity,
+				quantityInStock: batch.quantityInStock || 0,
+				quantityOnDisplay: batch.quantityOnDisplay || 0,
 				costPrice: batch.costPrice,
 				expiryDate: batch.expiryDate
 					? new Date(batch.expiryDate).toISOString().split("T")[0]
@@ -84,10 +88,20 @@ const EditBatchModal = ({
 			return;
 		}
 
-		if (formData.quantity <= 0) {
+		if (formData.quantityInStock < 0 || formData.quantityOnDisplay < 0) {
 			toast({
 				title: "Lỗi",
-				description: "Số lượng phải lớn hơn 0",
+				description: "Số lượng không được âm",
+				status: "error",
+				duration: 3000,
+			});
+			return;
+		}
+
+		if (formData.quantityInStock + formData.quantityOnDisplay <= 0) {
+			toast({
+				title: "Lỗi",
+				description: "Tổng số lượng phải lớn hơn 0",
 				status: "error",
 				duration: 3000,
 			});
@@ -118,7 +132,9 @@ const EditBatchModal = ({
 		try {
 			await onUpdate(batch.id, {
 				batchNumber: formData.batchNumber,
-				quantity: formData.quantity,
+				quantity: formData.quantityInStock + formData.quantityOnDisplay,
+				quantityInStock: formData.quantityInStock,
+				quantityOnDisplay: formData.quantityOnDisplay,
 				costPrice: formData.costPrice,
 				expiryDate: formData.expiryDate
 					? new Date(formData.expiryDate)
@@ -187,18 +203,48 @@ const EditBatchModal = ({
 							width="100%"
 							spacing={4}>
 							<FormControl isRequired>
-								<FormLabel>Số lượng</FormLabel>
+								<FormLabel>SL trong kho</FormLabel>
 								<Input
 									type="number"
-									value={formData.quantity}
+									value={formData.quantityInStock}
 									onChange={(e) =>
 										setFormData({
 											...formData,
-											quantity:
+											quantityInStock:
 												parseInt(e.target.value) || 0,
 										})
 									}
 									min={0}
+								/>
+							</FormControl>
+
+							<FormControl isRequired>
+								<FormLabel>SL trưng bày</FormLabel>
+								<Input
+									type="number"
+									value={formData.quantityOnDisplay}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											quantityOnDisplay:
+												parseInt(e.target.value) || 0,
+										})
+									}
+									min={0}
+								/>
+							</FormControl>
+						</HStack>
+
+						<HStack
+							width="100%"
+							spacing={4}>
+							<FormControl>
+								<FormLabel>Tổng số lượng</FormLabel>
+								<Input
+									type="number"
+									value={formData.quantityInStock + formData.quantityOnDisplay}
+									isReadOnly
+									bg="gray.50"
 								/>
 							</FormControl>
 

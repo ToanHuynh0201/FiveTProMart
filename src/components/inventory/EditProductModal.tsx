@@ -338,30 +338,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 										fontSize="15px"
 										fontWeight="600"
 										color="gray.700">
-										Tồn kho hiện tại
-									</FormLabel>
-									<NumberInput
-										min={0}
-										value={product.stock}
-										onChange={(_, value) =>
-											updateField("stock", value)
-										}>
-										<NumberInputField
-											fontSize="15px"
-											h="48px"
-										/>
-										<NumberInputStepper>
-											<NumberIncrementStepper />
-											<NumberDecrementStepper />
-										</NumberInputStepper>
-									</NumberInput>
-								</FormControl>
-
-								<FormControl>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
 										Tồn kho tối thiểu
 									</FormLabel>
 									<NumberInput

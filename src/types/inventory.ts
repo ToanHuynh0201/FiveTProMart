@@ -3,7 +3,9 @@ export interface ProductBatch {
 	id: string;
 	productId: string; // ID sản phẩm
 	batchNumber: string; // Số lô
-	quantity: number; // Số lượng trong lô
+	quantity: number; // Tổng số lượng trong lô (quantityInStock + quantityOnDisplay)
+	quantityInStock: number; // Số lượng trong kho
+	quantityOnDisplay: number; // Số lượng trưng bày
 	costPrice: number; // Giá vốn của lô này
 	expiryDate?: Date; // Hạn sử dụng
 	importDate: Date; // Ngày nhập

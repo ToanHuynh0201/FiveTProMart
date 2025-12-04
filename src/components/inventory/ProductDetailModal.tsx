@@ -25,9 +25,11 @@ import {
 	Tooltip,
 	Grid,
 	GridItem,
+	Input,
+	IconButton,
 } from "@chakra-ui/react";
-import { FiPackage } from "react-icons/fi";
-import type { InventoryProduct } from "../../types/inventory";
+import { FiPackage, FiEdit2, FiCheck, FiX } from "react-icons/fi";
+import type { InventoryProduct, ProductBatch } from "../../types/inventory";
 import { inventoryService } from "../../services/inventoryService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
@@ -52,6 +54,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	const [product, setProduct] = useState<InventoryProduct | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+	const [editValues, setEditValues] = useState<{
+		quantityInStock: number;
+		quantityOnDisplay: number;
+	}>({ quantityInStock: 0, quantityOnDisplay: 0 });
 
 	useEffect(() => {
 		if (isOpen && productId) {
@@ -134,6 +141,78 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 				{config.label}
 			</Badge>
 		);
+	};
+
+	const handleStartEdit = (batch: ProductBatch) => {
+		setEditingBatchId(batch.id);
+		setEditValues({
+			quantityInStock: batch.quantityInStock || 0,
+			quantityOnDisplay: batch.quantityOnDisplay || 0,
+		});
+	};
+
+	const handleCancelEdit = () => {
+		setEditingBatchId(null);
+		setEditValues({ quantityInStock: 0, quantityOnDisplay: 0 });
+	};
+
+	const handleQuantityChange = (
+		field: "quantityInStock" | "quantityOnDisplay",
+		value: number,
+		currentBatch: ProductBatch,
+	) => {
+		const totalQuantity = currentBatch.quantity; // Tổng số lượng cố định
+		const newValue = Math.max(0, Math.min(value, totalQuantity)); // Giới hạn từ 0 đến tổng
+
+		if (field === "quantityInStock") {
+			setEditValues({
+				quantityInStock: newValue,
+				quantityOnDisplay: totalQuantity - newValue,
+			});
+		} else {
+			setEditValues({
+				quantityInStock: totalQuantity - newValue,
+				quantityOnDisplay: newValue,
+			});
+		}
+	};
+
+	const handleSaveEdit = async (batchId: string) => {
+		if (!product) return;
+
+		try {
+			// Gọi API để lưu thay đổi
+			const updatedProduct = await inventoryService.updateBatch(
+				product.id,
+				batchId,
+				{
+					quantityInStock: editValues.quantityInStock,
+					quantityOnDisplay: editValues.quantityOnDisplay,
+				},
+			);
+
+			// Cập nhật UI với dữ liệu từ server
+			setProduct(updatedProduct);
+
+			toast({
+				title: "Thành công",
+				description: "Đã cập nhật số lượng lô hàng",
+				status: "success",
+				duration: 3000,
+			});
+
+			setEditingBatchId(null);
+		} catch (error) {
+			toast({
+				title: "Lỗi",
+				description:
+					error instanceof Error
+						? error.message
+						: "Không thể cập nhật số lượng",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	const InfoRow = ({
@@ -286,13 +365,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 													<Th
 														fontSize="12px"
 														isNumeric>
-														SL
+														SL trong kho
+													</Th>
+													<Th
+														fontSize="12px"
+														isNumeric>
+														SL trưng bày
 													</Th>
 													<Th fontSize="12px">
 														Hạn SD
 													</Th>
 													<Th fontSize="12px">
 														Trạng thái
+													</Th>
+													<Th fontSize="12px">
+														Thao tác
 													</Th>
 												</Tr>
 											</Thead>
@@ -307,6 +394,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 															isExpired(
 																batch.expiryDate,
 															);
+														const isEditing =
+															editingBatchId ===
+															batch.id;
 
 														return (
 															<Tr
@@ -335,11 +425,83 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 																</Td>
 																<Td
 																	fontSize="13px"
-																	isNumeric
-																	fontWeight="600">
-																	{
-																		batch.quantity
-																	}
+																	isNumeric>
+																	{isEditing ? (
+																		<Input
+																			type="number"
+																			size="sm"
+																			value={
+																				editValues.quantityInStock
+																			}
+																			onChange={(
+																				e,
+																			) =>
+																				handleQuantityChange(
+																					"quantityInStock",
+																					Number.parseInt(
+																						e
+																							.target
+																							.value,
+																					) ||
+																						0,
+																					batch,
+																				)
+																			}
+																			min={
+																				0
+																			}
+																			max={
+																				batch.quantity
+																			}
+																			w="80px"
+																		/>
+																	) : (
+																		<Text
+																			fontWeight="600">
+																			{batch.quantityInStock ||
+																				0}
+																		</Text>
+																	)}
+																</Td>
+																<Td
+																	fontSize="13px"
+																	isNumeric>
+																	{isEditing ? (
+																		<Input
+																			type="number"
+																			size="sm"
+																			value={
+																				editValues.quantityOnDisplay
+																			}
+																			onChange={(
+																				e,
+																			) =>
+																				handleQuantityChange(
+																					"quantityOnDisplay",
+																					Number.parseInt(
+																						e
+																							.target
+																							.value,
+																					) ||
+																						0,
+																					batch,
+																				)
+																			}
+																			min={
+																				0
+																			}
+																			max={
+																				batch.quantity
+																			}
+																			w="80px"
+																		/>
+																	) : (
+																		<Text
+																			fontWeight="600">
+																			{batch.quantityOnDisplay ||
+																				0}
+																		</Text>
+																	)}
 																</Td>
 																<Td fontSize="13px">
 																	{batch.expiryDate ? (
@@ -399,6 +561,54 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 																			? "Hết hạn"
 																			: "Đã bán hết"}
 																	</Badge>
+																</Td>
+																<Td>
+																	{isEditing ? (
+																		<Flex
+																			gap={
+																				1
+																			}>
+																			<IconButton
+																				aria-label="Lưu"
+																				icon={
+																					<FiCheck />
+																				}
+																				size="sm"
+																				colorScheme="green"
+																				onClick={() =>
+																					handleSaveEdit(
+																						batch.id,
+																					)
+																				}
+																			/>
+																			<IconButton
+																				aria-label="Hủy"
+																				icon={
+																					<FiX />
+																				}
+																				size="sm"
+																				colorScheme="gray"
+																				onClick={
+																					handleCancelEdit
+																				}
+																			/>
+																		</Flex>
+																	) : (
+																		<IconButton
+																			aria-label="Chỉnh sửa"
+																			icon={
+																				<FiEdit2 />
+																			}
+																			size="sm"
+																			variant="ghost"
+																			colorScheme="blue"
+																			onClick={() =>
+																				handleStartEdit(
+																					batch,
+																				)
+																			}
+																		/>
+																	)}
 																</Td>
 															</Tr>
 														);

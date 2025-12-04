@@ -543,11 +543,15 @@ const generateProductsFromSuppliers = (): InventoryProduct[] => {
 			if (hasExpiredBatch) {
 				// Thêm lô hết hạn (10-30 đơn vị)
 				const expiredQty = Math.floor(Math.random() * 20) + 10;
+				const expiredInStock = Math.floor(expiredQty * 0.7); // 70% trong kho
+				const expiredOnDisplay = expiredQty - expiredInStock; // 30% trưng bày
 				batches.push({
 					id: `batch_p${productCounter}_expired`,
 					productId: `p${productCounter}`,
 					batchNumber: `${p.code}-EXP001`,
 					quantity: expiredQty,
+					quantityInStock: expiredInStock,
+					quantityOnDisplay: expiredOnDisplay,
 					costPrice: p.costPrice,
 					// Hết hạn từ 1-60 ngày trước
 					expiryDate: new Date(
@@ -565,11 +569,15 @@ const generateProductsFromSuppliers = (): InventoryProduct[] => {
 			const activeQty = hasExpiredBatch
 				? stock - batches[0].quantity
 				: stock;
+			const activeInStock = Math.floor(activeQty * 0.6); // 60% trong kho
+			const activeOnDisplay = activeQty - activeInStock; // 40% trưng bày
 			batches.push({
 				id: `batch_p${productCounter}_1`,
 				productId: `p${productCounter}`,
 				batchNumber: `${p.code}-LOT001`,
 				quantity: activeQty,
+				quantityInStock: activeInStock,
+				quantityOnDisplay: activeOnDisplay,
 				costPrice: p.costPrice,
 				expiryDate: new Date(
 					Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000,
@@ -964,11 +972,18 @@ export const inventoryService = {
 			...updates,
 		};
 
-		// Recalculate product stock if quantity changed
+		// Đồng bộ quantity với quantityInStock + quantityOnDisplay nếu có cập nhật
 		if (
-			updates.quantity !== undefined &&
-			updates.quantity !== oldQuantity
+			updates.quantityInStock !== undefined ||
+			updates.quantityOnDisplay !== undefined
 		) {
+			const batch = product.batches[batchIndex];
+			batch.quantity = batch.quantityInStock + batch.quantityOnDisplay;
+		}
+
+		// Recalculate product stock if quantity changed
+		const newQuantity = product.batches[batchIndex].quantity;
+		if (newQuantity !== oldQuantity) {
 			product.stock = product.batches.reduce(
 				(total, batch) => total + batch.quantity,
 				0,
@@ -1088,7 +1103,10 @@ export const inventoryService = {
 			0,
 		);
 
-		const disposalId = `disposal_${String(disposalIdCounter).padStart(3, "0")}`;
+		const disposalId = `disposal_${String(disposalIdCounter).padStart(
+			3,
+			"0",
+		)}`;
 		disposalIdCounter++;
 
 		const disposalRecord: import("@/types/inventory").DisposalRecord = {

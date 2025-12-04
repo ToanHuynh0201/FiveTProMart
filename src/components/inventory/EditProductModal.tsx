@@ -203,7 +203,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 										fontSize="15px"
 										fontWeight="600"
 										color="gray.700">
-										Mã vạch
+										Mã Lô
 									</FormLabel>
 									<Input
 										value={product.barcode || ""}

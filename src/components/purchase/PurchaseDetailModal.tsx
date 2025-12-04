@@ -159,19 +159,6 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 										<Text
 											fontSize="14px"
 											color="gray.600">
-											Kho hàng:
-										</Text>
-										<Text
-											fontSize="14px"
-											fontWeight="500">
-											{purchase.warehouseLocation ||
-												"N/A"}
-										</Text>
-									</HStack>
-									<HStack justify="space-between">
-										<Text
-											fontSize="14px"
-											color="gray.600">
 											Ngày tạo:
 										</Text>
 										<Text

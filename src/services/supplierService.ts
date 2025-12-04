@@ -4,6 +4,7 @@ import type {
 	SupplierStats,
 	SupplierFilter,
 	UpdateSupplierData,
+	PurchaseHistory,
 } from "@/types/supplier";
 
 // Mock supplier data
@@ -219,6 +220,8 @@ export { mockSupplierData };
 
 class SupplierService {
 	private suppliers: Supplier[] = [...mockSupplierData];
+	// Store product IDs for each supplier
+	private supplierProductIds: Map<string, string[]> = new Map();
 
 	// Get all suppliers
 	async getAllSuppliers(): Promise<Supplier[]> {
@@ -232,12 +235,44 @@ class SupplierService {
 		const supplier = this.suppliers.find((s) => s.id === id);
 		if (!supplier) return null;
 
+		// Get custom product IDs if exists, otherwise use mock data
+		const customProductIds = this.supplierProductIds.get(id);
+		const products = customProductIds
+			? await this.getProductsByIds(customProductIds)
+			: this.getMockProducts(id);
+
 		// Mock detailed data
 		return {
 			...supplier,
-			products: this.getMockProducts(id),
+			products,
 			purchaseHistory: this.getMockPurchaseHistory(id),
 		};
+	}
+
+	// Get products by their IDs
+	private async getProductsByIds(productIds: string[]) {
+		// Import inventoryService dynamically to avoid circular dependency
+		const { inventoryService } = await import("./inventoryService");
+		const allProducts = await inventoryService.getAllProducts();
+
+		// Map product IDs to SupplierProduct format
+		return productIds
+			.map((productId) => {
+				const product = allProducts.find((p) => p.id === productId);
+				if (!product) return null;
+
+				return {
+					id: `sp_${productId}`,
+					productId: product.id,
+					productCode: product.code,
+					productName: product.name,
+					category: product.category,
+					unit: product.unit,
+					lastPurchasePrice: product.costPrice,
+					lastPurchaseDate: new Date(),
+				};
+			})
+			.filter((p) => p !== null) as any[];
 	}
 
 	// Filter suppliers
@@ -295,9 +330,17 @@ class SupplierService {
 		const index = this.suppliers.findIndex((s) => s.id === id);
 		if (index === -1) return null;
 
+		// Store product IDs if provided
+		if (updates.productIds !== undefined) {
+			this.supplierProductIds.set(id, updates.productIds);
+		}
+
+		// Remove productIds from updates before merging (it's not part of Supplier type)
+		const { productIds, ...supplierUpdates } = updates;
+
 		this.suppliers[index] = {
 			...this.suppliers[index],
-			...updates,
+			...supplierUpdates,
 			updatedAt: new Date(),
 		};
 
@@ -734,20 +777,50 @@ class SupplierService {
 	}
 
 	// Mock purchase history for a supplier
-	private getMockPurchaseHistory(supplierId: string) {
-		const historyCount = Math.floor(Math.random() * 10) + 5;
-		return Array.from({ length: historyCount }, (_, i) => ({
-			id: `purchase_${supplierId}_${i}`,
-			purchaseNumber: `PN-${new Date().getFullYear()}${String(
-				Math.floor(Math.random() * 12) + 1,
-			).padStart(2, "0")}${String(i + 1).padStart(4, "0")}`,
-			date: new Date(
-				Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000,
-			),
-			totalAmount: Math.floor(Math.random() * 50000000) + 5000000,
-			itemCount: Math.floor(Math.random() * 20) + 5,
-			status: (["ordered", "received", "cancelled"] as const)[i % 3],
-		}));
+	private getMockPurchaseHistory(supplierId: string): PurchaseHistory[] {
+		// Map supplier IDs to their actual purchase IDs from purchaseService
+		const supplierPurchaseMap: Record<string, string[]> = {
+			"1": ["pur_1"], // Công ty TNHH Thực phẩm Sạch Việt Nam
+			"2": ["pur_2"], // Công ty CP Nông sản Đà Lạt
+			"8": ["pur_3"], // Công ty CP Đồ uống Coca Cola
+		};
+
+		const purchaseIds = supplierPurchaseMap[supplierId];
+		if (!purchaseIds || purchaseIds.length === 0) {
+			return [];
+		}
+
+		// For now, return a simplified version with the actual IDs
+		// This will be populated with real data from purchaseService when needed
+		const purchases: PurchaseHistory[] = [
+			{
+				id: "pur_1",
+				purchaseNumber: "PN-20251120-0001",
+				date: new Date("2025-11-15"),
+				totalAmount: 2135000,
+				itemCount: 2,
+				status: "received",
+			},
+			{
+				id: "pur_2",
+				purchaseNumber: "PN-20251122-0002",
+				date: new Date("2025-11-22"),
+				totalAmount: 4710000,
+				itemCount: 2,
+				status: "ordered",
+			},
+			{
+				id: "pur_3",
+				purchaseNumber: "PN-20251123-0003",
+				date: new Date("2025-11-23"),
+				totalAmount: 2720000,
+				itemCount: 1,
+				status: "ordered",
+			},
+		];
+
+		// Filter to return only purchases for this supplier
+		return purchases.filter((p) => purchaseIds.includes(p.id));
 	}
 }
 

@@ -61,7 +61,6 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 	const [formData, setFormData] = useState({
 		purchaseNumber: "",
 		supplierId: "",
-		tax: 0,
 		shippingFee: 0,
 		discount: 0,
 		notes: "",
@@ -71,6 +70,10 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 	const [newItem, setNewItem] = useState({
 		productId: "",
 		quantity: 0,
+		unitPrice: 0,
+		vat: 0,
+		expiryDate: "",
+		manufactureDate: "",
 	});
 
 	useEffect(() => {
@@ -88,7 +91,6 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			setFormData({
 				purchaseNumber: "",
 				supplierId: "",
-				tax: 0,
 				shippingFee: 0,
 				discount: 0,
 				notes: "",
@@ -103,6 +105,10 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 		setNewItem({
 			productId: "",
 			quantity: 0,
+			unitPrice: 0,
+			vat: 0,
+			expiryDate: "",
+			manufactureDate: "",
 		});
 	};
 
@@ -157,11 +163,25 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
+		if (newItem.unitPrice <= 0) {
+			toast({
+				title: "Lỗi",
+				description: "Giá nhập phải lớn hơn 0",
+				status: "error",
+				duration: 2000,
+			});
+			return;
+		}
+
 		// Find selected product
 		const product = supplierProducts.find(
 			(p) => p.id === newItem.productId,
 		);
 		if (!product) return;
+
+		const subtotal = newItem.quantity * newItem.unitPrice;
+		const vatAmount = subtotal * (newItem.vat / 100);
+		const totalPrice = subtotal + vatAmount;
 
 		const item: PurchaseItem = {
 			id: `temp_${Date.now()}`,
@@ -170,8 +190,15 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			category: product.category,
 			unit: product.unit,
 			quantity: newItem.quantity,
-			unitPrice: product.lastPurchasePrice || 0,
-			totalPrice: newItem.quantity * (product.lastPurchasePrice || 0),
+			unitPrice: newItem.unitPrice,
+			vat: newItem.vat,
+			totalPrice: totalPrice,
+			expiryDate: newItem.expiryDate
+				? new Date(newItem.expiryDate)
+				: undefined,
+			manufactureDate: newItem.manufactureDate
+				? new Date(newItem.manufactureDate)
+				: undefined,
 		};
 
 		setItems([...items, item]);
@@ -184,8 +211,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 
 	const calculateTotals = () => {
 		const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-		const total =
-			subtotal + formData.tax + formData.shippingFee - formData.discount;
+		const total = subtotal + formData.shippingFee - formData.discount;
 		return { subtotal, total };
 	};
 
@@ -223,7 +249,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 				supplier,
 				items,
 				subtotal,
-				tax: formData.tax,
+				tax: 0,
 				shippingFee: formData.shippingFee,
 				discount: formData.discount,
 				total,
@@ -237,7 +263,6 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 					name: "Nguyễn Văn A",
 				},
 			};
-
 			await onAdd(purchase);
 			toast({
 				title: "Thành công",
@@ -362,10 +387,18 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 									<VStack spacing={3}>
 										<HStack
 											spacing={3}
-											w="full">
-											<FormControl flex={2}>
+											w="full"
+											align="flex-start">
+											<FormControl
+												flex={2}
+												isRequired>
+												<FormLabel
+													fontSize="13px"
+													mb={1}>
+													Sản phẩm
+												</FormLabel>
 												<Select
-													placeholder="Chọn sản phẩm *"
+													placeholder="Chọn sản phẩm"
 													value={newItem.productId}
 													onChange={(e) =>
 														setNewItem({
@@ -373,7 +406,8 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 															productId:
 																e.target.value,
 														})
-													}>
+													}
+													size="sm">
 													{supplierProducts.map(
 														(product) => (
 															<option
@@ -394,7 +428,14 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 													)}
 												</Select>
 											</FormControl>
-											<FormControl flex={1}>
+											<FormControl
+												flex={1}
+												isRequired>
+												<FormLabel
+													fontSize="13px"
+													mb={1}>
+													Số lượng
+												</FormLabel>
 												<NumberInput
 													value={newItem.quantity}
 													onChange={(_, val) =>
@@ -403,57 +444,164 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 															quantity: val,
 														})
 													}
-													min={0}>
-													<NumberInputField placeholder="Số lượng *" />
+													min={0}
+													size="sm">
+													<NumberInputField placeholder="0" />
 												</NumberInput>
 											</FormControl>
-											<Button
-												colorScheme="brand"
-												leftIcon={<AddIcon />}
-												onClick={handleAddItem}
-												flexShrink={0}
-												isDisabled={
-													!newItem.productId ||
-													newItem.quantity <= 0
-												}>
-												Thêm
-											</Button>
 										</HStack>
-										{newItem.productId && (
-											<Box
-												w="full"
-												bg="blue.50"
-												p={3}
-												borderRadius="md">
-												<Text
+
+										<HStack
+											spacing={3}
+											w="full"
+											align="flex-start">
+											<FormControl
+												flex={1}
+												isRequired>
+												<FormLabel
 													fontSize="13px"
-													color="gray.700">
-													<strong>
-														Giá nhập gần nhất:
-													</strong>{" "}
-													{formatCurrency(
-														supplierProducts.find(
-															(p) =>
-																p.id ===
-																newItem.productId,
-														)?.lastPurchasePrice ||
-															0,
-													)}
-													đ/
-													{
-														supplierProducts.find(
-															(p) =>
-																p.id ===
-																newItem.productId,
-														)?.unit
+													mb={1}>
+													Giá nhập (VNĐ)
+												</FormLabel>
+												<NumberInput
+													value={newItem.unitPrice}
+													onChange={(_, val) =>
+														setNewItem({
+															...newItem,
+															unitPrice: val,
+														})
 													}
-												</Text>
-											</Box>
-										)}
+													min={0}
+													size="sm">
+													<NumberInputField placeholder="0" />
+												</NumberInput>
+											</FormControl>
+											<FormControl flex={1}>
+												<FormLabel
+													fontSize="13px"
+													mb={1}>
+													VAT (%)
+												</FormLabel>
+												<NumberInput
+													value={newItem.vat}
+													onChange={(_, val) =>
+														setNewItem({
+															...newItem,
+															vat: val,
+														})
+													}
+													min={0}
+													max={100}
+													size="sm">
+													<NumberInputField placeholder="0" />
+												</NumberInput>
+											</FormControl>
+										</HStack>
+
+										<HStack
+											spacing={3}
+											w="full"
+											align="flex-start">
+											<FormControl flex={1}>
+												<FormLabel
+													fontSize="13px"
+													mb={1}>
+													Ngày sản xuất
+												</FormLabel>
+												<Input
+													type="date"
+													value={
+														newItem.manufactureDate
+													}
+													onChange={(e) =>
+														setNewItem({
+															...newItem,
+															manufactureDate:
+																e.target.value,
+														})
+													}
+													size="sm"
+												/>
+											</FormControl>
+											<FormControl flex={1}>
+												<FormLabel
+													fontSize="13px"
+													mb={1}>
+													Hạn sử dụng
+												</FormLabel>
+												<Input
+													type="date"
+													value={newItem.expiryDate}
+													onChange={(e) =>
+														setNewItem({
+															...newItem,
+															expiryDate:
+																e.target.value,
+														})
+													}
+													size="sm"
+												/>
+											</FormControl>
+										</HStack>
+
+										<Button
+											leftIcon={<AddIcon />}
+											colorScheme="blue"
+											onClick={handleAddItem}
+											w="full"
+											size="sm"
+											isDisabled={
+												!newItem.productId ||
+												newItem.quantity <= 0 ||
+												newItem.unitPrice <= 0
+											}>
+											Thêm sản phẩm
+										</Button>
+
+										{newItem.productId &&
+											newItem.quantity > 0 &&
+											newItem.unitPrice > 0 && (
+												<Box
+													w="full"
+													bg="blue.50"
+													p={3}
+													borderRadius="md"
+													borderLeft="4px solid"
+													borderColor="blue.500">
+													<Text
+														fontSize="13px"
+														color="gray.600"
+														mb={1}>
+														Tạm tính:
+													</Text>
+													<Text
+														fontSize="16px"
+														fontWeight="bold"
+														color="blue.600">
+														{formatCurrency(
+															newItem.quantity *
+																newItem.unitPrice *
+																(1 +
+																	newItem.vat /
+																		100),
+														)}
+														{newItem.vat > 0 && (
+															<Text
+																as="span"
+																fontSize="12px"
+																color="gray.600"
+																ml={2}>
+																(Bao gồm VAT{" "}
+																{newItem.vat}%)
+															</Text>
+														)}
+													</Text>
+												</Box>
+											)}
 									</VStack>
 								)}
 							</Box>
-						)}{" "}
+						)}
 						{/* Danh sách sản phẩm */}
 						{items.length > 0 && (
 							<Box>
@@ -475,8 +623,11 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 												<Th>Mã SP</Th>
 												<Th>Tên sản phẩm</Th>
 												<Th>Đơn vị</Th>
-												<Th isNumeric>Số lượng</Th>
-												<Th isNumeric>Đơn giá</Th>
+												<Th isNumeric>SL</Th>
+												<Th isNumeric>Giá nhập</Th>
+												<Th isNumeric>VAT (%)</Th>
+												<Th>NSX</Th>
+												<Th>HSD</Th>
 												<Th isNumeric>Thành tiền</Th>
 												<Th></Th>
 											</Tr>
@@ -504,6 +655,29 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 														{formatCurrency(
 															item.unitPrice,
 														)}
+													</Td>
+													<Td
+														isNumeric
+														fontSize="13px">
+														{item.vat}%
+													</Td>
+													<Td fontSize="13px">
+														{item.manufactureDate
+															? new Date(
+																	item.manufactureDate,
+															  ).toLocaleDateString(
+																	"vi-VN",
+															  )
+															: "-"}
+													</Td>
+													<Td fontSize="13px">
+														{item.expiryDate
+															? new Date(
+																	item.expiryDate,
+															  ).toLocaleDateString(
+																	"vi-VN",
+															  )
+															: "-"}
 													</Td>
 													<Td
 														isNumeric
@@ -552,23 +726,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 									w="full">
 									<FormControl>
 										<FormLabel fontSize="14px">
-											Thuế VAT
-										</FormLabel>
-										<NumberInput
-											value={formData.tax}
-											onChange={(_, val) =>
-												setFormData({
-													...formData,
-													tax: val,
-												})
-											}
-											min={0}>
-											<NumberInputField />
-										</NumberInput>
-									</FormControl>
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Phí vận chuyển
+											Phí vận chuyển (VNĐ)
 										</FormLabel>
 										<NumberInput
 											value={formData.shippingFee}
@@ -584,7 +742,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 									</FormControl>
 									<FormControl>
 										<FormLabel fontSize="14px">
-											Giảm giá
+											Giảm giá (VNĐ)
 										</FormLabel>
 										<NumberInput
 											value={formData.discount}
@@ -627,20 +785,12 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 										justify="space-between"
 										mb={2}>
 										<Text fontSize="14px">
-											Tổng tiền hàng:
+											Tổng tiền hàng (đã bao gồm VAT):
 										</Text>
 										<Text
 											fontSize="14px"
 											fontWeight="600">
 											{formatCurrency(subtotal)}
-										</Text>
-									</Flex>
-									<Flex
-										justify="space-between"
-										mb={2}>
-										<Text fontSize="14px">Thuế VAT:</Text>
-										<Text fontSize="14px">
-											{formatCurrency(formData.tax)}
 										</Text>
 									</Flex>
 									<Flex

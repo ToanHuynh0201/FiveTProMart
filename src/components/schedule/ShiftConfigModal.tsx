@@ -70,6 +70,23 @@ const ShiftConfigModal = ({
 		setIsAddingNew(true);
 	};
 
+	// Helper function to calculate working hours
+	const calculateWorkingHours = (
+		startTime: string,
+		endTime: string,
+	): number => {
+		const [startHour, startMinute] = startTime.split(":").map(Number);
+		const [endHour, endMinute] = endTime.split(":").map(Number);
+
+		const startInMinutes = startHour * 60 + startMinute;
+		const endInMinutes = endHour * 60 + endMinute;
+
+		const durationInMinutes = endInMinutes - startInMinutes;
+		const hours = durationInMinutes / 60;
+
+		return parseFloat(hours.toFixed(2));
+	};
+
 	const handleSaveShift = () => {
 		if (!editingShift) return;
 
@@ -94,6 +111,13 @@ const ShiftConfigModal = ({
 			});
 			return;
 		}
+
+		// Calculate and set working hours
+		const workingHours = calculateWorkingHours(
+			editingShift.startTime,
+			editingShift.endTime,
+		);
+		editingShift.workingHours = workingHours;
 
 		// Check for time overlap with other shifts
 		const otherShifts = shifts.filter((s) => s.id !== editingShift.id);
@@ -392,6 +416,31 @@ const ShiftConfigModal = ({
 												</FormControl>
 											</HStack>
 
+											{/* Display calculated working hours */}
+											{editingShift.startTime &&
+												editingShift.endTime &&
+												editingShift.startTime <
+													editingShift.endTime && (
+													<Box
+														p={2}
+														bg="blue.50"
+														borderRadius="md"
+														border="1px solid"
+														borderColor="blue.200">
+														<Text
+															fontSize="14px"
+															color="blue.700"
+															fontWeight="600">
+															📋 Số giờ làm việc:{" "}
+															{calculateWorkingHours(
+																editingShift.startTime,
+																editingShift.endTime,
+															)}{" "}
+															giờ
+														</Text>
+													</Box>
+												)}
+
 											<HStack spacing={4}>
 												<FormControl flex={1}>
 													<FormLabel
@@ -564,7 +613,33 @@ const ShiftConfigModal = ({
 															}
 														/>
 													</FormControl>
-												</HStack>{" "}
+												</HStack>
+
+												{/* Display calculated working hours */}
+												{editingShift.startTime &&
+													editingShift.endTime &&
+													editingShift.startTime <
+														editingShift.endTime && (
+														<Box
+															p={2}
+															bg="blue.50"
+															borderRadius="md"
+															border="1px solid"
+															borderColor="blue.200">
+															<Text
+																fontSize="14px"
+																color="blue.700"
+																fontWeight="600">
+																📋 Số giờ làm việc:{" "}
+																{calculateWorkingHours(
+																	editingShift.startTime,
+																	editingShift.endTime,
+																)}{" "}
+																giờ
+															</Text>
+														</Box>
+													)}
+
 												<HStack spacing={4}>
 													<FormControl flex={1}>
 														<FormLabel
@@ -671,6 +746,12 @@ const ShiftConfigModal = ({
 															color="gray.600">
 															({shift.startTime} -{" "}
 															{shift.endTime})
+														</Text>
+														<Text
+															fontSize="14px"
+															color="blue.600"
+															fontWeight="600">
+															• {shift.workingHours || calculateWorkingHours(shift.startTime, shift.endTime)} giờ
 														</Text>
 													</HStack>
 													<HStack

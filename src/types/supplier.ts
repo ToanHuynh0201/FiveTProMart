@@ -75,4 +75,5 @@ export interface UpdateSupplierData {
 	bankName?: string;
 	status?: "active" | "inactive";
 	notes?: string;
+	productIds?: string[]; // List of product IDs that this supplier provides
 }

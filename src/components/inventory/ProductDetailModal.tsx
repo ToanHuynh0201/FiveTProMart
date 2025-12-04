@@ -292,9 +292,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 														Hạn SD
 													</Th>
 													<Th fontSize="12px">
-														Ngày nhập
-													</Th>
-													<Th fontSize="12px">
 														Trạng thái
 													</Th>
 												</Tr>
@@ -380,13 +377,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 																			có
 																			HSD
 																		</Text>
-																	)}
-																</Td>
-																<Td fontSize="13px">
-																	{new Date(
-																		batch.importDate,
-																	).toLocaleDateString(
-																		"vi-VN",
 																	)}
 																</Td>
 																<Td fontSize="13px">

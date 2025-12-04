@@ -14,8 +14,10 @@ export interface PurchaseItem {
 	unit: string; // Đơn vị tính
 	quantity: number; // Số lượng nhập
 	unitPrice: number; // Đơn giá nhập
+	vat: number; // VAT (%)
 	totalPrice: number; // Thành tiền
 	expiryDate?: Date; // Hạn sử dụng (nếu có)
+	manufactureDate?: Date; // Ngày sản xuất (nếu có)
 }
 
 export interface Purchase {
@@ -66,5 +68,7 @@ export interface ExcelPurchaseItem {
 	"Đơn vị tính": string;
 	"Số lượng": number;
 	"Đơn giá": number;
+	"VAT (%)"?: number;
+	"Ngày sản xuất"?: string; // DD/MM/YYYY
 	"Hạn sử dụng"?: string; // DD/MM/YYYY
 }

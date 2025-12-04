@@ -9,6 +9,20 @@ import type {
 } from "@/types";
 import { staffService } from "./staffService";
 
+// Helper function to calculate working hours from time range
+const calculateWorkingHours = (startTime: string, endTime: string): number => {
+	const [startHour, startMinute] = startTime.split(":").map(Number);
+	const [endHour, endMinute] = endTime.split(":").map(Number);
+
+	const startInMinutes = startHour * 60 + startMinute;
+	const endInMinutes = endHour * 60 + endMinute;
+
+	const durationInMinutes = endInMinutes - startInMinutes;
+	const hours = durationInMinutes / 60;
+
+	return parseFloat(hours.toFixed(2));
+};
+
 // Default shift configuration
 const defaultShiftConfig: ShiftConfig = {
 	shifts: [
@@ -19,6 +33,7 @@ const defaultShiftConfig: ShiftConfig = {
 			endTime: "12:00",
 			requiredWarehouseStaff: 1,
 			requiredSalesStaff: 2,
+			workingHours: 4,
 			order: 0,
 		},
 		{
@@ -28,6 +43,7 @@ const defaultShiftConfig: ShiftConfig = {
 			endTime: "17:00",
 			requiredWarehouseStaff: 1,
 			requiredSalesStaff: 2,
+			workingHours: 4,
 			order: 1,
 		},
 	],
@@ -43,8 +59,42 @@ const loadShiftConfig = (): ShiftConfig => {
 	try {
 		const stored = localStorage.getItem("shiftConfig");
 		if (stored) {
-			const config = JSON.parse(stored);
-			return config;
+			const config = JSON.parse(stored) as ShiftConfig;
+
+			// Migration: Add workingHours if missing
+			let needsMigration = false;
+			const migratedShifts = config.shifts.map((shift) => {
+				if (
+					shift.workingHours === undefined ||
+					shift.workingHours === 0
+				) {
+					needsMigration = true;
+					const hours = calculateWorkingHours(
+						shift.startTime,
+						shift.endTime,
+					);
+					return {
+						...shift,
+						workingHours: hours,
+					};
+				}
+				return shift;
+			});
+
+			const migratedConfig: ShiftConfig = {
+				...config,
+				shifts: migratedShifts,
+			};
+
+			// Save migrated config back to localStorage
+			if (needsMigration) {
+				localStorage.setItem(
+					"shiftConfig",
+					JSON.stringify(migratedConfig),
+				);
+			}
+
+			return migratedConfig;
 		}
 	} catch (error) {
 		console.error("Failed to load shift config:", error);
@@ -565,13 +615,31 @@ const scheduleService = {
 		// Get staff info
 		const staff = await staffService.getStaffById(data.staffId);
 		if (!staff) {
-			throw new Error("Staff not found");
+			throw new Error("Không tìm thấy nhân viên");
 		}
 
 		// Get shift template info
 		const shiftTemplate = currentShiftConfig.shifts.find(
 			(s) => s.id === data.shift,
 		);
+
+		if (!shiftTemplate) {
+			throw new Error("Không tìm thấy ca làm việc");
+		}
+
+		// Check if staff is already assigned to this shift on this date
+		const existingAssignment = mockScheduleData.find(
+			(a) =>
+				a.staffId === data.staffId &&
+				a.date === data.date &&
+				a.shift === data.shift,
+		);
+
+		if (existingAssignment) {
+			throw new Error(
+				`${staff.name} đã được xếp vào ca ${shiftTemplate.name} trong ngày này`,
+			);
+		}
 
 		const newAssignment: ShiftAssignment = {
 			id: `sch-${Date.now()}`,
@@ -716,28 +784,62 @@ const scheduleService = {
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
 		const newAssignments: ShiftAssignment[] = [];
+		const errors: string[] = [];
 
 		for (const data of assignments) {
 			const staff = await staffService.getStaffById(data.staffId);
-			if (staff) {
-				const shiftTemplate = currentShiftConfig.shifts.find(
-					(s) => s.id === data.shift,
-				);
-				const newAssignment: ShiftAssignment = {
-					id: `sch-${Date.now()}-${Math.random()}`,
-					staffId: data.staffId,
-					staffName: staff.name,
-					staffPosition: staff.position,
-					date: data.date,
-					shift: data.shift,
-					shiftName: shiftTemplate?.name,
-					employmentType: staff.employmentType,
-					status: "scheduled",
-					notes: data.notes,
-				};
-				newAssignments.push(newAssignment);
-				mockScheduleData.push(newAssignment);
+			if (!staff) {
+				errors.push(`Không tìm thấy nhân viên với ID: ${data.staffId}`);
+				continue;
 			}
+
+			const shiftTemplate = currentShiftConfig.shifts.find(
+				(s) => s.id === data.shift,
+			);
+
+			if (!shiftTemplate) {
+				errors.push(
+					`Không tìm thấy ca làm việc với ID: ${data.shift} cho nhân viên ${staff.name}`,
+				);
+				continue;
+			}
+
+			// Check if staff is already assigned to this shift on this date
+			const existingAssignment = mockScheduleData.find(
+				(a) =>
+					a.staffId === data.staffId &&
+					a.date === data.date &&
+					a.shift === data.shift,
+			);
+
+			if (existingAssignment) {
+				errors.push(
+					`${staff.name} đã được xếp vào ca ${shiftTemplate.name} vào ngày ${data.date}`,
+				);
+				continue;
+			}
+
+			const newAssignment: ShiftAssignment = {
+				id: `sch-${Date.now()}-${Math.random()}`,
+				staffId: data.staffId,
+				staffName: staff.name,
+				staffPosition: staff.position,
+				date: data.date,
+				shift: data.shift,
+				shiftName: shiftTemplate?.name,
+				employmentType: staff.employmentType,
+				status: "scheduled",
+				notes: data.notes,
+			};
+			newAssignments.push(newAssignment);
+			mockScheduleData.push(newAssignment);
+		}
+
+		// If there were errors, throw them as a single error
+		if (errors.length > 0) {
+			throw new Error(
+				`Một số ca không thể được tạo:\n${errors.join("\n")}`,
+			);
 		}
 
 		return newAssignments;

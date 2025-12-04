@@ -317,6 +317,10 @@ export const purchaseService = {
 					const items: PurchaseItem[] = jsonData.map((row, index) => {
 						const quantity = Number(row["Số lượng"]) || 0;
 						const unitPrice = Number(row["Đơn giá"]) || 0;
+						const vat = Number(row["VAT (%)"] || 0);
+						const subtotal = quantity * unitPrice;
+						const vatAmount = subtotal * (vat / 100);
+						const totalPrice = subtotal + vatAmount;
 
 						return {
 							id: `temp_${index + 1}`,
@@ -326,7 +330,11 @@ export const purchaseService = {
 							unit: String(row["Đơn vị tính"] || ""),
 							quantity,
 							unitPrice,
-							totalPrice: quantity * unitPrice,
+							vat,
+							totalPrice,
+							manufactureDate: row["Ngày sản xuất"]
+								? parseExcelDate(row["Ngày sản xuất"])
+								: undefined,
 							expiryDate: row["Hạn sử dụng"]
 								? parseExcelDate(row["Hạn sử dụng"])
 								: undefined,
@@ -361,6 +369,8 @@ export const purchaseService = {
 				"Đơn vị tính": "gói",
 				"Số lượng": 50,
 				"Đơn giá": 35000,
+				"VAT (%)": 10,
+				"Ngày sản xuất": "01/12/2025",
 				"Hạn sử dụng": "31/12/2025",
 			},
 			{
@@ -370,6 +380,8 @@ export const purchaseService = {
 				"Đơn vị tính": "kg",
 				"Số lượng": 100,
 				"Đơn giá": 25000,
+				"VAT (%)": 0,
+				"Ngày sản xuất": "",
 				"Hạn sử dụng": "",
 			},
 		];
@@ -386,6 +398,8 @@ export const purchaseService = {
 			{ wch: 12 }, // Đơn vị tính
 			{ wch: 12 }, // Số lượng
 			{ wch: 12 }, // Đơn giá
+			{ wch: 10 }, // VAT (%)
+			{ wch: 15 }, // Ngày sản xuất
 			{ wch: 15 }, // Hạn sử dụng
 		];
 		ws["!cols"] = colWidths;

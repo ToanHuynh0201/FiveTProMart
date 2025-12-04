@@ -13,6 +13,7 @@ export interface Staff {
 	salary?: number;
 	workDays?: string[];
 	status?: "active" | "inactive" | "on-leave";
+	employmentType?: "Fulltime" | "Partime";
 }
 
 export interface StaffDetail extends Staff {}

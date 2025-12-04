@@ -173,13 +173,18 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 								</Text>
 								<Text>
 									2. Đảm bảo các cột: Mã sản phẩm, Tên sản
-									phẩm, Đơn vị tính, Số lượng, Đơn giá
+									phẩm, Đơn vị tính, Số lượng, Đơn giá, VAT
+									(%)
 								</Text>
 								<Text>
-									3. Chọn file Excel và xem trước dữ liệu
+									3. Các trường tùy chọn: Ngày sản xuất, Hạn
+									sử dụng (DD/MM/YYYY)
 								</Text>
 								<Text>
-									4. Xác nhận nhập vào phiếu nhập hàng
+									4. Chọn file Excel và xem trước dữ liệu
+								</Text>
+								<Text>
+									5. Xác nhận nhập vào phiếu nhập hàng
 								</Text>
 							</VStack>
 						</Box>
@@ -243,8 +248,11 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 												<Th>Tên sản phẩm</Th>
 												<Th>Nhóm hàng</Th>
 												<Th>Đơn vị</Th>
-												<Th isNumeric>Số lượng</Th>
+												<Th isNumeric>SL</Th>
 												<Th isNumeric>Đơn giá</Th>
+												<Th isNumeric>VAT (%)</Th>
+												<Th>NSX</Th>
+												<Th>HSD</Th>
 												<Th isNumeric>Thành tiền</Th>
 											</Tr>
 										</Thead>
@@ -276,6 +284,29 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 														{formatCurrency(
 															item.unitPrice,
 														)}
+													</Td>
+													<Td
+														isNumeric
+														fontSize="13px">
+														{item.vat}%
+													</Td>
+													<Td fontSize="13px">
+														{item.manufactureDate
+															? new Date(
+																	item.manufactureDate,
+															  ).toLocaleDateString(
+																	"vi-VN",
+															  )
+															: "-"}
+													</Td>
+													<Td fontSize="13px">
+														{item.expiryDate
+															? new Date(
+																	item.expiryDate,
+															  ).toLocaleDateString(
+																	"vi-VN",
+															  )
+															: "-"}
 													</Td>
 													<Td
 														isNumeric

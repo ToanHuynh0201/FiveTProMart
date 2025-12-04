@@ -5,6 +5,7 @@ export interface ShiftTemplate {
 	endTime: string; // "12:00"
 	requiredWarehouseStaff: number; // Số lượng nhân viên kho cần thiết
 	requiredSalesStaff: number; // Số lượng nhân viên bán hàng cần thiết
+	workingHours?: number; // Số giờ làm việc (tự động tính từ startTime và endTime)
 	color?: string; // Màu sắc hiển thị trên lịch
 	order: number; // Thứ tự hiển thị
 }

@@ -28,19 +28,24 @@ import {
 	TabPanels,
 	Tab,
 	TabPanel,
+	Tooltip,
+	IconButton,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { SupplierDetail } from "@/types/supplier";
 import { supplierService } from "@/services/supplierService";
+import { PurchaseDetailModal } from "@/components/purchase/PurchaseDetailModal";
+import { purchaseService } from "@/services/purchaseService";
+import type { Purchase } from "@/types/purchase";
 import {
 	FiPhone,
 	FiMail,
 	FiMapPin,
 	FiUser,
 	FiCreditCard,
-	FiPackage,
-	FiShoppingCart,
-	FiDollarSign,
+	FiEye,
+	FiCopy,
+	FiCheck,
 } from "react-icons/fi";
 
 interface SupplierDetailModalProps {
@@ -58,6 +63,45 @@ const SupplierDetailModal = ({
 		null,
 	);
 	const [isLoading, setIsLoading] = useState(false);
+	const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(
+		null,
+	);
+	const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
+		null,
+	);
+	const [isCopied, setIsCopied] = useState(false);
+	const [isPhoneCopied, setIsPhoneCopied] = useState(false);
+	const [isContactPhoneCopied, setIsContactPhoneCopied] = useState(false);
+
+	// Load purchase detail when selectedPurchaseId changes
+	useEffect(() => {
+		if (selectedPurchaseId) {
+			loadPurchaseDetail(selectedPurchaseId);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selectedPurchaseId]);
+
+	const loadPurchaseDetail = async (purchaseId: string) => {
+		try {
+			console.log("Loading purchase with ID:", purchaseId);
+			const purchase = await purchaseService.getPurchaseById(purchaseId);
+			console.log("Loaded purchase:", purchase);
+			if (purchase) {
+				setSelectedPurchase(purchase);
+			} else {
+				console.warn("Purchase not found with ID:", purchaseId);
+				setSelectedPurchase(null);
+			}
+		} catch (error) {
+			console.error("Error loading purchase detail:", error);
+			setSelectedPurchase(null);
+		}
+	};
+
+	const handleClosePurchaseDetail = () => {
+		setSelectedPurchaseId(null);
+		setSelectedPurchase(null);
+	};
 
 	useEffect(() => {
 		if (supplierId && isOpen) {
@@ -77,6 +121,42 @@ const SupplierDetailModal = ({
 			console.error("Error loading supplier detail:", error);
 		} finally {
 			setIsLoading(false);
+		}
+	};
+
+	const handleCopyBankAccount = async () => {
+		if (!supplierDetail?.bankAccount) return;
+
+		try {
+			await navigator.clipboard.writeText(supplierDetail.bankAccount);
+			setIsCopied(true);
+			setTimeout(() => setIsCopied(false), 2000);
+		} catch (error) {
+			console.error("Failed to copy:", error);
+		}
+	};
+
+	const handleCopyPhone = async () => {
+		if (!supplierDetail?.phone) return;
+
+		try {
+			await navigator.clipboard.writeText(supplierDetail.phone);
+			setIsPhoneCopied(true);
+			setTimeout(() => setIsPhoneCopied(false), 2000);
+		} catch (error) {
+			console.error("Failed to copy:", error);
+		}
+	};
+
+	const handleCopyContactPhone = async () => {
+		if (!supplierDetail?.contactPhone) return;
+
+		try {
+			await navigator.clipboard.writeText(supplierDetail.contactPhone);
+			setIsContactPhoneCopied(true);
+			setTimeout(() => setIsContactPhoneCopied(false), 2000);
+		} catch (error) {
+			console.error("Failed to copy:", error);
 		}
 	};
 
@@ -131,6 +211,7 @@ const SupplierDetailModal = ({
 	};
 
 	return (
+		<>
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
@@ -224,19 +305,70 @@ const SupplierDetailModal = ({
 
 							<Divider />
 
-							{/* Contact & Basic Info */}
+							{/* Contact & Basic Info - 4 columns layout */}
 							<Grid
 								templateColumns={{
 									base: "1fr",
-									md: "repeat(3, 1fr)",
+									md: "repeat(4, 1fr)",
 								}}
 								gap={4}>
 								<GridItem>
-									<InfoRow
-										icon={FiPhone}
-										label="Số điện thoại"
-										value={supplierDetail.phone}
-									/>
+									<Flex
+										align="center"
+										gap={2}
+										py={2}
+										px={3}
+										bg="gray.50"
+										borderRadius="10px"
+										cursor={supplierDetail.phone ? "pointer" : "default"}
+										onClick={handleCopyPhone}
+										_hover={
+											supplierDetail.phone
+												? { bg: "gray.100" }
+												: {}
+										}
+										transition="background 0.2s">
+										<Icon
+											as={FiPhone}
+											w="16px"
+											h="16px"
+											color="#161f70"
+										/>
+										<Box flex={1}>
+											<Text
+												fontSize="11px"
+												fontWeight="600"
+												color="gray.600"
+												mb={0.5}>
+												Số điện thoại
+											</Text>
+											<Flex
+												align="center"
+												gap={2}>
+												<Text
+													fontSize="13px"
+													fontWeight="500"
+													color="#161f70">
+													{supplierDetail.phone || "N/A"}
+												</Text>
+												{supplierDetail.phone && (
+													<Tooltip
+														label={isPhoneCopied ? "Đã copy!" : "Click để copy"}
+														placement="top"
+														hasArrow>
+														<Box>
+															<Icon
+																as={isPhoneCopied ? FiCheck : FiCopy}
+																w="14px"
+																h="14px"
+																color={isPhoneCopied ? "green.500" : "gray.500"}
+															/>
+														</Box>
+													</Tooltip>
+												)}
+											</Flex>
+										</Box>
+									</Flex>
 								</GridItem>
 								<GridItem>
 									<InfoRow
@@ -252,24 +384,6 @@ const SupplierDetailModal = ({
 										value={supplierDetail.taxCode}
 									/>
 								</GridItem>
-								<GridItem colSpan={{ base: 1, md: 3 }}>
-									<InfoRow
-										icon={FiMapPin}
-										label="Địa chỉ"
-										value={supplierDetail.address}
-									/>
-								</GridItem>
-							</Grid>
-
-							<Divider />
-
-							{/* Contact Person & Bank Info */}
-							<Grid
-								templateColumns={{
-									base: "1fr",
-									md: "repeat(2, 1fr)",
-								}}
-								gap={4}>
 								<GridItem>
 									<InfoRow
 										icon={FiUser}
@@ -278,18 +392,120 @@ const SupplierDetailModal = ({
 									/>
 								</GridItem>
 								<GridItem>
-									<InfoRow
-										icon={FiPhone}
-										label="SĐT người liên hệ"
-										value={supplierDetail.contactPhone}
-									/>
+									<Flex
+										align="center"
+										gap={2}
+										py={2}
+										px={3}
+										bg="gray.50"
+										borderRadius="10px"
+										cursor={supplierDetail.contactPhone ? "pointer" : "default"}
+										onClick={handleCopyContactPhone}
+										_hover={
+											supplierDetail.contactPhone
+												? { bg: "gray.100" }
+												: {}
+										}
+										transition="background 0.2s">
+										<Icon
+											as={FiPhone}
+											w="16px"
+											h="16px"
+											color="#161f70"
+										/>
+										<Box flex={1}>
+											<Text
+												fontSize="11px"
+												fontWeight="600"
+												color="gray.600"
+												mb={0.5}>
+												SĐT người liên hệ
+											</Text>
+											<Flex
+												align="center"
+												gap={2}>
+												<Text
+													fontSize="13px"
+													fontWeight="500"
+													color="#161f70">
+													{supplierDetail.contactPhone || "N/A"}
+												</Text>
+												{supplierDetail.contactPhone && (
+													<Tooltip
+														label={isContactPhoneCopied ? "Đã copy!" : "Click để copy"}
+														placement="top"
+														hasArrow>
+														<Box>
+															<Icon
+																as={isContactPhoneCopied ? FiCheck : FiCopy}
+																w="14px"
+																h="14px"
+																color={isContactPhoneCopied ? "green.500" : "gray.500"}
+															/>
+														</Box>
+													</Tooltip>
+												)}
+											</Flex>
+										</Box>
+									</Flex>
 								</GridItem>
 								<GridItem>
-									<InfoRow
-										icon={FiCreditCard}
-										label="Số tài khoản"
-										value={supplierDetail.bankAccount}
-									/>
+									<Flex
+										align="center"
+										gap={2}
+										py={2}
+										px={3}
+										bg="gray.50"
+										borderRadius="10px"
+										cursor={supplierDetail.bankAccount ? "pointer" : "default"}
+										onClick={handleCopyBankAccount}
+										_hover={
+											supplierDetail.bankAccount
+												? { bg: "gray.100" }
+												: {}
+										}
+										transition="background 0.2s">
+										<Icon
+											as={FiCreditCard}
+											w="16px"
+											h="16px"
+											color="#161f70"
+										/>
+										<Box flex={1}>
+											<Text
+												fontSize="11px"
+												fontWeight="600"
+												color="gray.600"
+												mb={0.5}>
+												Số tài khoản
+											</Text>
+											<Flex
+												align="center"
+												gap={2}>
+												<Text
+													fontSize="13px"
+													fontWeight="500"
+													color="#161f70">
+													{supplierDetail.bankAccount || "N/A"}
+												</Text>
+												{supplierDetail.bankAccount && (
+													<Tooltip
+														label={isCopied ? "Đã copy!" : "Click để copy"}
+														placement="top"
+														hasArrow>
+														<Box>
+															<Icon
+																as={isCopied ? FiCheck : FiCopy}
+																w="14px"
+																h="14px"
+																color={isCopied ? "green.500" : "gray.500"}
+															/>
+														</Box>
+													</Tooltip>
+												)}
+											</Flex>
+										</Box>
+									</Flex>
 								</GridItem>
 								<GridItem>
 									<InfoRow
@@ -298,122 +514,46 @@ const SupplierDetailModal = ({
 										value={supplierDetail.bankName}
 									/>
 								</GridItem>
-							</Grid>
-
-							<Divider />
-
-							{/* Statistics */}
-							<Grid
-								templateColumns={{
-									base: "1fr",
-									md: "repeat(4, 1fr)",
-								}}
-								gap={4}>
 								<GridItem>
-									<Box
-										bg="blue.50"
-										p={4}
-										borderRadius="12px"
-										textAlign="center">
+									<Flex
+										align="center"
+										gap={2}
+										py={2}
+										px={3}
+										bg="gray.50"
+										borderRadius="10px">
 										<Icon
-											as={FiPackage}
-											w="24px"
-											h="24px"
+											as={FiMapPin}
+											w="16px"
+											h="16px"
 											color="#161f70"
-											mb={2}
+											flexShrink={0}
 										/>
-										<Text
-											fontSize="24px"
-											fontWeight="700"
-											color="#161f70">
-											{supplierDetail.totalProducts || 0}
-										</Text>
-										<Text
-											fontSize="13px"
-											color="gray.600">
-											Sản phẩm
-										</Text>
-									</Box>
-								</GridItem>
-								<GridItem>
-									<Box
-										bg="green.50"
-										p={4}
-										borderRadius="12px"
-										textAlign="center">
-										<Icon
-											as={FiShoppingCart}
-											w="24px"
-											h="24px"
-											color="green.600"
-											mb={2}
-										/>
-										<Text
-											fontSize="24px"
-											fontWeight="700"
-											color="green.600">
-											{supplierDetail.totalPurchases || 0}
-										</Text>
-										<Text
-											fontSize="13px"
-											color="gray.600">
-											Đơn nhập hàng
-										</Text>
-									</Box>
-								</GridItem>
-								<GridItem colSpan={{ base: 1, md: 2 }}>
-									<Box
-										bg="orange.50"
-										p={4}
-										borderRadius="12px"
-										textAlign="center">
-										<Icon
-											as={FiDollarSign}
-											w="24px"
-											h="24px"
-											color="orange.600"
-											mb={2}
-										/>
-										<Text
-											fontSize="24px"
-											fontWeight="700"
-											color="orange.600">
-											{formatCurrency(
-												supplierDetail.totalValue,
-											)}
-										</Text>
-										<Text
-											fontSize="13px"
-											color="gray.600">
-											Tổng giá trị nhập hàng
-										</Text>
-									</Box>
+										<Box flex={1}>
+											<Text
+												fontSize="11px"
+												fontWeight="600"
+												color="gray.600"
+												mb={0.5}>
+												Địa chỉ
+											</Text>
+											<Tooltip
+												label={supplierDetail.address || "N/A"}
+												placement="top"
+												hasArrow>
+												<Text
+													fontSize="13px"
+													fontWeight="500"
+													color="#161f70"
+													noOfLines={1}
+													cursor="default">
+													{supplierDetail.address || "N/A"}
+												</Text>
+											</Tooltip>
+										</Box>
+									</Flex>
 								</GridItem>
 							</Grid>
-
-							{/* Notes */}
-							{supplierDetail.notes && (
-								<>
-									<Divider />
-									<Box>
-										<Text
-											fontSize="14px"
-											fontWeight="600"
-											color="gray.700"
-											mb={2}>
-											Ghi chú:
-										</Text>
-										<Text
-											fontSize="14px"
-											color="gray.600"
-											bg="gray.50"
-											p={3}
-											borderRadius="8px">
-											{supplierDetail.notes}
-										</Text>
-									</Box>
-								</>
-							)}
 
 							<Divider />
 
@@ -447,11 +587,11 @@ const SupplierDetailModal = ({
 								<TabPanels>
 									<TabPanel px={0}>
 										<Box
-											maxH="300px"
+											maxH="450px"
 											overflowY="auto">
 											<Table
 												variant="simple"
-												size="sm">
+												size="md">
 												<Thead
 													bg="gray.50"
 													position="sticky"
@@ -536,11 +676,11 @@ const SupplierDetailModal = ({
 
 									<TabPanel px={0}>
 										<Box
-											maxH="300px"
+											maxH="450px"
 											overflowY="auto">
 											<Table
 												variant="simple"
-												size="sm">
+												size="md">
 												<Thead
 													bg="gray.50"
 													position="sticky"
@@ -556,6 +696,9 @@ const SupplierDetailModal = ({
 															Tổng tiền
 														</Th>
 														<Th>Trạng thái</Th>
+														<Th textAlign="center">
+															Chi tiết
+														</Th>
 													</Tr>
 												</Thead>
 												<Tbody>
@@ -563,63 +706,100 @@ const SupplierDetailModal = ({
 													supplierDetail
 														.purchaseHistory
 														.length > 0 ? (
-														supplierDetail.purchaseHistory.map(
-															(purchase) => (
-																<Tr
-																	key={
-																		purchase.id
-																	}>
-																	<Td fontWeight="600">
-																		{
-																			purchase.purchaseNumber
-																		}
-																	</Td>
-																	<Td>
-																		{formatDate(
-																			purchase.date,
-																		)}
-																	</Td>
-																	<Td
-																		isNumeric>
-																		{
-																			purchase.itemCount
-																		}
-																	</Td>
-																	<Td
-																		isNumeric
-																		color="green.600"
-																		fontWeight="600">
-																		{formatCurrency(
-																			purchase.totalAmount,
-																		)}
-																	</Td>
-																	<Td>
-																		<Badge
-																			colorScheme={
-																				purchase.status ===
+														// Sort by date descending (newest first)
+														[
+															...supplierDetail.purchaseHistory,
+														]
+															.sort(
+																(a, b) =>
+																	new Date(
+																		b.date,
+																	).getTime() -
+																	new Date(
+																		a.date,
+																	).getTime(),
+															)
+															.map(
+																(purchase) => (
+																	<Tr
+																		key={
+																			purchase.id
+																		}>
+																		<Td fontWeight="600">
+																			{
+																				purchase.purchaseNumber
+																			}
+																		</Td>
+																		<Td>
+																			{formatDate(
+																				purchase.date,
+																			)}
+																		</Td>
+																		<Td
+																			isNumeric>
+																			{
+																				purchase.itemCount
+																			}
+																		</Td>
+																		<Td
+																			isNumeric
+																			color="green.600"
+																			fontWeight="600">
+																			{formatCurrency(
+																				purchase.totalAmount,
+																			)}
+																		</Td>
+																		<Td>
+																			<Badge
+																				colorScheme={
+																					purchase.status ===
+																					"received"
+																						? "green"
+																						: purchase.status ===
+																						  "ordered"
+																						? "blue"
+																						: "red"
+																				}>
+																				{purchase.status ===
 																				"received"
-																					? "green"
+																					? "Đã nhận"
 																					: purchase.status ===
 																					  "ordered"
-																					? "blue"
-																					: "red"
-																			}>
-																			{purchase.status ===
-																			"received"
-																				? "Đã nhận"
-																				: purchase.status ===
-																				  "ordered"
-																				? "Đã đặt"
-																				: "Đã hủy"}
-																		</Badge>
-																	</Td>
-																</Tr>
-															),
-														)
+																					? "Đã đặt"
+																					: "Đã hủy"}
+																			</Badge>
+																		</Td>
+																		<Td textAlign="center">
+																			<Tooltip
+																				label="Xem chi tiết"
+																				placement="top">
+																				<IconButton
+																					aria-label="Xem chi tiết"
+																					icon={
+																						<Icon
+																							as={
+																								FiEye
+																							}
+																						/>
+																					}
+																					size="sm"
+																					colorScheme="blue"
+																					variant="ghost"
+																					onClick={() =>
+																						setSelectedPurchaseId(
+																							purchase.id,
+																						)
+																					}
+																				/>
+																			</Tooltip>
+																		</Td>
+																	</Tr>
+																),
+															)
 													) : (
 														<Tr>
 															<Td
-																colSpan={5}
+																colSpan={6}
 																textAlign="center"
 																color="gray.500">
 																Chưa có lịch sử
@@ -661,6 +841,14 @@ const SupplierDetailModal = ({
 				</ModalFooter>
 			</ModalContent>
 		</Modal>
+
+		{/* Purchase Detail Modal */}
+		<PurchaseDetailModal
+			isOpen={!!selectedPurchase}
+			onClose={handleClosePurchaseDetail}
+			purchase={selectedPurchase}
+		/>
+	</>
 	);
 };
 

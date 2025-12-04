@@ -21,9 +21,25 @@ import {
 	GridItem,
 	Spinner,
 	Center,
+	Tabs,
+	TabList,
+	TabPanels,
+	Tab,
+	TabPanel,
+	Box,
+	Table,
+	Thead,
+	Tbody,
+	Tr,
+	Th,
+	Td,
+	Badge,
+	IconButton,
+	Icon,
 } from "@chakra-ui/react";
-import type { UpdateSupplierData } from "@/types/supplier";
+import type { UpdateSupplierData, SupplierProduct } from "@/types/supplier";
 import { supplierService } from "@/services/supplierService";
+import { FiX, FiPlus } from "react-icons/fi";
 
 interface EditSupplierModalProps {
 	isOpen: boolean;
@@ -63,6 +79,16 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 		email: "",
 	});
 
+	// Product management states
+	const [supplierProducts, setSupplierProducts] = useState<SupplierProduct[]>(
+		[],
+	);
+	const [newProduct, setNewProduct] = useState({
+		productName: "",
+		category: "",
+		unit: "",
+	});
+
 	useEffect(() => {
 		if (isOpen && supplierId) {
 			loadSupplierData();
@@ -91,6 +117,7 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 					status: supplier.status,
 					notes: supplier.notes || "",
 				});
+				setSupplierProducts(supplier.products || []);
 			}
 		} catch (error) {
 			console.error("Error loading supplier:", error);
@@ -104,6 +131,83 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 		} finally {
 			setIsFetching(false);
 		}
+	};
+
+	const generateProductCode = () => {
+		// Generate product code in format SP001, SP002, etc.
+		const existingCodes = supplierProducts
+			.map((p) => p.productCode)
+			.filter((code) => /^SP\d{3}$/.test(code));
+
+		if (existingCodes.length === 0) {
+			return "SP001";
+		}
+
+		const numbers = existingCodes.map((code) =>
+			parseInt(code.substring(2)),
+		);
+		const maxNumber = Math.max(...numbers);
+		const nextNumber = maxNumber + 1;
+		return `SP${nextNumber.toString().padStart(3, "0")}`;
+	};
+
+	const handleAddProduct = () => {
+		// Validate inputs
+		if (
+			!newProduct.productName.trim() ||
+			!newProduct.category.trim() ||
+			!newProduct.unit.trim()
+		) {
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng điền đầy đủ thông tin sản phẩm",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		// Generate product code automatically
+		const productCode = generateProductCode();
+
+		const newSupplierProduct: SupplierProduct = {
+			id: `temp_${Date.now()}`,
+			productId: `temp_${Date.now()}`, // Temporary ID
+			productCode: productCode,
+			productName: newProduct.productName,
+			category: newProduct.category,
+			unit: newProduct.unit,
+			lastPurchaseDate: new Date(),
+		};
+
+		setSupplierProducts([...supplierProducts, newSupplierProduct]);
+		// Reset form
+		setNewProduct({
+			productName: "",
+			category: "",
+			unit: "",
+		});
+		toast({
+			title: "Thành công",
+			description: "Đã thêm sản phẩm vào danh sách",
+			status: "success",
+			duration: 2000,
+			isClosable: true,
+		});
+	};
+
+	const handleRemoveProduct = (productId: string) => {
+		setSupplierProducts(
+			supplierProducts.filter((p) => p.productId !== productId),
+		);
+		toast({
+			title: "Thành công",
+			description: "Đã xóa sản phẩm khỏi danh sách",
+			status: "success",
+			duration: 1000,
+			isClosable: true,
+		});
 	};
 
 	const validatePhone = (phone: string): boolean => {
@@ -162,7 +266,13 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			await onUpdate(supplierId, formData);
+			// Include product IDs in the update data
+			const updateData: UpdateSupplierData = {
+				...formData,
+				productIds: supplierProducts.map((p) => p.productId),
+			};
+
+			await onUpdate(supplierId, updateData);
 			toast({
 				title: "Thành công",
 				description: "Cập nhật nhà cung cấp thành công",
@@ -225,350 +335,645 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 							/>
 						</Center>
 					) : (
-						<VStack
-							spacing={5}
-							align="stretch">
-							<Grid
-								templateColumns={{
-									base: "1fr",
-									md: "repeat(2, 1fr)",
-								}}
-								gap={5}>
-								<GridItem>
-									<FormControl
-										isRequired
-										isInvalid={!!errors.code}>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Mã nhà cung cấp
-										</FormLabel>
-										<Input
-											value={formData.code}
-											onChange={(e) => {
-												setFormData({
-													...formData,
-													code: e.target.value,
-												});
-												setErrors({
-													...errors,
-													code: "",
-												});
+						<Tabs
+							colorScheme="blue"
+							variant="enclosed">
+							<TabList>
+								<Tab
+									_selected={{
+										color: "#161f70",
+										bg: "blue.50",
+										borderColor: "#161f70",
+									}}>
+									Thông tin cơ bản
+								</Tab>
+								<Tab
+									_selected={{
+										color: "#161f70",
+										bg: "blue.50",
+										borderColor: "#161f70",
+									}}>
+									Sản phẩm cung cấp ({supplierProducts.length}
+									)
+								</Tab>
+							</TabList>
+
+							<TabPanels>
+								<TabPanel px={0}>
+									<VStack
+										spacing={5}
+										align="stretch"
+										mt={4}>
+										<Grid
+											templateColumns={{
+												base: "1fr",
+												md: "repeat(2, 1fr)",
 											}}
-											size="lg"
-											borderColor={
-												errors.code
-													? "red.500"
-													: "gray.300"
-											}
-										/>
-										{errors.code && (
+											gap={5}>
+											<GridItem>
+												<FormControl
+													isRequired
+													isInvalid={!!errors.code}>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Mã nhà cung cấp
+													</FormLabel>
+													<Input
+														value={formData.code}
+														onChange={(e) => {
+															setFormData({
+																...formData,
+																code: e.target
+																	.value,
+															});
+															setErrors({
+																...errors,
+																code: "",
+															});
+														}}
+														size="lg"
+														borderColor={
+															errors.code
+																? "red.500"
+																: "gray.300"
+														}
+													/>
+													{errors.code && (
+														<Text
+															color="red.500"
+															fontSize="sm"
+															mt={1}>
+															{errors.code}
+														</Text>
+													)}
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl
+													isRequired
+													isInvalid={!!errors.name}>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Tên nhà cung cấp
+													</FormLabel>
+													<Input
+														value={formData.name}
+														onChange={(e) => {
+															setFormData({
+																...formData,
+																name: e.target
+																	.value,
+															});
+															setErrors({
+																...errors,
+																name: "",
+															});
+														}}
+														size="lg"
+														borderColor={
+															errors.name
+																? "red.500"
+																: "gray.300"
+														}
+													/>
+													{errors.name && (
+														<Text
+															color="red.500"
+															fontSize="sm"
+															mt={1}>
+															{errors.name}
+														</Text>
+													)}
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl
+													isRequired
+													isInvalid={!!errors.phone}>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Số điện thoại
+													</FormLabel>
+													<Input
+														value={formData.phone}
+														onChange={(e) => {
+															setFormData({
+																...formData,
+																phone: e.target
+																	.value,
+															});
+															setErrors({
+																...errors,
+																phone: "",
+															});
+														}}
+														size="lg"
+														borderColor={
+															errors.phone
+																? "red.500"
+																: "gray.300"
+														}
+													/>
+													{errors.phone && (
+														<Text
+															color="red.500"
+															fontSize="sm"
+															mt={1}>
+															{errors.phone}
+														</Text>
+													)}
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl
+													isInvalid={!!errors.email}>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Email
+													</FormLabel>
+													<Input
+														value={formData.email}
+														onChange={(e) => {
+															setFormData({
+																...formData,
+																email: e.target
+																	.value,
+															});
+															setErrors({
+																...errors,
+																email: "",
+															});
+														}}
+														size="lg"
+														borderColor={
+															errors.email
+																? "red.500"
+																: "gray.300"
+														}
+													/>
+													{errors.email && (
+														<Text
+															color="red.500"
+															fontSize="sm"
+															mt={1}>
+															{errors.email}
+														</Text>
+													)}
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Mã số thuế
+													</FormLabel>
+													<Input
+														value={formData.taxCode}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																taxCode:
+																	e.target
+																		.value,
+															})
+														}
+														size="lg"
+													/>
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Người liên hệ
+													</FormLabel>
+													<Input
+														value={
+															formData.contactPerson
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																contactPerson:
+																	e.target
+																		.value,
+															})
+														}
+														size="lg"
+													/>
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														SĐT người liên hệ
+													</FormLabel>
+													<Input
+														value={
+															formData.contactPhone
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																contactPhone:
+																	e.target
+																		.value,
+															})
+														}
+														size="lg"
+													/>
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Trạng thái
+													</FormLabel>
+													<Select
+														value={formData.status}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																status: e.target
+																	.value as
+																	| "active"
+																	| "inactive",
+															})
+														}
+														size="lg">
+														<option value="active">
+															Hoạt động
+														</option>
+														<option value="inactive">
+															Ngưng hoạt động
+														</option>
+													</Select>
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Số tài khoản
+													</FormLabel>
+													<Input
+														value={
+															formData.bankAccount
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																bankAccount:
+																	e.target
+																		.value,
+															})
+														}
+														size="lg"
+													/>
+												</FormControl>
+											</GridItem>
+
+											<GridItem>
+												<FormControl>
+													<FormLabel
+														fontSize="16px"
+														fontWeight="600"
+														color="gray.700">
+														Tên ngân hàng
+													</FormLabel>
+													<Input
+														value={
+															formData.bankName
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																bankName:
+																	e.target
+																		.value,
+															})
+														}
+														size="lg"
+													/>
+												</FormControl>
+											</GridItem>
+										</Grid>
+
+										<FormControl>
+											<FormLabel
+												fontSize="16px"
+												fontWeight="600"
+												color="gray.700">
+												Địa chỉ
+											</FormLabel>
+											<Input
+												value={formData.address}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														address: e.target.value,
+													})
+												}
+												size="lg"
+											/>
+										</FormControl>
+
+										<FormControl>
+											<FormLabel
+												fontSize="16px"
+												fontWeight="600"
+												color="gray.700">
+												Ghi chú
+											</FormLabel>
+											<Textarea
+												value={formData.notes}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														notes: e.target.value,
+													})
+												}
+												size="lg"
+												rows={3}
+												resize="vertical"
+											/>
+										</FormControl>
+									</VStack>
+								</TabPanel>
+
+								<TabPanel px={0}>
+									<VStack
+										spacing={4}
+										align="stretch"
+										mt={4}>
+										{/* Current Products List */}
+										<Box>
 											<Text
-												color="red.500"
-												fontSize="sm"
-												mt={1}>
-												{errors.code}
+												fontSize="16px"
+												fontWeight="600"
+												color="gray.700"
+												mb={3}>
+												Danh sách sản phẩm hiện tại
 											</Text>
-										)}
-									</FormControl>
-								</GridItem>
+											<Box
+												maxH="400px"
+												overflowY="auto"
+												border="1px solid"
+												borderColor="gray.200"
+												borderRadius="8px">
+												<Table
+													variant="simple"
+													size="md">
+													<Thead
+														bg="gray.50"
+														position="sticky"
+														top={0}
+														zIndex={1}>
+														<Tr>
+															<Th textAlign="center">
+																Mã SP
+															</Th>
+															<Th textAlign="center">
+																Tên sản phẩm
+															</Th>
+															<Th textAlign="center">
+																Nhóm hàng
+															</Th>
+															<Th textAlign="center">
+																Đơn vị
+															</Th>
+															<Th
+																textAlign="center"
+																width="60px">
+																Thao tác
+															</Th>
+														</Tr>
+													</Thead>
+													<Tbody>
+														{supplierProducts.length >
+														0 ? (
+															supplierProducts.map(
+																(product) => (
+																	<Tr
+																		key={
+																			product.id
+																		}>
+																		<Td
+																			fontWeight="600"
+																			textAlign="center">
+																			{
+																				product.productCode
+																			}
+																		</Td>
+																		<Td>
+																			{
+																				product.productName
+																			}
+																		</Td>
+																		<Td textAlign="center">
+																			<Badge colorScheme="purple">
+																				{
+																					product.category
+																				}
+																			</Badge>
+																		</Td>
+																		<Td textAlign="center">
+																			{
+																				product.unit
+																			}
+																		</Td>
+																		<Td textAlign="center">
+																			<IconButton
+																				aria-label="Xóa sản phẩm"
+																				icon={
+																					<Icon
+																						as={
+																							FiX
+																						}
+																					/>
+																				}
+																				size="sm"
+																				colorScheme="red"
+																				variant="ghost"
+																				onClick={() =>
+																					handleRemoveProduct(
+																						product.productId,
+																					)
+																				}
+																			/>
+																		</Td>
+																	</Tr>
+																),
+															)
+														) : (
+															<Tr>
+																<Td
+																	colSpan={6}
+																	textAlign="center"
+																	color="gray.500">
+																	Chưa có sản
+																	phẩm nào
+																</Td>
+															</Tr>
+														)}
+													</Tbody>
+												</Table>
+											</Box>
+										</Box>
 
-								<GridItem>
-									<FormControl
-										isRequired
-										isInvalid={!!errors.name}>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Tên nhà cung cấp
-										</FormLabel>
-										<Input
-											value={formData.name}
-											onChange={(e) => {
-												setFormData({
-													...formData,
-													name: e.target.value,
-												});
-												setErrors({
-													...errors,
-													name: "",
-												});
-											}}
-											size="lg"
-											borderColor={
-												errors.name
-													? "red.500"
-													: "gray.300"
-											}
-										/>
-										{errors.name && (
+										{/* Add Products Section */}
+										<Box>
 											<Text
-												color="red.500"
-												fontSize="sm"
-												mt={1}>
-												{errors.name}
+												fontSize="16px"
+												fontWeight="600"
+												color="gray.700"
+												mb={3}>
+												Thêm sản phẩm mới
 											</Text>
-										)}
-									</FormControl>
-								</GridItem>
 
-								<GridItem>
-									<FormControl
-										isRequired
-										isInvalid={!!errors.phone}>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Số điện thoại
-										</FormLabel>
-										<Input
-											value={formData.phone}
-											onChange={(e) => {
-												setFormData({
-													...formData,
-													phone: e.target.value,
-												});
-												setErrors({
-													...errors,
-													phone: "",
-												});
-											}}
-											size="lg"
-											borderColor={
-												errors.phone
-													? "red.500"
-													: "gray.300"
-											}
-										/>
-										{errors.phone && (
-											<Text
-												color="red.500"
-												fontSize="sm"
-												mt={1}>
-												{errors.phone}
-											</Text>
-										)}
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl isInvalid={!!errors.email}>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Email
-										</FormLabel>
-										<Input
-											value={formData.email}
-											onChange={(e) => {
-												setFormData({
-													...formData,
-													email: e.target.value,
-												});
-												setErrors({
-													...errors,
-													email: "",
-												});
-											}}
-											size="lg"
-											borderColor={
-												errors.email
-													? "red.500"
-													: "gray.300"
-											}
-										/>
-										{errors.email && (
-											<Text
-												color="red.500"
-												fontSize="sm"
-												mt={1}>
-												{errors.email}
-											</Text>
-										)}
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Mã số thuế
-										</FormLabel>
-										<Input
-											value={formData.taxCode}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													taxCode: e.target.value,
-												})
-											}
-											size="lg"
-										/>
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Người liên hệ
-										</FormLabel>
-										<Input
-											value={formData.contactPerson}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													contactPerson:
-														e.target.value,
-												})
-											}
-											size="lg"
-										/>
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											SĐT người liên hệ
-										</FormLabel>
-										<Input
-											value={formData.contactPhone}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													contactPhone:
-														e.target.value,
-												})
-											}
-											size="lg"
-										/>
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Trạng thái
-										</FormLabel>
-										<Select
-											value={formData.status}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													status: e.target.value as
-														| "active"
-														| "inactive",
-												})
-											}
-											size="lg">
-											<option value="active">
-												Hoạt động
-											</option>
-											<option value="inactive">
-												Ngưng hoạt động
-											</option>
-										</Select>
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Số tài khoản
-										</FormLabel>
-										<Input
-											value={formData.bankAccount}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													bankAccount: e.target.value,
-												})
-											}
-											size="lg"
-										/>
-									</FormControl>
-								</GridItem>
-
-								<GridItem>
-									<FormControl>
-										<FormLabel
-											fontSize="16px"
-											fontWeight="600"
-											color="gray.700">
-											Tên ngân hàng
-										</FormLabel>
-										<Input
-											value={formData.bankName}
-											onChange={(e) =>
-												setFormData({
-													...formData,
-													bankName: e.target.value,
-												})
-											}
-											size="lg"
-										/>
-									</FormControl>
-								</GridItem>
-							</Grid>
-
-							<FormControl>
-								<FormLabel
-									fontSize="16px"
-									fontWeight="600"
-									color="gray.700">
-									Địa chỉ
-								</FormLabel>
-								<Input
-									value={formData.address}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											address: e.target.value,
-										})
-									}
-									size="lg"
-								/>
-							</FormControl>
-
-							<FormControl>
-								<FormLabel
-									fontSize="16px"
-									fontWeight="600"
-									color="gray.700">
-									Ghi chú
-								</FormLabel>
-								<Textarea
-									value={formData.notes}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											notes: e.target.value,
-										})
-									}
-									size="lg"
-									rows={3}
-									resize="vertical"
-								/>
-							</FormControl>
-						</VStack>
+											<Box
+												border="1px solid"
+												borderColor="gray.200"
+												borderRadius="8px"
+												p={4}
+												bg="gray.50">
+												<Grid
+													templateColumns={{
+														base: "1fr",
+														md: "repeat(3, 1fr)",
+													}}
+													gap={3}
+													mb={3}>
+													<GridItem>
+														<FormControl isRequired>
+															<FormLabel
+																fontSize="14px"
+																fontWeight="600">
+																Tên sản phẩm
+															</FormLabel>
+															<Input
+																value={
+																	newProduct.productName
+																}
+																onChange={(e) =>
+																	setNewProduct(
+																		{
+																			...newProduct,
+																			productName:
+																				e
+																					.target
+																					.value,
+																		},
+																	)
+																}
+																placeholder="VD: Rau cải xanh"
+																size="md"
+																bg="white"
+															/>
+														</FormControl>
+													</GridItem>
+													<GridItem>
+														<FormControl isRequired>
+															<FormLabel
+																fontSize="14px"
+																fontWeight="600">
+																Nhóm hàng
+															</FormLabel>
+															<Input
+																value={
+																	newProduct.category
+																}
+																onChange={(e) =>
+																	setNewProduct(
+																		{
+																			...newProduct,
+																			category:
+																				e
+																					.target
+																					.value,
+																		},
+																	)
+																}
+																placeholder="VD: Rau củ"
+																size="md"
+																bg="white"
+															/>
+														</FormControl>
+													</GridItem>
+													<GridItem>
+														<FormControl isRequired>
+															<FormLabel
+																fontSize="14px"
+																fontWeight="600">
+																Đơn vị
+															</FormLabel>
+															<Input
+																value={
+																	newProduct.unit
+																}
+																onChange={(e) =>
+																	setNewProduct(
+																		{
+																			...newProduct,
+																			unit: e
+																				.target
+																				.value,
+																		},
+																	)
+																}
+																placeholder="VD: kg, gói, thùng"
+																size="md"
+																bg="white"
+															/>
+														</FormControl>
+													</GridItem>
+												</Grid>
+												<Button
+													leftIcon={
+														<Icon as={FiPlus} />
+													}
+													colorScheme="blue"
+													bg="#161f70"
+													_hover={{ bg: "#0f1654" }}
+													onClick={handleAddProduct}
+													size="md"
+													width="full">
+													Thêm sản phẩm
+												</Button>
+											</Box>
+										</Box>
+									</VStack>
+								</TabPanel>
+							</TabPanels>
+						</Tabs>
 					)}
 				</ModalBody>
 

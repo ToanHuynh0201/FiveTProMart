@@ -190,10 +190,16 @@ const EditScheduleModal = ({
 			loadAvailableStaff();
 			onUpdate();
 		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Lỗi khi thêm nhân viên";
 			toast({
-				title: "Lỗi khi thêm nhân viên",
+				title: "Không thể thêm nhân viên",
+				description: errorMessage,
 				status: "error",
-				duration: 2000,
+				duration: 5000,
+				isClosable: true,
 			});
 		} finally {
 			setIsLoading(false);
@@ -236,10 +242,16 @@ const EditScheduleModal = ({
 			loadAvailableStaff();
 			onUpdate();
 		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Lỗi khi thêm nhân viên";
 			toast({
-				title: "Lỗi khi thêm nhân viên",
+				title: "Không thể thêm nhân viên",
+				description: errorMessage,
 				status: "error",
-				duration: 2000,
+				duration: 5000,
+				isClosable: true,
 			});
 		} finally {
 			setIsLoading(false);

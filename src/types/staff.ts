@@ -2,7 +2,6 @@ export interface Staff {
 	id: string;
 	name: string;
 	position: string;
-	shift: string;
 	avatar?: string;
 	// Extended details
 	phone?: string;
@@ -11,7 +10,6 @@ export interface Staff {
 	dateOfBirth?: string;
 	hireDate?: string;
 	salary?: number;
-	workDays?: string[];
 	status?: "active" | "inactive" | "on-leave";
 	employmentType?: "Fulltime" | "Partime";
 }
@@ -32,7 +30,6 @@ export interface UpdateStaffData {
 	email?: string;
 	address?: string;
 	salary?: number;
-	shift?: string;
 	status?: "active" | "inactive" | "on-leave";
 	position?: string;
 	employmentType?: "Fulltime" | "Partime";

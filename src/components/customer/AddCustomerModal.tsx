@@ -40,6 +40,8 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 	const [formData, setFormData] = useState({
 		name: "",
 		phone: "",
+		email: "",
+		address: "",
 		gender: "Nam" as "Nam" | "Nữ" | "Khác",
 		loyaltyPoints: 0,
 	});
@@ -47,6 +49,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 	const [errors, setErrors] = useState({
 		name: "",
 		phone: "",
+		email: "",
 	});
 
 	useEffect(() => {
@@ -55,12 +58,15 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 			setFormData({
 				name: "",
 				phone: "",
+				email: "",
+				address: "",
 				gender: "Nam",
 				loyaltyPoints: 0,
 			});
 			setErrors({
 				name: "",
 				phone: "",
+				email: "",
 			});
 		}
 	}, [isOpen]);
@@ -71,11 +77,18 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 		return phoneRegex.test(phone);
 	};
 
+	const validateEmail = (email: string): boolean => {
+		// Basic email validation
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
+	};
+
 	const handleSubmit = async () => {
 		// Reset errors
 		const newErrors = {
 			name: "",
 			phone: "",
+			email: "",
 		};
 
 		// Validation
@@ -92,10 +105,15 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
+		// Email validation (optional field)
+		if (formData.email.trim() && !validateEmail(formData.email)) {
+			newErrors.email = "Email không hợp lệ";
+		}
+
 		setErrors(newErrors);
 
 		// If there are errors, don't submit
-		if (newErrors.name || newErrors.phone) {
+		if (newErrors.name || newErrors.phone || newErrors.email) {
 			return;
 		}
 
@@ -258,6 +276,85 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 									{errors.phone}
 								</Text>
 							)}
+						</FormControl>
+
+						{/* Email */}
+						<FormControl isInvalid={!!errors.email}>
+							<FormLabel
+								fontSize={{ base: "16px", md: "18px" }}
+								fontWeight="600"
+								color="gray.700"
+								mb={2}>
+								Email
+							</FormLabel>
+							<Input
+								type="email"
+								placeholder="Nhập email (không bắt buộc)"
+								value={formData.email}
+								onChange={(e) => {
+									setFormData({
+										...formData,
+										email: e.target.value,
+									});
+									setErrors({ ...errors, email: "" });
+								}}
+								size="lg"
+								fontSize={{ base: "14px", md: "16px" }}
+								borderColor={
+									errors.email ? "red.500" : "gray.300"
+								}
+								_hover={{
+									borderColor: errors.email
+										? "red.600"
+										: "gray.400",
+								}}
+								_focus={{
+									borderColor: errors.email
+										? "red.500"
+										: "brand.500",
+									boxShadow: errors.email
+										? "0 0 0 1px var(--chakra-colors-red-500)"
+										: "0 0 0 1px var(--chakra-colors-brand-500)",
+								}}
+							/>
+							{errors.email && (
+								<Text
+									color="red.500"
+									fontSize="14px"
+									mt={1}>
+									{errors.email}
+								</Text>
+							)}
+						</FormControl>
+
+						{/* Địa chỉ */}
+						<FormControl>
+							<FormLabel
+								fontSize={{ base: "16px", md: "18px" }}
+								fontWeight="600"
+								color="gray.700"
+								mb={2}>
+								Địa chỉ
+							</FormLabel>
+							<Input
+								placeholder="Nhập địa chỉ (không bắt buộc)"
+								value={formData.address}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										address: e.target.value,
+									})
+								}
+								size="lg"
+								fontSize={{ base: "14px", md: "16px" }}
+								borderColor="gray.300"
+								_hover={{ borderColor: "gray.400" }}
+								_focus={{
+									borderColor: "brand.500",
+									boxShadow:
+										"0 0 0 1px var(--chakra-colors-brand-500)",
+								}}
+							/>
 						</FormControl>
 
 						{/* Giới tính */}

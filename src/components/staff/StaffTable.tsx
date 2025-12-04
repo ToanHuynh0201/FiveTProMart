@@ -116,14 +116,6 @@ const StaffTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									py={3}>
-									Ca làm việc
-								</Th>
-								<Th
-									fontSize="12px"
-									fontWeight="700"
-									color="gray.700"
-									textTransform="none"
 									textAlign="center"
 									py={3}>
 									Thao tác
@@ -134,7 +126,7 @@ const StaffTable = ({
 							{staffList.length === 0 ? (
 								<Tr>
 									<Td
-										colSpan={5}
+										colSpan={4}
 										textAlign="center"
 										py={6}>
 										<Text
@@ -179,12 +171,6 @@ const StaffTable = ({
 												py={3}>
 												{staff.position}
 											</Text>
-										</Td>
-										<Td
-											fontSize="13px"
-											color="gray.600"
-											py={3}>
-											{staff.shift}
 										</Td>
 										<Td>
 											<Flex

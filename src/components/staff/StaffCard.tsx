@@ -161,22 +161,6 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 				mb={3}>
 				{staff.position}
 			</Text>
-			{/* Shift Info */}
-			<Box mb={4}>
-				<Text
-					fontSize="15px"
-					fontWeight="600"
-					color="brand.600"
-					mb={1}>
-					Ca làm
-				</Text>
-				<Text
-					fontSize="14px"
-					fontWeight="400"
-					color="black">
-					{staff.shift}
-				</Text>
-			</Box>
 			{/* View Details Link */}
 			<Text
 				fontSize="10px"

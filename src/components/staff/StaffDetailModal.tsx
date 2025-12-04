@@ -22,20 +22,9 @@
 	FormControl,
 	FormLabel,
 	useToast,
-	Tabs,
-	TabList,
-	TabPanels,
-	Tab,
-	TabPanel,
-	Table,
-	Thead,
-	Tbody,
-	Tr,
-	Th,
-	Td,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import type { StaffDetail, WorkSchedule, UpdateStaffData } from "@/types";
+import type { StaffDetail, UpdateStaffData } from "@/types";
 import { staffService } from "@/services/staffService";
 
 interface StaffDetailModalProps {
@@ -57,15 +46,12 @@ const StaffDetailModal = ({
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-	const [workSchedule, setWorkSchedule] = useState<WorkSchedule[]>([]);
-	const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
 	const [formData, setFormData] = useState<UpdateStaffData>({});
 	const toast = useToast();
 
 	useEffect(() => {
 		if (staffId && isOpen) {
 			loadStaffDetail();
-			loadWorkSchedule();
 		}
 	}, [staffId, isOpen]);
 
@@ -82,7 +68,6 @@ const StaffDetailModal = ({
 					email: data.email,
 					address: data.address,
 					salary: data.salary,
-					shift: data.shift,
 					status: data.status,
 					position: data.position,
 					dateOfBirth: data.dateOfBirth,
@@ -103,24 +88,6 @@ const StaffDetailModal = ({
 		}
 	};
 
-	const loadWorkSchedule = async () => {
-		if (!staffId) return;
-
-		setIsLoadingSchedule(true);
-		try {
-			const currentDate = new Date();
-			const schedule = await staffService.getWorkSchedule(
-				staffId,
-				currentDate.getMonth() + 1,
-				currentDate.getFullYear(),
-			);
-			setWorkSchedule(schedule);
-		} catch (error) {
-			console.error("Error loading work schedule:", error);
-		} finally {
-			setIsLoadingSchedule(false);
-		}
-	};
 
 	const handleSave = async () => {
 		if (!staffId) return;
@@ -163,7 +130,6 @@ const StaffDetailModal = ({
 				email: staffDetail.email,
 				address: staffDetail.address,
 				salary: staffDetail.salary,
-				shift: staffDetail.shift,
 				status: staffDetail.status,
 				position: staffDetail.position,
 				dateOfBirth: staffDetail.dateOfBirth,
@@ -205,29 +171,6 @@ const StaffDetailModal = ({
 		}
 	};
 
-	const getStatusBadge = (status: string) => {
-		const statusMap = {
-			scheduled: { label: "Đã lên lịch", color: "blue.500" },
-			completed: { label: "Hoàn thành", color: "success.500" },
-			late: { label: "Đi muộn", color: "orange.500" },
-			absent: { label: "Nghỉ", color: "error.500" },
-		};
-		return (
-			statusMap[status as keyof typeof statusMap] || {
-				label: status,
-				color: "gray.500",
-			}
-		);
-	};
-
-	const getShiftLabel = (shift: "morning" | "afternoon" | "evening") => {
-		const shiftMap = {
-			morning: "Sáng",
-			afternoon: "Chiều",
-			evening: "Tối",
-		};
-		return shiftMap[shift] || shift;
-	};
 
 	const InfoRow = ({
 		label,
@@ -307,33 +250,9 @@ const StaffDetailModal = ({
 							/>
 						</Flex>
 					) : staffDetail ? (
-						<Tabs
-							colorScheme="brand"
-							variant="enclosed">
-							<TabList>
-								<Tab
-									fontWeight="600"
-									_selected={{
-										color: "brand.500",
-										borderColor: "brand.500",
-										borderBottomColor: "white",
-									}}>
-									Thông tin
-								</Tab>
-								<Tab
-									fontWeight="600"
-									_selected={{
-										color: "brand.500",
-										borderColor: "brand.500",
-										borderBottomColor: "white",
-									}}>
-									Lịch làm việc
-								</Tab>
-							</TabList>
-
-							<TabPanels>
-								{/* Info Tab */}
-								<TabPanel px={0}>
+						<VStack
+							spacing={6}
+							align="stretch">
 									<VStack
 										spacing={6}
 										align="stretch">
@@ -644,43 +563,6 @@ const StaffDetailModal = ({
 												gap={4}>
 												<GridItem>
 													{isEditing ? (
-														<FormControl mt={2}>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Ca làm việc
-															</FormLabel>
-															<Input
-																value={
-																	formData.shift ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			shift: e
-																				.target
-																				.value,
-																		},
-																	)
-																}
-																size="sm"
-																placeholder="Sáng: 7:00 - 11:00"
-															/>
-														</FormControl>
-													) : (
-														<InfoRow
-															label="Ca làm việc"
-															value={
-																staffDetail.shift
-															}
-														/>
-													)}
-												</GridItem>
-												<GridItem>
-													{isEditing ? (
 														<FormControl>
 															<FormLabel
 																fontSize="14px"
@@ -798,294 +680,9 @@ const StaffDetailModal = ({
 													)}
 												</GridItem>
 											</Grid>
-											{staffDetail.workDays &&
-												staffDetail.workDays.length >
-													0 && (
-													<Box mt={3}>
-														<Text
-															fontSize="14px"
-															fontWeight="600"
-															color="gray.600"
-															mb={2}>
-															Ngày làm việc:
-														</Text>
-														<Flex
-															gap={2}
-															flexWrap="wrap">
-															{staffDetail.workDays.map(
-																(day) => (
-																	<Badge
-																		key={
-																			day
-																		}
-																		bg="brand.50"
-																		color="brand.600"
-																		borderRadius="6px"
-																		px={2}
-																		py={1}
-																		fontSize="12px">
-																		{day}
-																	</Badge>
-																),
-															)}
-														</Flex>
-													</Box>
-												)}
 										</Box>
 									</VStack>
-								</TabPanel>
-
-								{/* Schedule Tab */}
-								<TabPanel px={0}>
-									<VStack
-										spacing={6}
-										align="stretch">
-										<Flex
-											justify="space-between"
-											align="center">
-											<Text
-												fontSize="18px"
-												fontWeight="700"
-												color="brand.600">
-												Lịch làm việc tháng{" "}
-												{new Date().getMonth() + 1}/
-												{new Date().getFullYear()}
-											</Text>
-										</Flex>{" "}
-										{isLoadingSchedule ? (
-											<Flex
-												justify="center"
-												py={10}>
-												<Spinner
-													size="lg"
-													color="brand.500"
-												/>
-											</Flex>
-										) : workSchedule.length > 0 ? (
-											<>
-												{/* Table View */}
-												<Box>
-													<Text
-														fontSize="16px"
-														fontWeight="700"
-														color="brand.600"
-														mb={3}>
-														Chi tiết lịch làm việc
-													</Text>
-													<Box
-														overflowX="auto"
-														borderRadius="12px"
-														border="1px solid"
-														borderColor="gray.200">
-														<Table variant="simple">
-															<Thead bg="brand.50">
-																<Tr>
-																	<Th
-																		color="brand.600"
-																		fontWeight="700">
-																		Ngày
-																	</Th>
-																	<Th
-																		color="brand.600"
-																		fontWeight="700">
-																		Ca làm
-																		việc
-																	</Th>
-																	<Th
-																		color="brand.600"
-																		fontWeight="700">
-																		Giờ làm
-																	</Th>
-																	<Th
-																		color="brand.600"
-																		fontWeight="700">
-																		Trạng
-																		thái
-																	</Th>
-																	<Th
-																		color="brand.600"
-																		fontWeight="700">
-																		Ghi chú
-																	</Th>
-																</Tr>
-															</Thead>
-															<Tbody>
-																{workSchedule.map(
-																	(
-																		schedule,
-																		index,
-																	) => {
-																		const statusBadge =
-																			getStatusBadge(
-																				schedule.status,
-																			);
-																		// Format date to DD/MM/YYYY
-																		const dateObj =
-																			new Date(
-																				schedule.date,
-																			);
-																		const formattedDate = `${dateObj
-																			.getDate()
-																			.toString()
-																			.padStart(
-																				2,
-																				"0",
-																			)}/${(
-																			dateObj.getMonth() +
-																			1
-																		)
-																			.toString()
-																			.padStart(
-																				2,
-																				"0",
-																			)}/${dateObj.getFullYear()}`;
-
-																		return (
-																			<Tr
-																				key={
-																					index
-																				}>
-																				<Td
-																					fontWeight="600"
-																					color="gray.700">
-																					{
-																						formattedDate
-																					}
-																				</Td>
-																				<Td>
-																					{getShiftLabel(
-																						schedule.shift,
-																					)}
-																				</Td>
-																				<Td>
-																					{
-																						schedule.startTime
-																					}{" "}
-																					-{" "}
-																					{
-																						schedule.endTime
-																					}
-																				</Td>
-																				<Td>
-																					<Badge
-																						bg={
-																							statusBadge.color
-																						}
-																						color="white"
-																						borderRadius="6px"
-																						px={
-																							2
-																						}
-																						py={
-																							1
-																						}
-																						fontSize="12px">
-																						{
-																							statusBadge.label
-																						}
-																					</Badge>
-																				</Td>
-																				<Td
-																					fontSize="14px"
-																					color="gray.600">
-																					{schedule.notes ||
-																						"-"}
-																				</Td>
-																			</Tr>
-																		);
-																	},
-																)}
-															</Tbody>
-														</Table>
-													</Box>
-												</Box>
-
-												<Divider />
-
-												{/* Legend */}
-												<Box
-													borderRadius="12px"
-													border="1px solid"
-													borderColor="gray.200"
-													bg="gray.50"
-													p={4}>
-													<Text
-														fontSize="14px"
-														fontWeight="600"
-														color="gray.700"
-														mb={3}>
-														Chú thích trạng thái:
-													</Text>
-													<Flex
-														gap={4}
-														flexWrap="wrap">
-														<Flex
-															align="center"
-															gap={2}>
-															<Box
-																w="20px"
-																h="20px"
-																bg="blue.500"
-																borderRadius="4px"
-															/>
-															<Text fontSize="14px">
-																Đã lên lịch
-															</Text>
-														</Flex>
-														<Flex
-															align="center"
-															gap={2}>
-															<Box
-																w="20px"
-																h="20px"
-																bg="success.500"
-																borderRadius="4px"
-															/>
-															<Text fontSize="14px">
-																Hoàn thành
-															</Text>
-														</Flex>
-														<Flex
-															align="center"
-															gap={2}>
-															<Box
-																w="20px"
-																h="20px"
-																bg="orange.500"
-																borderRadius="4px"
-															/>
-															<Text fontSize="14px">
-																Đi muộn
-															</Text>
-														</Flex>
-														<Flex
-															align="center"
-															gap={2}>
-															<Box
-																w="20px"
-																h="20px"
-																bg="error.500"
-																borderRadius="4px"
-															/>
-															<Text fontSize="14px">
-																Nghỉ
-															</Text>
-														</Flex>
-													</Flex>
-												</Box>
-											</>
-										) : (
-											<Box
-												textAlign="center"
-												py={10}
-												color="gray.500">
-												Không có lịch làm việc
-											</Box>
-										)}
-									</VStack>
-								</TabPanel>
-							</TabPanels>
-						</Tabs>
+						</VStack>
 					) : (
 						<Box
 							textAlign="center"

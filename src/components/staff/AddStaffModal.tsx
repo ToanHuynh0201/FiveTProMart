@@ -15,7 +15,6 @@
 	Grid,
 	GridItem,
 	useToast,
-	Checkbox,
 	HStack,
 	Text,
 } from "@chakra-ui/react";
@@ -35,7 +34,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 	const [formData, setFormData] = useState({
 		name: "",
 		position: "",
-		shift: "",
 		phone: "",
 		email: "",
 		address: "",
@@ -43,26 +41,7 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 		hireDate: "",
 		salary: "",
 		status: "active" as "active" | "inactive" | "on-leave",
-		workDays: [] as string[],
 	});
-	const workDayOptions = [
-		"Thứ 2",
-		"Thứ 3",
-		"Thứ 4",
-		"Thứ 5",
-		"Thứ 6",
-		"Thứ 7",
-		"Chủ nhật",
-	];
-
-	const handleWorkDayToggle = (day: string) => {
-		setFormData((prev) => ({
-			...prev,
-			workDays: prev.workDays.includes(day)
-				? prev.workDays.filter((d) => d !== day)
-				: [...prev.workDays, day],
-		}));
-	};
 
 	const handleSubmit = async () => {
 		// Validation
@@ -81,17 +60,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			toast({
 				title: "Lỗi",
 				description: "Vui lòng nhập vị trí công việc",
-				status: "error",
-				duration: 3000,
-				isClosable: true,
-			});
-			return;
-		}
-
-		if (!formData.shift.trim()) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng nhập ca làm việc",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -127,7 +95,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			const newStaff: Omit<Staff, "id"> = {
 				name: formData.name.trim(),
 				position: formData.position.trim(),
-				shift: formData.shift.trim(),
 				phone: formData.phone.trim(),
 				email: formData.email.trim(),
 				address: formData.address.trim() || undefined,
@@ -135,10 +102,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 				hireDate: formData.hireDate || undefined,
 				salary: formData.salary ? Number(formData.salary) : undefined,
 				status: formData.status,
-				workDays:
-					formData.workDays.length > 0
-						? formData.workDays
-						: undefined,
 			};
 
 			onAdd(newStaff);
@@ -155,7 +118,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			setFormData({
 				name: "",
 				position: "",
-				shift: "",
 				phone: "",
 				email: "",
 				address: "",
@@ -163,7 +125,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 				hireDate: "",
 				salary: "",
 				status: "active",
-				workDays: [],
 			});
 			onClose();
 		} catch (error) {
@@ -184,7 +145,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 		setFormData({
 			name: "",
 			position: "",
-			shift: "",
 			phone: "",
 			email: "",
 			address: "",
@@ -192,7 +152,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			hireDate: "",
 			salary: "",
 			status: "active",
-			workDays: [],
 		});
 		onClose();
 	};
@@ -373,34 +332,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 							templateColumns="repeat(2, 1fr)"
 							gap={4}>
 							<GridItem>
-								<FormControl isRequired>
-									<FormLabel
-										fontSize="14px"
-										fontWeight="600"
-										color="gray.700">
-										Ca làm việc
-									</FormLabel>
-									<Select
-										value={formData.shift}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												shift: e.target.value,
-											})
-										}
-										placeholder="Chọn ca làm việc"
-										size="md">
-										<option value="Sáng (6:00 - 12:00)">
-											Sáng (6:00 - 12:00)
-										</option>
-										<option value="Chiều (12:00 - 18:00)">
-											Chiều (12:00 - 18:00)
-										</option>
-									</Select>
-								</FormControl>
-							</GridItem>
-
-							<GridItem>
 								<FormControl>
 									<FormLabel
 										fontSize="14px"
@@ -502,34 +433,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 							</GridItem>
 						</Grid>
 
-						{/* Work Days */}
-						<FormControl>
-							<FormLabel
-								fontSize="14px"
-								fontWeight="600"
-								color="gray.700"
-								mb={3}>
-								Ngày làm việc trong tuần
-							</FormLabel>
-							<HStack
-								spacing={3}
-								flexWrap="wrap">
-								{workDayOptions.map((day) => (
-									<Checkbox
-										key={day}
-										isChecked={formData.workDays.includes(
-											day,
-										)}
-										onChange={() =>
-											handleWorkDayToggle(day)
-										}
-										colorScheme="brand"
-										size="md">
-										{day}
-									</Checkbox>
-								))}
-							</HStack>
-						</FormControl>
 					</VStack>
 				</ModalBody>
 

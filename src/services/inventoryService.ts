@@ -533,6 +533,54 @@ const generateProductsFromSuppliers = (): InventoryProduct[] => {
 	allSupplierProducts.forEach((supplierData) => {
 		supplierData.products.forEach((p) => {
 			const stock = Math.floor(Math.random() * 150) + 50;
+
+			// Tạo batches với một số lô hết hạn
+			const batches: ProductBatch[] = [];
+
+			// 20% sản phẩm sẽ có lô hết hạn
+			const hasExpiredBatch = Math.random() < 0.2;
+
+			if (hasExpiredBatch) {
+				// Thêm lô hết hạn (10-30 đơn vị)
+				const expiredQty = Math.floor(Math.random() * 20) + 10;
+				batches.push({
+					id: `batch_p${productCounter}_expired`,
+					productId: `p${productCounter}`,
+					batchNumber: `${p.code}-EXP001`,
+					quantity: expiredQty,
+					costPrice: p.costPrice,
+					// Hết hạn từ 1-60 ngày trước
+					expiryDate: new Date(
+						Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000,
+					),
+					importDate: new Date(
+						Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000,
+					),
+					supplier: supplierData.supplierName,
+					status: "expired",
+				});
+			}
+
+			// Thêm lô còn hạn chính
+			const activeQty = hasExpiredBatch
+				? stock - batches[0].quantity
+				: stock;
+			batches.push({
+				id: `batch_p${productCounter}_1`,
+				productId: `p${productCounter}`,
+				batchNumber: `${p.code}-LOT001`,
+				quantity: activeQty,
+				costPrice: p.costPrice,
+				expiryDate: new Date(
+					Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000,
+				),
+				importDate: new Date(
+					Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+				),
+				supplier: supplierData.supplierName,
+				status: "active",
+			});
+
 			const product: InventoryProduct = {
 				id: `p${productCounter}`,
 				code: p.code,
@@ -549,28 +597,7 @@ const generateProductsFromSuppliers = (): InventoryProduct[] => {
 					2,
 					"0",
 				)}`,
-				batches: [
-					{
-						id: `batch_p${productCounter}_1`,
-						productId: `p${productCounter}`,
-						batchNumber: `LOT${String(productCounter).padStart(
-							3,
-							"0",
-						)}`,
-						quantity: stock,
-						costPrice: p.costPrice,
-						expiryDate: new Date(
-							Date.now() +
-								Math.random() * 365 * 24 * 60 * 60 * 1000,
-						),
-						importDate: new Date(
-							Date.now() -
-								Math.random() * 30 * 24 * 60 * 60 * 1000,
-						),
-						supplier: supplierData.supplierName,
-						status: "active",
-					},
-				],
+				batches: batches,
 				status: "active",
 				createdAt: new Date(
 					Date.now() - Math.random() * 180 * 24 * 60 * 60 * 1000,
@@ -618,7 +645,11 @@ const mockStockMovements: StockMovement[] = [
 	},
 ];
 
+// Mock disposal records storage
+const mockDisposalRecords: import("../types/inventory").DisposalRecord[] = [];
+
 let productIdCounter = 48;
+let disposalIdCounter = 1;
 
 export const inventoryService = {
 	// Lấy tất cả sản phẩm
@@ -961,5 +992,128 @@ export const inventoryService = {
 		product.updatedAt = new Date();
 
 		return product;
+	},
+
+	// Lấy danh sách lô hàng đã hết hạn
+	getExpiredBatches: async (): Promise<ProductBatch[]> => {
+		await new Promise((resolve) => setTimeout(resolve, 200));
+
+		const expiredBatches: ProductBatch[] = [];
+		const now = new Date();
+
+		mockProducts.forEach((product) => {
+			if (product.batches && product.batches.length > 0) {
+				product.batches.forEach((batch) => {
+					if (
+						batch.quantity > 0 &&
+						batch.expiryDate &&
+						new Date(batch.expiryDate) < now
+					) {
+						expiredBatches.push(batch);
+					}
+				});
+			}
+		});
+
+		return expiredBatches;
+	},
+
+	// Tạo phiếu hủy hàng
+	createDisposal: async (
+		items: import("@/types/inventory").DisposalItem[],
+		note: string,
+	): Promise<import("@/types/inventory").DisposalRecord> => {
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
+		// Validate items
+		items.forEach((item) => {
+			const product = mockProducts.find((p) => p.id === item.productId);
+			if (!product) {
+				throw new Error(`Không tìm thấy sản phẩm: ${item.productName}`);
+			}
+
+			const batch = product.batches?.find((b) => b.id === item.batchId);
+			if (!batch) {
+				throw new Error(`Không tìm thấy lô hàng: ${item.batchNumber}`);
+			}
+
+			if (batch.quantity < item.quantity) {
+				throw new Error(
+					`Số lượng hủy vượt quá tồn kho. Lô ${item.batchNumber} chỉ còn ${batch.quantity}`,
+				);
+			}
+		});
+
+		// Update batch quantities
+		items.forEach((item) => {
+			const product = mockProducts.find((p) => p.id === item.productId);
+			if (!product || !product.batches) return;
+
+			const batch = product.batches.find((b) => b.id === item.batchId);
+			if (!batch) return;
+
+			// Reduce batch quantity
+			batch.quantity -= item.quantity;
+
+			// Update batch status if sold out
+			if (batch.quantity === 0) {
+				batch.status = "sold-out";
+			}
+
+			// Recalculate product stock
+			product.stock = product.batches.reduce(
+				(total, b) => total + b.quantity,
+				0,
+			);
+
+			// Update product status
+			if (product.stock === 0) {
+				product.status = "out-of-stock";
+			}
+
+			// Recalculate average cost price
+			const totalCost = product.batches.reduce(
+				(total, b) => total + b.quantity * b.costPrice,
+				0,
+			);
+			product.costPrice =
+				product.stock > 0 ? totalCost / product.stock : 0;
+
+			product.updatedAt = new Date();
+		});
+
+		// Create disposal record
+		const totalValue = items.reduce(
+			(sum, item) => sum + item.quantity * item.costPrice,
+			0,
+		);
+
+		const disposalId = `disposal_${String(disposalIdCounter).padStart(3, "0")}`;
+		disposalIdCounter++;
+
+		const disposalRecord: import("@/types/inventory").DisposalRecord = {
+			id: disposalId,
+			items,
+			totalValue,
+			createdBy: "current_user", // Replace with actual user
+			createdAt: new Date(),
+			note,
+		};
+
+		// Save to disposal records
+		mockDisposalRecords.push(disposalRecord);
+
+		return disposalRecord;
+	},
+
+	// Lấy lịch sử hủy hàng
+	getDisposalHistory: async (): Promise<
+		import("@/types/inventory").DisposalRecord[]
+	> => {
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		// Return records sorted by newest first
+		return [...mockDisposalRecords].sort(
+			(a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+		);
 	},
 };

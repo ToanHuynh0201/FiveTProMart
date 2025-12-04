@@ -70,3 +70,27 @@ export interface ProductFilter {
 	status: string;
 	stockLevel: "all" | "low" | "out" | "normal" | "expiring-soon" | "expired"; // Mức tồn kho
 }
+
+// Hủy hàng
+export interface DisposalItem {
+	id: string; // ID unique cho mỗi item trong disposal
+	productId: string;
+	productName: string;
+	productCode: string;
+	batchId: string;
+	batchNumber: string;
+	quantity: number; // Số lượng hủy
+	maxQuantity: number; // Số lượng tối đa có thể hủy (quantity của batch)
+	costPrice: number; // Giá vốn
+	expiryDate?: Date;
+	reason: string; // Lý do hủy: "expired" | "damaged" | "other"
+}
+
+export interface DisposalRecord {
+	id: string;
+	items: DisposalItem[];
+	totalValue: number; // Tổng giá trị hủy
+	createdBy: string;
+	createdAt: Date;
+	note?: string; // Ghi chú
+}

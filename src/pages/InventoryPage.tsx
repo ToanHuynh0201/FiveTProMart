@@ -10,7 +10,7 @@ import {
 	Button,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
-import { BsExclamationTriangle } from "react-icons/bs";
+import { BsExclamationTriangle, BsTrash } from "react-icons/bs";
 import { FiPackage } from "react-icons/fi";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -20,6 +20,7 @@ import {
 	EditProductModal,
 	ProductDetailModal,
 	BatchListModal,
+	DisposalModal,
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
@@ -30,6 +31,7 @@ import type {
 	InventoryCategory,
 	InventoryStats,
 	ProductBatch,
+	DisposalItem,
 } from "@/types";
 
 const ITEMS_PER_PAGE = 10;
@@ -80,6 +82,11 @@ const InventoryPage = () => {
 		isOpen: isBatchModalOpen,
 		onOpen: onBatchModalOpen,
 		onClose: onBatchModalClose,
+	} = useDisclosure();
+	const {
+		isOpen: isDisposalModalOpen,
+		onOpen: onDisposalModalOpen,
+		onClose: onDisposalModalClose,
 	} = useDisclosure();
 
 	// Load initial data
@@ -289,6 +296,29 @@ const InventoryPage = () => {
 		}
 	};
 
+	const handleDisposal = () => {
+		onDisposalModalOpen();
+	};
+
+	const handleSubmitDisposal = async (
+		items: DisposalItem[],
+		note: string,
+	) => {
+		try {
+			await inventoryService.createDisposal(items, note);
+			await loadData(); // Reload data to update stats and inventory
+			toast({
+				title: "Thành công",
+				description: `Đã hủy ${items.length} lô hàng`,
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error creating disposal:", error);
+			throw error;
+		}
+	};
+
 	// Pagination
 	const startIndex = (currentPage - 1) * pageSize;
 	const endIndex = startIndex + pageSize;
@@ -300,13 +330,26 @@ const InventoryPage = () => {
 				px={{ base: 4, md: 6, lg: 8 }}
 				py={6}>
 				{/* Page Title */}
-				<Text
-					fontSize={{ base: "28px", md: "36px" }}
-					fontWeight="600"
-					color="brand.600"
+				<Flex
+					justify="space-between"
+					align="center"
 					mb={6}>
-					Quản lý hàng hóa
-				</Text>
+					<Text
+						fontSize={{ base: "28px", md: "36px" }}
+						fontWeight="600"
+						color="brand.600">
+						Quản lý hàng hóa
+					</Text>
+					<Button
+						leftIcon={<BsTrash />}
+						colorScheme="red"
+						variant="outline"
+						onClick={handleDisposal}
+						size="md"
+						fontWeight="600">
+						Hủy hàng
+					</Button>
+				</Flex>
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
@@ -347,6 +390,7 @@ const InventoryPage = () => {
 						/>
 					</SimpleGrid>
 				)}
+
 				{/* Search & Filter Bar */}
 				<ProductSearchBar
 					filters={filters}
@@ -469,6 +513,14 @@ const InventoryPage = () => {
 				onClose={onBatchModalClose}
 				product={selectedProduct}
 				onUpdateBatch={handleUpdateBatch}
+			/>
+
+			{/* Disposal Modal */}
+			<DisposalModal
+				isOpen={isDisposalModalOpen}
+				onClose={onDisposalModalClose}
+				products={products}
+				onSubmit={handleSubmitDisposal}
 			/>
 		</MainLayout>
 	);

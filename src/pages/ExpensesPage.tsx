@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Pagination, LoadingSpinner } from "@/components/common";
-import { AddExpenseModal } from "@/components/expenses/AddExpenseModal";
+import { AddExpenseModal, ExpenseDetailModal } from "@/components/expenses";
 import { usePagination } from "@/hooks";
 import {
 	getAllExpenses,
@@ -57,6 +57,7 @@ import {
 	FiEdit2,
 	FiTrash2,
 	FiDollarSign,
+	FiBarChart2,
 } from "react-icons/fi";
 import { useRef } from "react";
 
@@ -89,6 +90,12 @@ const ExpensesPage = () => {
 		isOpen: isDeleteAlertOpen,
 		onOpen: onDeleteAlertOpen,
 		onClose: onDeleteAlertClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isDetailModalOpen,
+		onOpen: onDetailModalOpen,
+		onClose: onDetailModalClose,
 	} = useDisclosure();
 
 	// Load expense data on mount
@@ -124,14 +131,14 @@ const ExpensesPage = () => {
 			filtered = filtered.filter(
 				(expense) =>
 					expense.description.toLowerCase().includes(lowerQuery) ||
-					expense.notes?.toLowerCase().includes(lowerQuery)
+					expense.notes?.toLowerCase().includes(lowerQuery),
 			);
 		}
 
 		// Filter by category
 		if (selectedCategory !== "all") {
 			filtered = filtered.filter(
-				(expense) => expense.category === selectedCategory
+				(expense) => expense.category === selectedCategory,
 			);
 		}
 
@@ -148,7 +155,7 @@ const ExpensesPage = () => {
 	// Calculate statistics
 	const totalExpense = expenseList.reduce(
 		(sum, expense) => sum + expense.amount,
-		0
+		0,
 	);
 	const monthExpense = expenseList
 		.filter((expense) => {
@@ -166,7 +173,7 @@ const ExpensesPage = () => {
 		expenseList.map((expense) => {
 			const date = new Date(expense.date);
 			return `${date.getFullYear()}-${date.getMonth()}`;
-		})
+		}),
 	);
 	const monthCount = uniqueMonths.size > 0 ? uniqueMonths.size : 1;
 	const averagePerMonth = totalExpense / monthCount;
@@ -248,7 +255,10 @@ const ExpensesPage = () => {
 
 	return (
 		<MainLayout>
-			<Box minH="100vh" bg="gray.50" py={8}>
+			<Box
+				minH="100vh"
+				bg="gray.50"
+				py={8}>
 				<Container maxW="container.2xl">
 					{/* Header */}
 					<Flex
@@ -265,8 +275,11 @@ const ExpensesPage = () => {
 								mb={2}>
 								Quản Lý Chi Phí Phát Sinh
 							</Heading>
-							<Text color="gray.600" fontSize={{ base: "md", md: "lg" }}>
-								Quản lý các chi phí điện nước, nhu yếu phẩm, sửa chữa
+							<Text
+								color="gray.600"
+								fontSize={{ base: "md", md: "lg" }}>
+								Quản lý các chi phí điện nước, nhu yếu phẩm, sửa
+								chữa
 							</Text>
 						</Box>
 						<Button
@@ -279,7 +292,10 @@ const ExpensesPage = () => {
 					</Flex>
 
 					{/* Statistics Cards */}
-					<SimpleGrid columns={{ base: 1, md: 2, lg: 5 }} spacing={6} mb={8}>
+					<SimpleGrid
+						columns={{ base: 1, md: 2, lg: 5 }}
+						spacing={6}
+						mb={8}>
 						<Card>
 							<CardBody>
 								<Stat>
@@ -287,7 +303,9 @@ const ExpensesPage = () => {
 									<StatNumber color="red.600">
 										{formatCurrency(totalExpense)}
 									</StatNumber>
-									<StatHelpText>Tất cả thời gian</StatHelpText>
+									<StatHelpText>
+										Tất cả thời gian
+									</StatHelpText>
 								</Stat>
 							</CardBody>
 						</Card>
@@ -299,10 +317,13 @@ const ExpensesPage = () => {
 										{formatCurrency(monthExpense)}
 									</StatNumber>
 									<StatHelpText>
-										{new Date().toLocaleDateString("vi-VN", {
-											month: "long",
-											year: "numeric",
-										})}
+										{new Date().toLocaleDateString(
+											"vi-VN",
+											{
+												month: "long",
+												year: "numeric",
+											},
+										)}
 									</StatHelpText>
 								</Stat>
 							</CardBody>
@@ -314,7 +335,9 @@ const ExpensesPage = () => {
 									<StatNumber color="teal.600">
 										{formatCurrency(averagePerMonth)}
 									</StatNumber>
-									<StatHelpText>{monthCount} tháng</StatHelpText>
+									<StatHelpText>
+										{monthCount} tháng
+									</StatHelpText>
 								</Stat>
 							</CardBody>
 						</Card>
@@ -329,18 +352,35 @@ const ExpensesPage = () => {
 								</Stat>
 							</CardBody>
 						</Card>
-						<Card>
+						<Card
+							cursor="pointer"
+							transition="all 0.2s"
+							_hover={{
+								shadow: "md",
+								transform: "translateY(-2px)",
+							}}
+							onClick={onDetailModalOpen}>
 							<CardBody>
 								<Stat>
-									<StatLabel>TB / Khoản</StatLabel>
-									<StatNumber color="purple.600">
-										{formatCurrency(
-											expenseList.length > 0
-												? totalExpense / expenseList.length
-												: 0
-										)}
-									</StatNumber>
-									<StatHelpText>Chi phí trung bình</StatHelpText>
+									<Flex
+										justify="space-between"
+										align="center">
+										<Box>
+											<StatLabel>Xem Biểu Đồ</StatLabel>
+											<StatNumber
+												color="purple.600"
+												fontSize="md">
+												Chi tiết
+											</StatNumber>
+											<StatHelpText>
+												Phân tích chi phí
+											</StatHelpText>
+										</Box>
+										<FiBarChart2
+											size={32}
+											color="#805AD5"
+										/>
+									</Flex>
 								</Stat>
 							</CardBody>
 						</Card>
@@ -349,7 +389,9 @@ const ExpensesPage = () => {
 					{/* Filters */}
 					<Card mb={6}>
 						<CardBody>
-							<Flex gap={4} direction={{ base: "column", md: "row" }}>
+							<Flex
+								gap={4}
+								direction={{ base: "column", md: "row" }}>
 								<InputGroup flex={1}>
 									<InputLeftElement pointerEvents="none">
 										<FiSearch color="gray" />
@@ -357,19 +399,25 @@ const ExpensesPage = () => {
 									<Input
 										placeholder="Tìm kiếm theo mô tả, ghi chú..."
 										value={searchQuery}
-										onChange={(e) => setSearchQuery(e.target.value)}
+										onChange={(e) =>
+											setSearchQuery(e.target.value)
+										}
 										bg="white"
 									/>
 								</InputGroup>
 								<Select
 									value={selectedCategory}
-									onChange={(e) => setSelectedCategory(e.target.value)}
+									onChange={(e) =>
+										setSelectedCategory(e.target.value)
+									}
 									bg="white"
 									w={{ base: "full", md: "250px" }}>
 									<option value="all">Tất cả loại</option>
 									<option value="electricity">Điện</option>
 									<option value="water">Nước</option>
-									<option value="supplies">Nhu yếu phẩm</option>
+									<option value="supplies">
+										Nhu yếu phẩm
+									</option>
 									<option value="repairs">Sửa chữa</option>
 									<option value="other">Khác</option>
 								</Select>
@@ -396,35 +444,55 @@ const ExpensesPage = () => {
 									<Tbody>
 										{currentExpenses.length === 0 ? (
 											<Tr>
-												<Td colSpan={7} textAlign="center" py={8}>
+												<Td
+													colSpan={7}
+													textAlign="center"
+													py={8}>
 													<Text color="gray.500">
-														Không tìm thấy chi phí nào
+														Không tìm thấy chi phí
+														nào
 													</Text>
 												</Td>
 											</Tr>
 										) : (
 											currentExpenses.map((expense) => (
 												<Tr key={expense.id}>
-													<Td>{formatDate(expense.date)}</Td>
+													<Td>
+														{formatDate(
+															expense.date,
+														)}
+													</Td>
 													<Td>
 														<Badge
 															colorScheme={
-																expense.category === "electricity"
+																expense.category ===
+																"electricity"
 																	? "orange"
-																	: expense.category === "water"
-																		? "blue"
-																		: expense.category === "supplies"
-																			? "green"
-																			: expense.category === "repairs"
-																				? "red"
-																				: "gray"
+																	: expense.category ===
+																	  "water"
+																	? "blue"
+																	: expense.category ===
+																	  "supplies"
+																	? "green"
+																	: expense.category ===
+																	  "repairs"
+																	? "red"
+																	: "gray"
 															}>
-															{getExpenseCategoryLabel(expense.category)}
+															{getExpenseCategoryLabel(
+																expense.category,
+															)}
 														</Badge>
 													</Td>
-													<Td>{expense.description}</Td>
-													<Td isNumeric fontWeight="600">
-														{formatCurrency(expense.amount)}
+													<Td>
+														{expense.description}
+													</Td>
+													<Td
+														isNumeric
+														fontWeight="600">
+														{formatCurrency(
+															expense.amount,
+														)}
 													</Td>
 													<Td>
 														<Text
@@ -432,27 +500,37 @@ const ExpensesPage = () => {
 															color="gray.600"
 															noOfLines={1}
 															maxW="200px">
-															{expense.notes || "-"}
+															{expense.notes ||
+																"-"}
 														</Text>
 													</Td>
 													<Td>
-														<Text fontSize="sm" color="gray.600">
-															{expense.createdBy || "-"}
+														<Text
+															fontSize="sm"
+															color="gray.600">
+															{expense.createdBy ||
+																"-"}
 														</Text>
 													</Td>
 													<Td>
 														<Menu>
 															<MenuButton
 																as={IconButton}
-																icon={<FiMoreVertical />}
+																icon={
+																	<FiMoreVertical />
+																}
 																variant="ghost"
 																size="sm"
 															/>
 															<MenuList>
 																<MenuItem
-																	icon={<FiTrash2 />}
+																	icon={
+																		<FiTrash2 />
+																	}
 																	onClick={() =>
-																		handleDeleteClick(expense.id)
+																		handleDeleteClick(
+																			expense.id,
+																		)
 																	}
 																	color="red.500">
 																	Xóa
@@ -469,7 +547,9 @@ const ExpensesPage = () => {
 
 							{/* Pagination */}
 							{filteredExpenses.length > pageSize && (
-								<Flex justify="center" mt={6}>
+								<Flex
+									justify="center"
+									mt={6}>
 									<Pagination {...pagination} />
 								</Flex>
 							)}
@@ -485,6 +565,12 @@ const ExpensesPage = () => {
 				onAdd={handleAddExpense}
 			/>
 
+			{/* Expense Detail Modal with Chart */}
+			<ExpenseDetailModal
+				isOpen={isDetailModalOpen}
+				onClose={onDetailModalClose}
+			/>
+
 			{/* Delete Confirmation Dialog */}
 			<AlertDialog
 				isOpen={isDeleteAlertOpen}
@@ -492,20 +578,27 @@ const ExpensesPage = () => {
 				onClose={onDeleteAlertClose}>
 				<AlertDialogOverlay>
 					<AlertDialogContent>
-						<AlertDialogHeader fontSize="lg" fontWeight="bold">
+						<AlertDialogHeader
+							fontSize="lg"
+							fontWeight="bold">
 							Xóa Chi Phí
 						</AlertDialogHeader>
 
 						<AlertDialogBody>
-							Bạn có chắc chắn muốn xóa chi phí này? Hành động này không thể hoàn
-							tác.
+							Bạn có chắc chắn muốn xóa chi phí này? Hành động này
+							không thể hoàn tác.
 						</AlertDialogBody>
 
 						<AlertDialogFooter>
-							<Button ref={cancelRef} onClick={onDeleteAlertClose}>
+							<Button
+								ref={cancelRef}
+								onClick={onDeleteAlertClose}>
 								Hủy
 							</Button>
-							<Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+							<Button
+								colorScheme="red"
+								onClick={handleDeleteConfirm}
+								ml={3}>
 								Xóa
 							</Button>
 						</AlertDialogFooter>

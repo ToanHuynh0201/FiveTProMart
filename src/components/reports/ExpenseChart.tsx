@@ -1,5 +1,5 @@
 import { Box, Flex, Button, ButtonGroup } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
 	LineChart,
 	Line,
@@ -11,18 +11,30 @@ import {
 	Tooltip,
 	Legend,
 	ResponsiveContainer,
+	PieChart,
+	Pie,
+	Cell,
 } from "recharts";
 import { ChartCard } from "./ChartCard";
 import type { ExpenseReport } from "@/types/reports";
-import { getExpenseCategoryLabel, getExpenseCategoryColor } from "@/services/expenseService";
+import {
+	getExpenseCategoryLabel,
+	getExpenseCategoryColor,
+} from "@/services/expenseService";
 
 interface ExpenseChartProps {
 	data: ExpenseReport;
 	onExpand?: () => void;
 }
 
-type ChartType = "line" | "bar";
-type MetricType = "all" | "electricity" | "water" | "supplies" | "repairs" | "other";
+type ChartType = "line" | "bar" | "pie";
+type MetricType =
+	| "all"
+	| "electricity"
+	| "water"
+	| "supplies"
+	| "repairs"
+	| "other";
 
 export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 	data,
@@ -45,6 +57,39 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 		const date = new Date(dateStr);
 		return `${date.getDate()}/${date.getMonth() + 1}`;
 	};
+
+	// Prepare pie chart data
+	const pieChartData = useMemo(
+		() =>
+			[
+				{
+					name: getExpenseCategoryLabel("electricity"),
+					value: data.byCategory.electricity,
+					color: getExpenseCategoryColor("electricity"),
+				},
+				{
+					name: getExpenseCategoryLabel("water"),
+					value: data.byCategory.water,
+					color: getExpenseCategoryColor("water"),
+				},
+				{
+					name: getExpenseCategoryLabel("supplies"),
+					value: data.byCategory.supplies,
+					color: getExpenseCategoryColor("supplies"),
+				},
+				{
+					name: getExpenseCategoryLabel("repairs"),
+					value: data.byCategory.repairs,
+					color: getExpenseCategoryColor("repairs"),
+				},
+				{
+					name: getExpenseCategoryLabel("other"),
+					value: data.byCategory.other,
+					color: getExpenseCategoryColor("other"),
+				},
+			].filter((item) => item.value > 0),
+		[data.byCategory],
+	);
 
 	const CustomTooltip = ({ active, payload, label }: any) => {
 		if (active && payload && payload.length) {
@@ -81,6 +126,46 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 		return null;
 	};
 
+	const CustomPieTooltip = ({ active, payload }: any) => {
+		if (active && payload && payload.length) {
+			const percentage = (payload[0].value / data.totalExpense) * 100;
+			return (
+				<Box
+					bg="white"
+					p={3}
+					borderRadius="md"
+					boxShadow="lg"
+					border="1px solid"
+					borderColor="gray.200">
+					<Box
+						fontWeight="600"
+						fontSize="sm"
+						color="gray.700"
+						mb={1}>
+						{payload[0].name}
+					</Box>
+					<Flex
+						justify="space-between"
+						gap={4}
+						fontSize="sm">
+						<Box color="gray.600">Số tiền:</Box>
+						<Box fontWeight="600">
+							{formatCurrency(payload[0].value)} đ
+						</Box>
+					</Flex>
+					<Flex
+						justify="space-between"
+						gap={4}
+						fontSize="sm">
+						<Box color="gray.600">Tỷ lệ:</Box>
+						<Box fontWeight="600">{percentage.toFixed(1)}%</Box>
+					</Flex>
+				</Box>
+			);
+		}
+		return null;
+	};
+
 	const actions = (
 		<Flex
 			gap={2}
@@ -108,64 +193,91 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 					}}>
 					Cột
 				</Button>
+				<Button
+					onClick={() => setChartType("pie")}
+					bg={chartType === "pie" ? "brand.500" : "white"}
+					color={chartType === "pie" ? "white" : "gray.700"}
+					_hover={{
+						bg: chartType === "pie" ? "brand.600" : "gray.50",
+					}}>
+					Tròn
+				</Button>
 			</ButtonGroup>
 
-			<ButtonGroup
-				size="sm"
-				isAttached
-				variant="outline"
-				w={{ base: "full", sm: "auto" }}>
-				<Button
-					onClick={() => setMetricType("all")}
-					bg={metricType === "all" ? "brand.500" : "white"}
-					color={metricType === "all" ? "white" : "gray.700"}
-					_hover={{
-						bg: metricType === "all" ? "brand.600" : "gray.50",
-					}}
-					fontSize={{ base: "xs", sm: "sm" }}>
-					Tất cả
-				</Button>
-				<Button
-					onClick={() => setMetricType("electricity")}
-					bg={metricType === "electricity" ? "brand.500" : "white"}
-					color={metricType === "electricity" ? "white" : "gray.700"}
-					_hover={{
-						bg: metricType === "electricity" ? "brand.600" : "gray.50",
-					}}
-					fontSize={{ base: "xs", sm: "sm" }}>
-					Điện
-				</Button>
-				<Button
-					onClick={() => setMetricType("water")}
-					bg={metricType === "water" ? "brand.500" : "white"}
-					color={metricType === "water" ? "white" : "gray.700"}
-					_hover={{
-						bg: metricType === "water" ? "brand.600" : "gray.50",
-					}}
-					fontSize={{ base: "xs", sm: "sm" }}>
-					Nước
-				</Button>
-				<Button
-					onClick={() => setMetricType("supplies")}
-					bg={metricType === "supplies" ? "brand.500" : "white"}
-					color={metricType === "supplies" ? "white" : "gray.700"}
-					_hover={{
-						bg: metricType === "supplies" ? "brand.600" : "gray.50",
-					}}
-					fontSize={{ base: "xs", sm: "sm" }}>
-					NVP
-				</Button>
-				<Button
-					onClick={() => setMetricType("repairs")}
-					bg={metricType === "repairs" ? "brand.500" : "white"}
-					color={metricType === "repairs" ? "white" : "gray.700"}
-					_hover={{
-						bg: metricType === "repairs" ? "brand.600" : "gray.50",
-					}}
-					fontSize={{ base: "xs", sm: "sm" }}>
-					Sửa
-				</Button>
-			</ButtonGroup>
+			{chartType !== "pie" && (
+				<ButtonGroup
+					size="sm"
+					isAttached
+					variant="outline"
+					w={{ base: "full", sm: "auto" }}>
+					<Button
+						onClick={() => setMetricType("all")}
+						bg={metricType === "all" ? "brand.500" : "white"}
+						color={metricType === "all" ? "white" : "gray.700"}
+						_hover={{
+							bg: metricType === "all" ? "brand.600" : "gray.50",
+						}}
+						fontSize={{ base: "xs", sm: "sm" }}>
+						Tất cả
+					</Button>
+					<Button
+						onClick={() => setMetricType("electricity")}
+						bg={
+							metricType === "electricity" ? "brand.500" : "white"
+						}
+						color={
+							metricType === "electricity" ? "white" : "gray.700"
+						}
+						_hover={{
+							bg:
+								metricType === "electricity"
+									? "brand.600"
+									: "gray.50",
+						}}
+						fontSize={{ base: "xs", sm: "sm" }}>
+						Điện
+					</Button>
+					<Button
+						onClick={() => setMetricType("water")}
+						bg={metricType === "water" ? "brand.500" : "white"}
+						color={metricType === "water" ? "white" : "gray.700"}
+						_hover={{
+							bg:
+								metricType === "water"
+									? "brand.600"
+									: "gray.50",
+						}}
+						fontSize={{ base: "xs", sm: "sm" }}>
+						Nước
+					</Button>
+					<Button
+						onClick={() => setMetricType("supplies")}
+						bg={metricType === "supplies" ? "brand.500" : "white"}
+						color={metricType === "supplies" ? "white" : "gray.700"}
+						_hover={{
+							bg:
+								metricType === "supplies"
+									? "brand.600"
+									: "gray.50",
+						}}
+						fontSize={{ base: "xs", sm: "sm" }}>
+						NVP
+					</Button>
+					<Button
+						onClick={() => setMetricType("repairs")}
+						bg={metricType === "repairs" ? "brand.500" : "white"}
+						color={metricType === "repairs" ? "white" : "gray.700"}
+						_hover={{
+							bg:
+								metricType === "repairs"
+									? "brand.600"
+									: "gray.50",
+						}}
+						fontSize={{ base: "xs", sm: "sm" }}>
+						Sửa
+					</Button>
+				</ButtonGroup>
+			)}
 		</Flex>
 	);
 
@@ -176,7 +288,9 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 		return (
 			<ChartCard
 				title="Chi Phí Phát Sinh"
-				subtitle={`Tổng chi phí: ${formatCurrency(data.totalExpense)} đ`}
+				subtitle={`Tổng chi phí: ${formatCurrency(
+					data.totalExpense,
+				)} đ`}
 				actions={actions}
 				onExpand={onExpand}>
 				<Box
@@ -191,15 +305,59 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 		);
 	}
 
+	// Render Pie Chart
+	if (chartType === "pie") {
+		return (
+			<ChartCard
+				title="Chi Phí Phát Sinh"
+				subtitle={`Tổng chi phí: ${formatCurrency(
+					data.totalExpense,
+				)} đ`}
+				actions={actions}
+				onExpand={onExpand}>
+				<ResponsiveContainer
+					width="100%"
+					height={350}>
+					<PieChart>
+						<Pie
+							data={pieChartData}
+							cx="50%"
+							cy="50%"
+							labelLine={false}
+							label={({ name, percent }) =>
+								`${name}: ${(percent! * 100).toFixed(1)}%`
+							}
+							outerRadius={120}
+							fill="#8884d8"
+							dataKey="value">
+							{pieChartData.map((entry, index) => (
+								<Cell
+									key={`cell-${index}`}
+									fill={entry.color}
+								/>
+							))}
+						</Pie>
+						<Tooltip content={<CustomPieTooltip />} />
+					</PieChart>
+				</ResponsiveContainer>
+			</ChartCard>
+		);
+	}
+
 	return (
 		<ChartCard
 			title="Chi Phí Phát Sinh"
 			subtitle={`Tổng chi phí: ${formatCurrency(data.totalExpense)} đ`}
 			actions={actions}
 			onExpand={onExpand}>
-			<ResponsiveContainer width="100%" height={350}>
+			<ResponsiveContainer
+				width="100%"
+				height={350}>
 				<ChartComponent data={data.data}>
-					<CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+					<CartesianGrid
+						strokeDasharray="3 3"
+						stroke="#E2E8F0"
+					/>
 					<XAxis
 						dataKey="date"
 						tickFormatter={formatDate}
@@ -228,17 +386,21 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 					/>
 					{chartType === "line" ? (
 						<>
-							{(metricType === "all" || metricType === "electricity") && (
+							{(metricType === "all" ||
+								metricType === "electricity") && (
 								<Line
 									type="monotone"
 									dataKey="electricity"
-									stroke={getExpenseCategoryColor("electricity")}
+									stroke={getExpenseCategoryColor(
+										"electricity",
+									)}
 									strokeWidth={2}
 									dot={{ r: 4 }}
 									activeDot={{ r: 6 }}
 								/>
 							)}
-							{(metricType === "all" || metricType === "water") && (
+							{(metricType === "all" ||
+								metricType === "water") && (
 								<Line
 									type="monotone"
 									dataKey="water"
@@ -248,7 +410,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 									activeDot={{ r: 6 }}
 								/>
 							)}
-							{(metricType === "all" || metricType === "supplies") && (
+							{(metricType === "all" ||
+								metricType === "supplies") && (
 								<Line
 									type="monotone"
 									dataKey="supplies"
@@ -258,7 +421,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 									activeDot={{ r: 6 }}
 								/>
 							)}
-							{(metricType === "all" || metricType === "repairs") && (
+							{(metricType === "all" ||
+								metricType === "repairs") && (
 								<Line
 									type="monotone"
 									dataKey="repairs"
@@ -268,7 +432,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 									activeDot={{ r: 6 }}
 								/>
 							)}
-							{(metricType === "all" || metricType === "other") && (
+							{(metricType === "all" ||
+								metricType === "other") && (
 								<Line
 									type="monotone"
 									dataKey="other"
@@ -291,35 +456,42 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 						</>
 					) : (
 						<>
-							{(metricType === "all" || metricType === "electricity") && (
+							{(metricType === "all" ||
+								metricType === "electricity") && (
 								<Bar
 									dataKey="electricity"
-									fill={getExpenseCategoryColor("electricity")}
+									fill={getExpenseCategoryColor(
+										"electricity",
+									)}
 									radius={[4, 4, 0, 0]}
 								/>
 							)}
-							{(metricType === "all" || metricType === "water") && (
+							{(metricType === "all" ||
+								metricType === "water") && (
 								<Bar
 									dataKey="water"
 									fill={getExpenseCategoryColor("water")}
 									radius={[4, 4, 0, 0]}
 								/>
 							)}
-							{(metricType === "all" || metricType === "supplies") && (
+							{(metricType === "all" ||
+								metricType === "supplies") && (
 								<Bar
 									dataKey="supplies"
 									fill={getExpenseCategoryColor("supplies")}
 									radius={[4, 4, 0, 0]}
 								/>
 							)}
-							{(metricType === "all" || metricType === "repairs") && (
+							{(metricType === "all" ||
+								metricType === "repairs") && (
 								<Bar
 									dataKey="repairs"
 									fill={getExpenseCategoryColor("repairs")}
 									radius={[4, 4, 0, 0]}
 								/>
 							)}
-							{(metricType === "all" || metricType === "other") && (
+							{(metricType === "all" ||
+								metricType === "other") && (
 								<Bar
 									dataKey="other"
 									fill={getExpenseCategoryColor("other")}

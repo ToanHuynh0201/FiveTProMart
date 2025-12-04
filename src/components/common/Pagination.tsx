@@ -24,9 +24,13 @@ const Pagination = ({
 	const [pageInput, setPageInput] = useState("");
 	const toast = useToast();
 
-	const startItem = (currentPage - 1) * pageSize + 1;
-	const endItem = Math.min(currentPage * pageSize, totalItems);
+	const safeCurrentPage = currentPage || 1;
 	const safeTotalPages = totalPages || 1;
+	const safeTotalItems = totalItems || 0;
+	const safePageSize = pageSize || 10;
+
+	const startItem = (safeCurrentPage - 1) * safePageSize + 1;
+	const endItem = Math.min(safeCurrentPage * safePageSize, safeTotalItems);
 
 	const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setPageInput(e.target.value);
@@ -74,22 +78,22 @@ const Pagination = ({
 					color="gray.600"
 					fontWeight="500">
 					Hiển thị {startItem} đến {endItem} trong tổng số{" "}
-					{totalItems} {itemLabel}
+					{safeTotalItems} {itemLabel}
 				</Text>
 			)}
 			<HStack spacing={2}>
 				<Button
 					size="sm"
-					onClick={() => onPageChange(currentPage - 1)}
-					isDisabled={currentPage <= 1}
+					onClick={() => onPageChange(safeCurrentPage - 1)}
+					isDisabled={safeCurrentPage <= 1}
 					leftIcon={<ChevronLeftIcon />}
 					variant="outline"
 					colorScheme="brand"
 					borderRadius="8px"
 					_hover={{
-						bg: currentPage > 1 ? "brand.50" : "transparent",
+						bg: safeCurrentPage > 1 ? "brand.50" : "transparent",
 						transform:
-							currentPage > 1 ? "translateX(-2px)" : "none",
+							safeCurrentPage > 1 ? "translateX(-2px)" : "none",
 					}}
 					transition="all 0.2s ease">
 					Trước
@@ -106,7 +110,7 @@ const Pagination = ({
 						size="sm"
 						width="60px"
 						textAlign="center"
-						placeholder={currentPage.toString()}
+						placeholder={safeCurrentPage.toString()}
 						value={pageInput}
 						onChange={handlePageInputChange}
 						onKeyDown={handlePageInputSubmit}
@@ -134,19 +138,19 @@ const Pagination = ({
 
 				<Button
 					size="sm"
-					onClick={() => onPageChange(currentPage + 1)}
-					isDisabled={currentPage >= safeTotalPages}
+					onClick={() => onPageChange(safeCurrentPage + 1)}
+					isDisabled={safeCurrentPage >= safeTotalPages}
 					rightIcon={<ChevronRightIcon />}
 					variant="outline"
 					colorScheme="brand"
 					borderRadius="8px"
 					_hover={{
 						bg:
-							currentPage < safeTotalPages
+							safeCurrentPage < safeTotalPages
 								? "brand.50"
 								: "transparent",
 						transform:
-							currentPage < safeTotalPages
+							safeCurrentPage < safeTotalPages
 								? "translateX(2px)"
 								: "none",
 					}}

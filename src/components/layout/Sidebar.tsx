@@ -6,6 +6,7 @@ import { SidebarLogo } from "./SidebarLogo";
 import { SidebarItem } from "./SidebarItem";
 import { SidebarHeader } from "./SidebarHeader";
 import { SidebarUserProfile } from "./SidebarUserProfile";
+import { UpcomingShifts } from "./UpcomingShifts";
 import { navItems } from "./sidebarConfig";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -20,7 +21,10 @@ function Sidebar() {
 	});
 
 	useEffect(() => {
-		localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(isCollapsed));
+		localStorage.setItem(
+			SIDEBAR_COLLAPSED_KEY,
+			JSON.stringify(isCollapsed),
+		);
 	}, [isCollapsed]);
 
 	const isActivePath = (path: string) => location.pathname === path;
@@ -123,6 +127,9 @@ function Sidebar() {
 					/>
 				))}
 			</VStack>
+
+			{/* Upcoming Shifts Section */}
+			<UpcomingShifts isCollapsed={isCollapsed} />
 		</Flex>
 	);
 }

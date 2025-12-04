@@ -46,30 +46,35 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 	onClose,
 	data,
 }) => {
-	const [topLimit, setTopLimit] = useState<number | "all">(10);
+	const [tableTopLimit, setTableTopLimit] = useState<number | "all">(10);
 	const [currentPage, setCurrentPage] = useState(1);
 
-	// Filter data based on selected top limit
-	const filteredProducts = useMemo(() => {
-		if (topLimit === "all") {
+	// Chart data: Always show top 10
+	const chartProducts = useMemo(() => {
+		return data.topSellingProducts.slice(0, 10);
+	}, [data.topSellingProducts]);
+
+	// Table data: Filter based on selected top limit
+	const filteredTableProducts = useMemo(() => {
+		if (tableTopLimit === "all") {
 			return data.topSellingProducts;
 		}
-		return data.topSellingProducts.slice(0, topLimit);
-	}, [data.topSellingProducts, topLimit]);
+		return data.topSellingProducts.slice(0, tableTopLimit);
+	}, [data.topSellingProducts, tableTopLimit]);
 
 	// Paginate table data
 	const paginatedProducts = useMemo(() => {
 		const startIndex = (currentPage - 1) * PAGE_SIZE;
 		const endIndex = startIndex + PAGE_SIZE;
-		return filteredProducts.slice(startIndex, endIndex);
-	}, [filteredProducts, currentPage]);
+		return filteredTableProducts.slice(startIndex, endIndex);
+	}, [filteredTableProducts, currentPage]);
 
-	const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+	const totalPages = Math.ceil(filteredTableProducts.length / PAGE_SIZE);
 
 	// Reset to page 1 when filter changes
-	const handleTopLimitChange = (value: string) => {
+	const handleTableTopLimitChange = (value: string) => {
 		const newLimit = value === "all" ? "all" : Number.parseInt(value);
-		setTopLimit(newLimit);
+		setTableTopLimit(newLimit);
 		setCurrentPage(1);
 	};
 
@@ -83,7 +88,7 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 		return value.toString();
 	};
 
-	const chartData = filteredProducts.map((product) => ({
+	const chartData = chartProducts.map((product) => ({
 		name:
 			product.name.length > 15
 				? product.name.substring(0, 15) + "..."
@@ -152,97 +157,98 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 				</ModalHeader>
 				<ModalCloseButton />
 				<ModalBody pb={6}>
-					{/* Top Limit Selector */}
-					<Flex
-						justify="space-between"
-						align="center"
-						mb={6}>
-						<Text
-							fontSize="lg"
-							fontWeight="600"
-							color="gray.700">
-							Top Sản phẩm bán chạy
-						</Text>
-						<Flex
-							align="center"
-							gap={3}>
-							<Text
-								fontSize="sm"
-								color="gray.600">
-								Hiển thị:
-							</Text>
-							<Select
-								value={topLimit}
-								onChange={(e) => handleTopLimitChange(e.target.value)}
-								size="sm"
-								width="120px"
-								bg="white"
-								borderColor="gray.300">
-								<option value={5}>Top 5</option>
-								<option value={10}>Top 10</option>
-								<option value={50}>Top 50</option>
-								<option value="all">Tất cả</option>
-							</Select>
-						</Flex>
-					</Flex>
-
-					{/* Chart */}
-					<Box
-						bg="white"
-						borderRadius="lg"
-						p={6}
-						boxShadow="sm"
-						border="1px solid"
-						borderColor="gray.200">
-						<ResponsiveContainer
-							width="100%"
-							height={500}>
-							<BarChart
-								data={chartData}
-								layout="vertical">
-								<CartesianGrid
-									strokeDasharray="3 3"
-									stroke="#f0f0f0"
-								/>
-								<XAxis
-									type="number"
-									tickFormatter={formatCurrency}
-									stroke="#718096"
-									fontSize={12}
-								/>
-								<YAxis
-									dataKey="name"
-									type="category"
-									width={120}
-									stroke="#718096"
-									fontSize={11}
-								/>
-								<Tooltip content={<CustomTooltip />} />
-								<Bar
-									dataKey="revenue"
-									radius={[0, 8, 8, 0]}>
-									{chartData.map((_, index) => (
-										<Cell
-											key={`cell-${index}`}
-											fill={COLORS[index % COLORS.length]}
-										/>
-									))}
-								</Bar>
-							</BarChart>
-						</ResponsiveContainer>
-					</Box>
-
-					<Divider my={6} />
-
-					{/* Table with Pagination */}
-					<Box>
+					{/* Chart Section */}
+					<Box mb={6}>
 						<Text
 							fontSize="lg"
 							fontWeight="600"
 							color="gray.700"
 							mb={4}>
-							Chi tiết sản phẩm ({filteredProducts.length} sản phẩm)
+							Top 10 Sản phẩm bán chạy
 						</Text>
+						<Box
+							bg="white"
+							borderRadius="lg"
+							p={6}
+							boxShadow="sm"
+							border="1px solid"
+							borderColor="gray.200">
+							<ResponsiveContainer
+								width="100%"
+								height={500}>
+								<BarChart
+									data={chartData}
+									layout="vertical">
+									<CartesianGrid
+										strokeDasharray="3 3"
+										stroke="#f0f0f0"
+									/>
+									<XAxis
+										type="number"
+										tickFormatter={formatCurrency}
+										stroke="#718096"
+										fontSize={12}
+									/>
+									<YAxis
+										dataKey="name"
+										type="category"
+										width={120}
+										stroke="#718096"
+										fontSize={11}
+									/>
+									<Tooltip content={<CustomTooltip />} />
+									<Bar
+										dataKey="revenue"
+										radius={[0, 8, 8, 0]}>
+										{chartData.map((_, index) => (
+											<Cell
+												key={`cell-${index}`}
+												fill={COLORS[index % COLORS.length]}
+											/>
+										))}
+									</Bar>
+								</BarChart>
+							</ResponsiveContainer>
+						</Box>
+					</Box>
+
+					<Divider my={6} />
+
+					{/* Table Section with Filter */}
+					<Box>
+						{/* Filter above table */}
+						<Flex
+							justify="space-between"
+							align="center"
+							mb={4}>
+							<Text
+								fontSize="lg"
+								fontWeight="600"
+								color="gray.700">
+								Chi tiết sản phẩm ({filteredTableProducts.length} sản phẩm)
+							</Text>
+							<Flex
+								align="center"
+								gap={3}>
+								<Text
+									fontSize="sm"
+									color="gray.600">
+									Hiển thị:
+								</Text>
+								<Select
+									value={tableTopLimit}
+									onChange={(e) => handleTableTopLimitChange(e.target.value)}
+									size="sm"
+									width="120px"
+									bg="white"
+									borderColor="gray.300">
+									<option value={5}>Top 5</option>
+									<option value={10}>Top 10</option>
+									<option value={50}>Top 50</option>
+									<option value="all">Tất cả</option>
+								</Select>
+							</Flex>
+						</Flex>
 						<Box
 							overflowX="auto"
 							borderRadius="lg"
@@ -333,7 +339,7 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 						<Pagination
 							currentPage={currentPage}
 							totalPages={totalPages}
-							totalItems={filteredProducts.length}
+							totalItems={filteredTableProducts.length}
 							pageSize={PAGE_SIZE}
 							onPageChange={setCurrentPage}
 							itemLabel="sản phẩm"

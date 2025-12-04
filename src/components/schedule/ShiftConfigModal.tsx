@@ -301,6 +301,48 @@ const ShiftConfigModal = ({
 								</HStack>
 							</FormControl>
 						</Box>
+						<Box
+							p={4}
+							bg="blue.50"
+							borderRadius="md"
+							borderLeft="4px solid"
+							borderLeftColor="green.500">
+							<FormControl>
+								<HStack
+									spacing={4}
+									align="center">
+									<Box flex={1}>
+										<FormLabel
+											fontSize="15px"
+											fontWeight="600"
+											mb={1}>
+											Số giờ tối mỗi nhân viên có thể làm
+											trong 1 tuần
+										</FormLabel>
+										<Text
+											fontSize="13px"
+											color="green.600">
+											Nhân viên sẽ không xuất hiện trong
+											danh sách khi đã đạt giới hạn
+										</Text>
+									</Box>
+									<NumberInput
+										value={maxShiftsPerWeek}
+										onChange={(_, value) =>
+											setMaxShiftsPerWeek(value)
+										}
+										min={1}
+										max={14}
+										w="120px">
+										<NumberInputField />
+										<NumberInputStepper>
+											<NumberIncrementStepper />
+											<NumberDecrementStepper />
+										</NumberInputStepper>
+									</NumberInput>
+								</HStack>
+							</FormControl>
+						</Box>
 
 						<Divider />
 
@@ -630,7 +672,8 @@ const ShiftConfigModal = ({
 																fontSize="14px"
 																color="blue.700"
 																fontWeight="600">
-																📋 Số giờ làm việc:{" "}
+																📋 Số giờ làm
+																việc:{" "}
 																{calculateWorkingHours(
 																	editingShift.startTime,
 																	editingShift.endTime,
@@ -751,7 +794,13 @@ const ShiftConfigModal = ({
 															fontSize="14px"
 															color="blue.600"
 															fontWeight="600">
-															• {shift.workingHours || calculateWorkingHours(shift.startTime, shift.endTime)} giờ
+															•{" "}
+															{shift.workingHours ||
+																calculateWorkingHours(
+																	shift.startTime,
+																	shift.endTime,
+																)}{" "}
+															giờ
 														</Text>
 													</HStack>
 													<HStack

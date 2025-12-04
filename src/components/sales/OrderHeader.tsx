@@ -112,7 +112,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({
 					_hover={{
 						bg: "orange.600",
 					}}>
-					Tạm dừng
+					Lưu nháp
 				</Button>
 			)}
 		</Flex>

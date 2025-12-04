@@ -66,7 +66,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 	const getTypeBadge = (type: string) => {
 		const typeConfig = {
 			discount: { color: "blue", label: "Giảm giá" },
-			buy1getN: { color: "purple", label: "Mua 1 tặng N" },
 			buyThisGetThat: { color: "orange", label: "Mua này tặng kia" },
 		};
 
@@ -89,13 +88,15 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 	const getPromotionDetail = (promotion: Promotion) => {
 		switch (promotion.type) {
 			case "discount":
-				return `Giảm ${promotion.discountConfig?.percentage}%`;
-			case "buy1getN":
-				return `Mua 1 tặng ${promotion.buy1GetNConfig?.quantityReceived}`;
+				const productCount =
+					promotion.discountConfig?.products.length || 0;
+				return `Giảm ${promotion.discountConfig?.percentage}% (${productCount} SP)`;
 			case "buyThisGetThat":
+				const purchaseCount =
+					promotion.buyThisGetThatConfig?.purchaseGroups.length || 0;
 				const giftCount =
 					promotion.buyThisGetThatConfig?.giftProducts.length || 0;
-				return `Tặng ${giftCount} sản phẩm`;
+				return `Mua ${purchaseCount} SP → Tặng ${giftCount} SP`;
 			default:
 				return "";
 		}
@@ -134,14 +135,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 								textTransform="none"
 								py={4}>
 								Tên chương trình
-							</Th>
-							<Th
-								fontSize="13px"
-								fontWeight="700"
-								color="gray.700"
-								textTransform="none"
-								py={4}>
-								Sản phẩm áp dụng
 							</Th>
 							<Th
 								fontSize="13px"
@@ -204,22 +197,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 									fontWeight="600"
 									maxW="200px">
 									{promotion.name}
-								</Td>
-								<Td
-									fontSize="14px"
-									color="gray.700">
-									<VStack
-										align="flex-start"
-										spacing={0}>
-										<Text fontWeight="600">
-											{promotion.product.name}
-										</Text>
-										<Text
-											fontSize="12px"
-											color="gray.500">
-											{promotion.product.code}
-										</Text>
-									</VStack>
 								</Td>
 								<Td>{getTypeBadge(promotion.type)}</Td>
 								<Td

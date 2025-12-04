@@ -25,6 +25,7 @@ import {
 	Text,
 	IconButton,
 	Flex,
+	Divider,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import type {
@@ -48,16 +49,15 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
 	const [products, setProducts] = useState<PromotionProduct[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
 
 	const [formData, setFormData] = useState<{
 		code: string;
 		name: string;
 		description: string;
 		type: PromotionType;
-		productId: string;
 		discountPercentage: number;
-		buy1GetNQuantity: number;
+		discountProducts: string[]; // Array of product IDs for discount
+		purchaseGroups: { productId: string; quantity: number }[]; // For buyThisGetThat
 		giftProducts: { productId: string; quantity: number }[];
 		startDate: string;
 		endDate: string;
@@ -66,9 +66,9 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		name: "",
 		description: "",
 		type: "discount",
-		productId: "",
 		discountPercentage: 0,
-		buy1GetNQuantity: 1,
+		discountProducts: [],
+		purchaseGroups: [],
 		giftProducts: [],
 		startDate: "",
 		endDate: "",
@@ -92,14 +92,13 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 			name: "",
 			description: "",
 			type: "discount",
-			productId: "",
 			discountPercentage: 0,
-			buy1GetNQuantity: 1,
+			discountProducts: [],
+			purchaseGroups: [],
 			giftProducts: [],
 			startDate: "",
 			endDate: "",
 		});
-		setSearchQuery("");
 	};
 
 	const loadProducts = async () => {
@@ -111,6 +110,57 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		}
 	};
 
+	// Discount products management
+	const handleAddDiscountProduct = () => {
+		setFormData({
+			...formData,
+			discountProducts: [...formData.discountProducts, ""],
+		});
+	};
+
+	const handleRemoveDiscountProduct = (index: number) => {
+		const newProducts = formData.discountProducts.filter(
+			(_, i) => i !== index,
+		);
+		setFormData({ ...formData, discountProducts: newProducts });
+	};
+
+	const handleDiscountProductChange = (index: number, productId: string) => {
+		const newProducts = [...formData.discountProducts];
+		newProducts[index] = productId;
+		setFormData({ ...formData, discountProducts: newProducts });
+	};
+
+	// Purchase groups management (for buyThisGetThat)
+	const handleAddPurchaseGroup = () => {
+		setFormData({
+			...formData,
+			purchaseGroups: [
+				...formData.purchaseGroups,
+				{ productId: "", quantity: 1 },
+			],
+		});
+	};
+
+	const handleRemovePurchaseGroup = (index: number) => {
+		const newGroups = formData.purchaseGroups.filter((_, i) => i !== index);
+		setFormData({ ...formData, purchaseGroups: newGroups });
+	};
+
+	const handlePurchaseGroupChange = (
+		index: number,
+		field: "productId" | "quantity",
+		value: string | number,
+	) => {
+		const newGroups = [...formData.purchaseGroups];
+		newGroups[index] = {
+			...newGroups[index],
+			[field]: value,
+		};
+		setFormData({ ...formData, purchaseGroups: newGroups });
+	};
+
+	// Gift products management
 	const handleAddGiftProduct = () => {
 		setFormData({
 			...formData,
@@ -153,16 +203,6 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 			return;
 		}
 
-		if (!formData.productId) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng chọn sản phẩm áp dụng",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
 		if (!formData.startDate || !formData.endDate) {
 			toast({
 				title: "Lỗi",
@@ -197,21 +237,62 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 				});
 				return;
 			}
-		}
 
-		if (formData.type === "buy1getN") {
-			if (formData.buy1GetNQuantity <= 0) {
+			if (formData.discountProducts.length === 0) {
 				toast({
 					title: "Lỗi",
-					description: "Số lượng tặng phải lớn hơn 0",
+					description: "Vui lòng thêm ít nhất 1 sản phẩm áp dụng",
 					status: "error",
 					duration: 3000,
 				});
 				return;
 			}
+
+			for (const productId of formData.discountProducts) {
+				if (!productId) {
+					toast({
+						title: "Lỗi",
+						description: "Vui lòng chọn sản phẩm áp dụng",
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+			}
 		}
 
 		if (formData.type === "buyThisGetThat") {
+			if (formData.purchaseGroups.length === 0) {
+				toast({
+					title: "Lỗi",
+					description: "Vui lòng thêm ít nhất 1 sản phẩm cần mua",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+
+			for (const group of formData.purchaseGroups) {
+				if (!group.productId) {
+					toast({
+						title: "Lỗi",
+						description: "Vui lòng chọn sản phẩm cần mua",
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+				if (group.quantity <= 0) {
+					toast({
+						title: "Lỗi",
+						description: "Số lượng phải lớn hơn 0",
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+			}
+
 			if (formData.giftProducts.length === 0) {
 				toast({
 					title: "Lỗi",
@@ -247,44 +328,57 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			const selectedProduct = products.find(
-				(p) => p.id === formData.productId,
-			);
-			if (!selectedProduct) {
-				throw new Error("Product not found");
-			}
-
 			const promotionData: PromotionFormData = {
 				code: formData.code,
 				name: formData.name,
 				description: formData.description,
 				type: formData.type,
-				product: selectedProduct,
 				startDate: new Date(formData.startDate),
 				endDate: new Date(formData.endDate),
-			}; // Add type-specific config
+			};
+
+			// Add type-specific config
 			if (formData.type === "discount") {
+				const discountProductsList = formData.discountProducts
+					.map((id) => products.find((p) => p.id === id))
+					.filter((p): p is PromotionProduct => p !== undefined);
+
 				promotionData.discountConfig = {
 					percentage: formData.discountPercentage,
-				};
-			} else if (formData.type === "buy1getN") {
-				promotionData.buy1GetNConfig = {
-					quantityReceived: formData.buy1GetNQuantity,
+					products: discountProductsList,
 				};
 			} else if (formData.type === "buyThisGetThat") {
-				promotionData.buyThisGetThatConfig = {
-					giftProducts: formData.giftProducts.map((gift) => {
-						const giftProduct = products.find(
-							(p) => p.id === gift.productId,
+				const purchaseGroupsList = formData.purchaseGroups.map(
+					(group) => {
+						const product = products.find(
+							(p) => p.id === group.productId,
 						);
-						if (!giftProduct) {
-							throw new Error("Gift product not found");
+						if (!product) {
+							throw new Error("Purchase product not found");
 						}
 						return {
-							product: giftProduct,
-							quantity: gift.quantity,
+							product,
+							quantity: group.quantity,
 						};
-					}),
+					},
+				);
+
+				const giftProductsList = formData.giftProducts.map((gift) => {
+					const giftProduct = products.find(
+						(p) => p.id === gift.productId,
+					);
+					if (!giftProduct) {
+						throw new Error("Gift product not found");
+					}
+					return {
+						product: giftProduct,
+						quantity: gift.quantity,
+					};
+				});
+
+				promotionData.buyThisGetThatConfig = {
+					purchaseGroups: purchaseGroupsList,
+					giftProducts: giftProductsList,
 				};
 			}
 
@@ -308,12 +402,6 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		}
 	};
 
-	const filteredProducts = products.filter(
-		(p) =>
-			p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			p.code.toLowerCase().includes(searchQuery.toLowerCase()),
-	);
-
 	return (
 		<Modal
 			isOpen={isOpen}
@@ -334,41 +422,45 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 						spacing={4}
 						align="stretch">
 						{/* Mã khuyến mãi */}
-						<FormControl>
-							<FormLabel
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.700">
-								Mã khuyến mãi
-							</FormLabel>
-							<Input
-								value={formData.code}
-								isReadOnly
-								bg="gray.50"
-								fontSize="15px"
-								h="48px"
-							/>
-						</FormControl>{" "}
-						<FormControl isRequired>
-							<FormLabel
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.700">
-								Tên chương trình
-							</FormLabel>
-							<Input
-								placeholder="VD: Giảm giá 20% Coca Cola"
-								value={formData.name}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										name: e.target.value,
-									})
-								}
-								fontSize="15px"
-								h="48px"
-							/>
-						</FormControl>
+						<HStack>
+							<FormControl>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Mã khuyến mãi
+								</FormLabel>
+								<Input
+									value={formData.code}
+									isReadOnly
+									bg="gray.50"
+									fontSize="15px"
+									h="48px"
+								/>
+							</FormControl>
+
+							<FormControl isRequired>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Tên chương trình
+								</FormLabel>
+								<Input
+									placeholder="VD: Giảm giá 20% các sản phẩm nước uống"
+									value={formData.name}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											name: e.target.value,
+										})
+									}
+									fontSize="15px"
+									h="48px"
+								/>
+							</FormControl>
+						</HStack>
+
 						<FormControl>
 							<FormLabel
 								fontSize="15px"
@@ -389,6 +481,7 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 								rows={2}
 							/>
 						</FormControl>
+
 						{/* Loại khuyến mãi */}
 						<FormControl isRequired>
 							<FormLabel
@@ -403,268 +496,477 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 									setFormData({
 										...formData,
 										type: e.target.value as PromotionType,
+										discountProducts: [],
+										purchaseGroups: [],
 										giftProducts: [],
 									})
 								}
 								fontSize="15px"
 								h="48px">
 								<option value="discount">Giảm giá (%)</option>
-								<option value="buy1getN">Mua 1 tặng N</option>
 								<option value="buyThisGetThat">
 									Mua này tặng kia
 								</option>
 							</Select>
 						</FormControl>
-						{/* Sản phẩm áp dụng */}
-						<FormControl isRequired>
-							<FormLabel
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.700">
-								Sản phẩm áp dụng
-							</FormLabel>
-							<Input
-								placeholder="Tìm kiếm sản phẩm..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								fontSize="15px"
-								h="48px"
-								mb={2}
-							/>
-							<Select
-								placeholder="Chọn sản phẩm"
-								value={formData.productId}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										productId: e.target.value,
-									})
-								}
-								fontSize="15px"
-								h="48px">
-								{filteredProducts.map((product) => (
-									<option
-										key={product.id}
-										value={product.id}>
-										{product.code} - {product.name}
-									</option>
-								))}
-							</Select>
-						</FormControl>
-						{/* Configuration based on type */}
+
+						{/* Discount Configuration */}
 						{formData.type === "discount" && (
-							<FormControl isRequired>
-								<FormLabel
-									fontSize="15px"
-									fontWeight="600"
-									color="gray.700">
-									Phần trăm giảm giá (%)
-								</FormLabel>
-								<NumberInput
-									min={1}
-									max={100}
-									value={formData.discountPercentage}
-									onChange={(_, value) =>
-										setFormData({
-											...formData,
-											discountPercentage: value,
-										})
-									}>
-									<NumberInputField
-										placeholder="VD: 20"
-										fontSize="15px"
-										h="48px"
-									/>
-									<NumberInputStepper>
-										<NumberIncrementStepper />
-										<NumberDecrementStepper />
-									</NumberInputStepper>
-								</NumberInput>
-							</FormControl>
-						)}
-						{formData.type === "buy1getN" && (
-							<FormControl isRequired>
-								<FormLabel
-									fontSize="15px"
-									fontWeight="600"
-									color="gray.700">
-									Số lượng tặng (N)
-								</FormLabel>
-								<NumberInput
-									min={1}
-									value={formData.buy1GetNQuantity}
-									onChange={(_, value) =>
-										setFormData({
-											...formData,
-											buy1GetNQuantity: value,
-										})
-									}>
-									<NumberInputField
-										placeholder="VD: 2 (mua 1 tặng 2)"
-										fontSize="15px"
-										h="48px"
-									/>
-									<NumberInputStepper>
-										<NumberIncrementStepper />
-										<NumberDecrementStepper />
-									</NumberInputStepper>
-								</NumberInput>
-								<Text
-									fontSize="13px"
-									color="gray.500"
-									mt={2}>
-									Mua 1 sản phẩm sẽ tặng thêm{" "}
-									{formData.buy1GetNQuantity} sản phẩm cùng
-									loại
-								</Text>
-							</FormControl>
-						)}
-						{formData.type === "buyThisGetThat" && (
-							<Box>
-								<Flex
-									justify="space-between"
-									align="center"
-									mb={2}>
+							<>
+								<FormControl isRequired>
 									<FormLabel
 										fontSize="15px"
 										fontWeight="600"
-										color="gray.700"
-										mb={0}>
-										Sản phẩm tặng
+										color="gray.700">
+										Phần trăm giảm giá (%)
 									</FormLabel>
-									<Button
-										leftIcon={<AddIcon />}
-										size="sm"
-										colorScheme="brand"
-										onClick={handleAddGiftProduct}>
-										Thêm sản phẩm
-									</Button>
-								</Flex>
+									<NumberInput
+										min={1}
+										max={100}
+										value={formData.discountPercentage}
+										onChange={(_, value) =>
+											setFormData({
+												...formData,
+												discountPercentage: value,
+											})
+										}>
+										<NumberInputField
+											placeholder="VD: 20"
+											fontSize="15px"
+											h="48px"
+										/>
+										<NumberInputStepper>
+											<NumberIncrementStepper />
+											<NumberDecrementStepper />
+										</NumberInputStepper>
+									</NumberInput>
+								</FormControl>
 
-								{formData.giftProducts.length === 0 && (
-									<Box
-										p={4}
-										bg="gray.50"
-										borderRadius="8px"
-										textAlign="center">
-										<Text
-											fontSize="14px"
-											color="gray.500">
-											Chưa có sản phẩm tặng nào
-										</Text>
-									</Box>
-								)}
+								<Box>
+									<Flex
+										justify="space-between"
+										align="center"
+										mb={2}>
+										<FormLabel
+											fontSize="15px"
+											fontWeight="600"
+											color="gray.700"
+											mb={0}>
+											Sản phẩm áp dụng
+										</FormLabel>
+										<Button
+											leftIcon={<AddIcon />}
+											size="sm"
+											colorScheme="brand"
+											onClick={handleAddDiscountProduct}>
+											Thêm sản phẩm
+										</Button>
+									</Flex>
 
-								<VStack
-									spacing={3}
-									align="stretch">
-									{formData.giftProducts.map(
-										(gift, index) => (
-											<Box
-												key={index}
-												p={3}
-												bg="gray.50"
-												borderRadius="8px">
-												<Flex
-													gap={2}
-													align="flex-end">
-													<FormControl flex={2}>
-														<FormLabel
-															fontSize="13px"
-															fontWeight="600"
-															color="gray.700">
-															Sản phẩm {index + 1}
-														</FormLabel>
-														<Select
-															placeholder="Chọn sản phẩm"
-															value={
-																gift.productId
-															}
-															onChange={(e) =>
-																handleGiftProductChange(
-																	index,
-																	"productId",
-																	e.target
-																		.value,
-																)
-															}
-															fontSize="14px"
-															h="44px">
-															{products.map(
-																(product) => (
-																	<option
-																		key={
-																			product.id
-																		}
-																		value={
-																			product.id
-																		}>
-																		{
-																			product.code
-																		}{" "}
-																		-{" "}
-																		{
-																			product.name
-																		}
-																	</option>
-																),
-															)}
-														</Select>
-													</FormControl>
-
-													<FormControl flex={1}>
-														<FormLabel
-															fontSize="13px"
-															fontWeight="600"
-															color="gray.700">
-															Số lượng
-														</FormLabel>
-														<NumberInput
-															min={1}
-															value={
-																gift.quantity
-															}
-															onChange={(
-																_,
-																value,
-															) =>
-																handleGiftProductChange(
-																	index,
-																	"quantity",
-																	value,
-																)
-															}>
-															<NumberInputField
-																fontSize="14px"
-																h="44px"
-															/>
-															<NumberInputStepper>
-																<NumberIncrementStepper />
-																<NumberDecrementStepper />
-															</NumberInputStepper>
-														</NumberInput>
-													</FormControl>
-
-													<IconButton
-														aria-label="Xóa sản phẩm"
-														icon={<DeleteIcon />}
-														colorScheme="red"
-														variant="ghost"
-														size="md"
-														h="44px"
-														onClick={() =>
-															handleRemoveGiftProduct(
-																index,
-															)
-														}
-													/>
-												</Flex>
-											</Box>
-										),
+									{formData.discountProducts.length === 0 && (
+										<Box
+											p={4}
+											bg="gray.50"
+											borderRadius="8px"
+											textAlign="center">
+											<Text
+												fontSize="14px"
+												color="gray.500">
+												Chưa có sản phẩm nào
+											</Text>
+										</Box>
 									)}
-								</VStack>
-							</Box>
+
+									<VStack
+										spacing={3}
+										align="stretch">
+										{formData.discountProducts.map(
+											(productId, index) => (
+												<Box
+													key={index}
+													p={3}
+													bg="gray.50"
+													borderRadius="8px">
+													<Flex
+														gap={2}
+														align="flex-end">
+														<FormControl flex={1}>
+															<FormLabel
+																fontSize="13px"
+																fontWeight="600"
+																color="gray.700">
+																Sản phẩm{" "}
+																{index + 1}
+															</FormLabel>
+															<Select
+																placeholder="Chọn sản phẩm"
+																value={
+																	productId
+																}
+																onChange={(e) =>
+																	handleDiscountProductChange(
+																		index,
+																		e.target
+																			.value,
+																	)
+																}
+																fontSize="14px"
+																h="44px">
+																{products.map(
+																	(
+																		product,
+																	) => (
+																		<option
+																			key={
+																				product.id
+																			}
+																			value={
+																				product.id
+																			}>
+																			{
+																				product.code
+																			}{" "}
+																			-{" "}
+																			{
+																				product.name
+																			}
+																		</option>
+																	),
+																)}
+															</Select>
+														</FormControl>
+
+														<IconButton
+															aria-label="Xóa sản phẩm"
+															icon={
+																<DeleteIcon />
+															}
+															colorScheme="red"
+															variant="ghost"
+															size="md"
+															h="44px"
+															onClick={() =>
+																handleRemoveDiscountProduct(
+																	index,
+																)
+															}
+														/>
+													</Flex>
+												</Box>
+											),
+										)}
+									</VStack>
+								</Box>
+							</>
 						)}
+
+						{/* BuyThisGetThat Configuration */}
+						{formData.type === "buyThisGetThat" && (
+							<>
+								<Box>
+									<Flex
+										justify="space-between"
+										align="center"
+										mb={2}>
+										<FormLabel
+											fontSize="15px"
+											fontWeight="600"
+											color="gray.700"
+											mb={0}>
+											Sản phẩm cần mua
+										</FormLabel>
+										<Button
+											leftIcon={<AddIcon />}
+											size="sm"
+											colorScheme="brand"
+											onClick={handleAddPurchaseGroup}>
+											Thêm sản phẩm
+										</Button>
+									</Flex>
+
+									{formData.purchaseGroups.length === 0 && (
+										<Box
+											p={4}
+											bg="gray.50"
+											borderRadius="8px"
+											textAlign="center">
+											<Text
+												fontSize="14px"
+												color="gray.500">
+												Chưa có sản phẩm cần mua nào
+											</Text>
+										</Box>
+									)}
+
+									<VStack
+										spacing={3}
+										align="stretch">
+										{formData.purchaseGroups.map(
+											(group, index) => (
+												<Box
+													key={index}
+													p={3}
+													bg="gray.50"
+													borderRadius="8px">
+													<Flex
+														gap={2}
+														align="flex-end">
+														<FormControl flex={2}>
+															<FormLabel
+																fontSize="13px"
+																fontWeight="600"
+																color="gray.700">
+																Sản phẩm{" "}
+																{index + 1}
+															</FormLabel>
+															<Select
+																placeholder="Chọn sản phẩm"
+																value={
+																	group.productId
+																}
+																onChange={(e) =>
+																	handlePurchaseGroupChange(
+																		index,
+																		"productId",
+																		e.target
+																			.value,
+																	)
+																}
+																fontSize="14px"
+																h="44px">
+																{products.map(
+																	(
+																		product,
+																	) => (
+																		<option
+																			key={
+																				product.id
+																			}
+																			value={
+																				product.id
+																			}>
+																			{
+																				product.code
+																			}{" "}
+																			-{" "}
+																			{
+																				product.name
+																			}
+																		</option>
+																	),
+																)}
+															</Select>
+														</FormControl>
+
+														<FormControl flex={1}>
+															<FormLabel
+																fontSize="13px"
+																fontWeight="600"
+																color="gray.700">
+																Số lượng
+															</FormLabel>
+															<NumberInput
+																min={1}
+																value={
+																	group.quantity
+																}
+																onChange={(
+																	_,
+																	value,
+																) =>
+																	handlePurchaseGroupChange(
+																		index,
+																		"quantity",
+																		value,
+																	)
+																}>
+																<NumberInputField
+																	fontSize="14px"
+																	h="44px"
+																/>
+																<NumberInputStepper>
+																	<NumberIncrementStepper />
+																	<NumberDecrementStepper />
+																</NumberInputStepper>
+															</NumberInput>
+														</FormControl>
+
+														<IconButton
+															aria-label="Xóa sản phẩm"
+															icon={
+																<DeleteIcon />
+															}
+															colorScheme="red"
+															variant="ghost"
+															size="md"
+															h="44px"
+															onClick={() =>
+																handleRemovePurchaseGroup(
+																	index,
+																)
+															}
+														/>
+													</Flex>
+												</Box>
+											),
+										)}
+									</VStack>
+								</Box>
+
+								<Divider />
+
+								<Box>
+									<Flex
+										justify="space-between"
+										align="center"
+										mb={2}>
+										<FormLabel
+											fontSize="15px"
+											fontWeight="600"
+											color="gray.700"
+											mb={0}>
+											Sản phẩm tặng
+										</FormLabel>
+										<Button
+											leftIcon={<AddIcon />}
+											size="sm"
+											colorScheme="green"
+											onClick={handleAddGiftProduct}>
+											Thêm sản phẩm
+										</Button>
+									</Flex>
+
+									{formData.giftProducts.length === 0 && (
+										<Box
+											p={4}
+											bg="gray.50"
+											borderRadius="8px"
+											textAlign="center">
+											<Text
+												fontSize="14px"
+												color="gray.500">
+												Chưa có sản phẩm tặng nào
+											</Text>
+										</Box>
+									)}
+
+									<VStack
+										spacing={3}
+										align="stretch">
+										{formData.giftProducts.map(
+											(gift, index) => (
+												<Box
+													key={index}
+													p={3}
+													bg="green.50"
+													borderRadius="8px">
+													<Flex
+														gap={2}
+														align="flex-end">
+														<FormControl flex={2}>
+															<FormLabel
+																fontSize="13px"
+																fontWeight="600"
+																color="gray.700">
+																Sản phẩm{" "}
+																{index + 1}
+															</FormLabel>
+															<Select
+																placeholder="Chọn sản phẩm"
+																value={
+																	gift.productId
+																}
+																onChange={(e) =>
+																	handleGiftProductChange(
+																		index,
+																		"productId",
+																		e.target
+																			.value,
+																	)
+																}
+																fontSize="14px"
+																h="44px">
+																{products.map(
+																	(
+																		product,
+																	) => (
+																		<option
+																			key={
+																				product.id
+																			}
+																			value={
+																				product.id
+																			}>
+																			{
+																				product.code
+																			}{" "}
+																			-{" "}
+																			{
+																				product.name
+																			}
+																		</option>
+																	),
+																)}
+															</Select>
+														</FormControl>
+
+														<FormControl flex={1}>
+															<FormLabel
+																fontSize="13px"
+																fontWeight="600"
+																color="gray.700">
+																Số lượng
+															</FormLabel>
+															<NumberInput
+																min={1}
+																value={
+																	gift.quantity
+																}
+																onChange={(
+																	_,
+																	value,
+																) =>
+																	handleGiftProductChange(
+																		index,
+																		"quantity",
+																		value,
+																	)
+																}>
+																<NumberInputField
+																	fontSize="14px"
+																	h="44px"
+																/>
+																<NumberInputStepper>
+																	<NumberIncrementStepper />
+																	<NumberDecrementStepper />
+																</NumberInputStepper>
+															</NumberInput>
+														</FormControl>
+
+														<IconButton
+															aria-label="Xóa sản phẩm"
+															icon={
+																<DeleteIcon />
+															}
+															colorScheme="red"
+															variant="ghost"
+															size="md"
+															h="44px"
+															onClick={() =>
+																handleRemoveGiftProduct(
+																	index,
+																)
+															}
+														/>
+													</Flex>
+												</Box>
+											),
+										)}
+									</VStack>
+								</Box>
+							</>
+						)}
+
 						{/* Thời gian */}
 						<HStack spacing={4}>
 							<FormControl isRequired>

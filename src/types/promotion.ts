@@ -1,5 +1,5 @@
 // Loại khuyến mãi
-export type PromotionType = "discount" | "buy1getN" | "buyThisGetThat";
+export type PromotionType = "discount" | "buyThisGetThat";
 
 // Sản phẩm áp dụng khuyến mãi
 export interface PromotionProduct {
@@ -13,13 +13,17 @@ export interface PromotionProduct {
 // Cấu hình cho từng loại khuyến mãi
 export interface DiscountConfig {
 	percentage: number; // Phần trăm giảm giá (0-100)
+	products: PromotionProduct[]; // Danh sách sản phẩm áp dụng giảm giá
 }
 
-export interface Buy1GetNConfig {
-	quantityReceived: number; // Số lượng sản phẩm tặng (n)
+// Nhóm sản phẩm cần mua trong "Mua này tặng kia"
+export interface PurchaseProductGroup {
+	product: PromotionProduct; // Sản phẩm cần mua
+	quantity: number; // Số lượng cần mua
 }
 
 export interface BuyThisGetThatConfig {
+	purchaseGroups: PurchaseProductGroup[]; // Các nhóm sản phẩm cần mua
 	giftProducts: {
 		product: PromotionProduct; // Sản phẩm tặng
 		quantity: number; // Số lượng tặng
@@ -33,11 +37,9 @@ export interface Promotion {
 	name: string; // Tên chương trình khuyến mãi
 	description?: string; // Mô tả
 	type: PromotionType; // Loại khuyến mãi
-	product: PromotionProduct; // Sản phẩm áp dụng khuyến mãi
 
 	// Cấu hình theo loại khuyến mãi
 	discountConfig?: DiscountConfig; // Cho loại "discount"
-	buy1GetNConfig?: Buy1GetNConfig; // Cho loại "buy1getN"
 	buyThisGetThatConfig?: BuyThisGetThatConfig; // Cho loại "buyThisGetThat"
 
 	startDate: Date; // Ngày bắt đầu

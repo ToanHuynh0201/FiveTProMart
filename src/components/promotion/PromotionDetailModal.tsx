@@ -114,7 +114,6 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 	const getTypeBadge = (type: string) => {
 		const typeConfig = {
 			discount: { color: "blue", label: "Giảm giá" },
-			buy1getN: { color: "purple", label: "Mua 1 tặng N" },
 			buyThisGetThat: { color: "orange", label: "Mua này tặng kia" },
 		};
 
@@ -248,36 +247,6 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 							</Box>
 						)}
 
-						{/* Product Info */}
-						<Box>
-							<Text
-								fontSize="14px"
-								fontWeight="600"
-								color="gray.700"
-								mb={2}>
-								Sản phẩm áp dụng
-							</Text>
-							<Box
-								p={3}
-								bg="gray.50"
-								borderRadius="8px">
-								<Text
-									fontSize="15px"
-									fontWeight="600"
-									color="gray.800">
-									{promotion.product.name}
-								</Text>
-								<Text
-									fontSize="13px"
-									color="gray.600"
-									mt={1}>
-									Mã: {promotion.product.code}
-									{promotion.product.category &&
-										` • ${promotion.product.category}`}
-								</Text>
-							</Box>
-						</Box>
-
 						{/* Promotion Details */}
 						<Box>
 							<Text
@@ -293,68 +262,42 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 								borderRadius="8px"
 								borderWidth="1px"
 								borderColor="brand.200">
-								{promotion.type === "discount" && (
-									<HStack spacing={2}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="brand.700">
-											Giảm giá:
-										</Text>
-										<Text
-											fontSize="24px"
-											fontWeight="800"
-											color="brand.600">
-											{
-												promotion.discountConfig
-													?.percentage
-											}
-											%
-										</Text>
-									</HStack>
-								)}
-
-								{promotion.type === "buy1getN" && (
-									<VStack
-										align="flex-start"
-										spacing={1}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="brand.700">
-											Mua 1 tặng{" "}
-											{
-												promotion.buy1GetNConfig
-													?.quantityReceived
-											}
-										</Text>
-										<Text
-											fontSize="13px"
-											color="gray.600">
-											Mua 1{" "}
-											{promotion.product.name.toLowerCase()}{" "}
-											tặng thêm{" "}
-											{
-												promotion.buy1GetNConfig
-													?.quantityReceived
-											}{" "}
-											{promotion.product.name.toLowerCase()}
-										</Text>
-									</VStack>
-								)}
-
-								{promotion.type === "buyThisGetThat" &&
-									promotion.buyThisGetThatConfig && (
+								{promotion.type === "discount" &&
+									promotion.discountConfig && (
 										<VStack
 											align="stretch"
-											spacing={2}>
+											spacing={3}>
+											<HStack spacing={2}>
+												<Text
+													fontSize="16px"
+													fontWeight="700"
+													color="brand.700">
+													Giảm giá:
+												</Text>
+												<Text
+													fontSize="24px"
+													fontWeight="800"
+													color="brand.600">
+													{
+														promotion.discountConfig
+															.percentage
+													}
+													%
+												</Text>
+											</HStack>
+
+											<Divider />
+
 											<Text
-												fontSize="16px"
-												fontWeight="700"
-												color="brand.700">
-												Mua{" "}
-												{promotion.product.name.toLowerCase()}{" "}
-												tặng:
+												fontSize="14px"
+												fontWeight="600"
+												color="gray.700">
+												Sản phẩm áp dụng (
+												{
+													promotion.discountConfig
+														.products.length
+												}
+												):
 											</Text>
 											<Table
 												size="sm"
@@ -364,54 +307,33 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 														<Th
 															fontSize="12px"
 															color="gray.700">
-															Sản phẩm tặng
+															Sản phẩm
 														</Th>
 														<Th
 															fontSize="12px"
-															color="gray.700"
-															isNumeric>
-															Số lượng
+															color="gray.700">
+															Mã sản phẩm
 														</Th>
 													</Tr>
 												</Thead>
 												<Tbody>
-													{promotion.buyThisGetThatConfig.giftProducts.map(
-														(gift, index) => (
+													{promotion.discountConfig.products.map(
+														(product, index) => (
 															<Tr key={index}>
 																<Td fontSize="13px">
-																	<VStack
-																		align="flex-start"
-																		spacing={
-																			0
-																		}>
-																		<Text
-																			fontWeight="600"
-																			color="gray.800">
-																			{
-																				gift
-																					.product
-																					.name
-																			}
-																		</Text>
-																		<Text
-																			fontSize="12px"
-																			color="gray.500">
-																			{
-																				gift
-																					.product
-																					.code
-																			}
-																		</Text>
-																	</VStack>
+																	<Text
+																		fontWeight="600"
+																		color="gray.800">
+																		{
+																			product.name
+																		}
+																	</Text>
 																</Td>
 																<Td
-																	fontSize="14px"
-																	fontWeight="600"
-																	color="brand.600"
-																	isNumeric>
-																	×
+																	fontSize="13px"
+																	color="gray.600">
 																	{
-																		gift.quantity
+																		product.code
 																	}
 																</Td>
 															</Tr>
@@ -419,6 +341,183 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 													)}
 												</Tbody>
 											</Table>
+										</VStack>
+									)}
+
+								{promotion.type === "buyThisGetThat" &&
+									promotion.buyThisGetThatConfig && (
+										<VStack
+											align="stretch"
+											spacing={3}>
+											<Text
+												fontSize="16px"
+												fontWeight="700"
+												color="brand.700">
+												Mua này tặng kia
+											</Text>
+
+											{/* Purchase Groups */}
+											<Box>
+												<Text
+													fontSize="14px"
+													fontWeight="600"
+													color="gray.700"
+													mb={2}>
+													Sản phẩm cần mua (
+													{
+														promotion
+															.buyThisGetThatConfig
+															.purchaseGroups
+															.length
+													}
+													):
+												</Text>
+												<Table
+													size="sm"
+													variant="simple">
+													<Thead>
+														<Tr>
+															<Th
+																fontSize="12px"
+																color="gray.700">
+																Sản phẩm
+															</Th>
+															<Th
+																fontSize="12px"
+																color="gray.700"
+																isNumeric>
+																Số lượng
+															</Th>
+														</Tr>
+													</Thead>
+													<Tbody>
+														{promotion.buyThisGetThatConfig.purchaseGroups.map(
+															(group, index) => (
+																<Tr key={index}>
+																	<Td fontSize="13px">
+																		<VStack
+																			align="flex-start"
+																			spacing={
+																				0
+																			}>
+																			<Text
+																				fontWeight="600"
+																				color="gray.800">
+																				{
+																					group
+																						.product
+																						.name
+																				}
+																			</Text>
+																			<Text
+																				fontSize="12px"
+																				color="gray.500">
+																				{
+																					group
+																						.product
+																						.code
+																				}
+																			</Text>
+																		</VStack>
+																	</Td>
+																	<Td
+																		fontSize="14px"
+																		fontWeight="600"
+																		color="blue.600"
+																		isNumeric>
+																		×
+																		{
+																			group.quantity
+																		}
+																	</Td>
+																</Tr>
+															),
+														)}
+													</Tbody>
+												</Table>
+											</Box>
+
+											<Divider />
+
+											{/* Gift Products */}
+											<Box>
+												<Text
+													fontSize="14px"
+													fontWeight="600"
+													color="gray.700"
+													mb={2}>
+													Sản phẩm tặng (
+													{
+														promotion
+															.buyThisGetThatConfig
+															.giftProducts.length
+													}
+													):
+												</Text>
+												<Table
+													size="sm"
+													variant="simple">
+													<Thead>
+														<Tr>
+															<Th
+																fontSize="12px"
+																color="gray.700">
+																Sản phẩm
+															</Th>
+															<Th
+																fontSize="12px"
+																color="gray.700"
+																isNumeric>
+																Số lượng
+															</Th>
+														</Tr>
+													</Thead>
+													<Tbody>
+														{promotion.buyThisGetThatConfig.giftProducts.map(
+															(gift, index) => (
+																<Tr key={index}>
+																	<Td fontSize="13px">
+																		<VStack
+																			align="flex-start"
+																			spacing={
+																				0
+																			}>
+																			<Text
+																				fontWeight="600"
+																				color="gray.800">
+																				{
+																					gift
+																						.product
+																						.name
+																				}
+																			</Text>
+																			<Text
+																				fontSize="12px"
+																				color="gray.500">
+																				{
+																					gift
+																						.product
+																						.code
+																				}
+																			</Text>
+																		</VStack>
+																	</Td>
+																	<Td
+																		fontSize="14px"
+																		fontWeight="600"
+																		color="green.600"
+																		isNumeric>
+																		×
+																		{
+																			gift.quantity
+																		}
+																	</Td>
+																</Tr>
+															),
+														)}
+													</Tbody>
+												</Table>
+											</Box>
 										</VStack>
 									)}
 							</Box>

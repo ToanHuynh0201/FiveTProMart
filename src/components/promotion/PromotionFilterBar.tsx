@@ -50,7 +50,6 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 							h="44px">
 							<option value="all">Tất cả loại KM</option>
 							<option value="discount">Giảm giá</option>
-							<option value="buy1getN">Mua 1 tặng N</option>
 							<option value="buyThisGetThat">
 								Mua này tặng kia
 							</option>

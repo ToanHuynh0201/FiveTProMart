@@ -78,12 +78,12 @@ let mockPromotions: Promotion[] = [
 	{
 		id: "promo_1",
 		code: "KM001",
-		name: "Giảm giá Coca Cola",
-		description: "Giảm 20% cho sản phẩm Coca Cola",
+		name: "Giảm giá nước uống",
+		description: "Giảm 20% cho các sản phẩm nước uống",
 		type: "discount",
-		product: mockProducts[3],
 		discountConfig: {
 			percentage: 20,
+			products: [mockProducts[3], mockProducts[4], mockProducts[7]], // Coca, Lavie, 7up
 		},
 		startDate: new Date("2025-11-01"),
 		endDate: new Date("2025-12-31"),
@@ -95,12 +95,26 @@ let mockPromotions: Promotion[] = [
 	{
 		id: "promo_2",
 		code: "KM002",
-		name: "Mua 1 tặng 2 Coca Cola",
-		description: "Mua 1 lon Coca tặng thêm 2 lon",
-		type: "buy1getN",
-		product: mockProducts[3],
-		buy1GetNConfig: {
-			quantityReceived: 2,
+		name: "Mua Coca và 7up tặng khăn giấy",
+		description: "Mua 1 lon Coca và 1 lon 7up tặng 1 gói khăn giấy",
+		type: "buyThisGetThat",
+		buyThisGetThatConfig: {
+			purchaseGroups: [
+				{
+					product: mockProducts[3], // Coca
+					quantity: 1,
+				},
+				{
+					product: mockProducts[7], // 7up
+					quantity: 1,
+				},
+			],
+			giftProducts: [
+				{
+					product: mockProducts[8], // Khăn giấy
+					quantity: 1,
+				},
+			],
 		},
 		startDate: new Date("2025-11-15"),
 		endDate: new Date("2025-11-30"),
@@ -112,16 +126,17 @@ let mockPromotions: Promotion[] = [
 	{
 		id: "promo_3",
 		code: "KM003",
-		name: "Mua Coca tặng 7up và khăn giấy",
-		description: "Mua 1 lon Coca tặng 1 lon 7up và 1 gói khăn giấy",
+		name: "Mua 2 Coca tặng khăn giấy",
+		description: "Mua 2 lon Coca tặng 1 gói khăn giấy",
 		type: "buyThisGetThat",
-		product: mockProducts[3],
 		buyThisGetThatConfig: {
-			giftProducts: [
+			purchaseGroups: [
 				{
-					product: mockProducts[7], // 7up
-					quantity: 1,
+					product: mockProducts[3], // Coca
+					quantity: 2,
 				},
+			],
+			giftProducts: [
 				{
 					product: mockProducts[8], // Khăn giấy
 					quantity: 1,
@@ -138,12 +153,12 @@ let mockPromotions: Promotion[] = [
 	{
 		id: "promo_4",
 		code: "KM004",
-		name: "Giảm giá Snack Lays",
-		description: "Giảm 15% cho Snack khoai tây Lays",
+		name: "Giảm giá Snack",
+		description: "Giảm 15% cho các sản phẩm Snack",
 		type: "discount",
-		product: mockProducts[6],
 		discountConfig: {
 			percentage: 15,
+			products: [mockProducts[0], mockProducts[1], mockProducts[6]], // Snack bắp cải, củ cải, Lays
 		},
 		startDate: new Date("2025-10-01"),
 		endDate: new Date("2025-10-31"),
@@ -155,29 +170,12 @@ let mockPromotions: Promotion[] = [
 	{
 		id: "promo_5",
 		code: "KM005",
-		name: "Mua 1 tặng 1 Mì Hảo Hảo",
-		description: "Mua 1 gói mì tặng 1 gói",
-		type: "buy1getN",
-		product: mockProducts[5],
-		buy1GetNConfig: {
-			quantityReceived: 1,
-		},
-		startDate: new Date("2025-11-20"),
-		endDate: new Date("2025-12-20"),
-		status: "active",
-		createdAt: new Date("2025-11-15"),
-		updatedAt: new Date("2025-11-15"),
-		createdBy: "admin_1",
-	},
-	{
-		id: "promo_6",
-		code: "KM006",
 		name: "Flash Sale Tết 2026",
-		description: "Giảm 50% Bánh snack bắp cải",
+		description: "Giảm 50% các sản phẩm thực phẩm khô",
 		type: "discount",
-		product: mockProducts[0],
 		discountConfig: {
 			percentage: 50,
+			products: [mockProducts[5]], // Mì Hảo Hảo
 		},
 		startDate: new Date("2026-01-01"),
 		endDate: new Date("2026-01-07"),
@@ -188,7 +186,7 @@ let mockPromotions: Promotion[] = [
 	},
 ];
 
-let promotionIdCounter = 7;
+let promotionIdCounter = 6;
 
 export const promotionService = {
 	// Lấy tất cả khuyến mãi
@@ -205,7 +203,20 @@ export const promotionService = {
 			}
 			return { ...promo, status };
 		});
-		return [...mockPromotions];
+
+		// Sắp xếp: active -> inactive -> expired
+		// Trong cùng trạng thái: sắp xếp theo startDate giảm dần (xa đến gần)
+		const statusOrder = { active: 1, inactive: 2, expired: 3 };
+		const sorted = [...mockPromotions].sort((a, b) => {
+			const statusDiff =
+				statusOrder[a.status as keyof typeof statusOrder] -
+				statusOrder[b.status as keyof typeof statusOrder];
+			if (statusDiff !== 0) return statusDiff;
+			// Nếu cùng trạng thái, sắp xếp theo startDate giảm dần
+			return b.startDate.getTime() - a.startDate.getTime();
+		});
+
+		return sorted;
 	},
 
 	// Lấy khuyến mãi theo ID
@@ -224,13 +235,49 @@ export const promotionService = {
 		// Tìm kiếm theo tên, mã KM, tên sản phẩm
 		if (filters.searchQuery && filters.searchQuery.trim()) {
 			const query = filters.searchQuery.toLowerCase();
-			filtered = filtered.filter(
-				(p) =>
+			filtered = filtered.filter((p) => {
+				// Tìm trong tên và mã KM
+				if (
 					p.name.toLowerCase().includes(query) ||
-					p.code.toLowerCase().includes(query) ||
-					p.product.name.toLowerCase().includes(query) ||
-					p.product.code.toLowerCase().includes(query),
-			);
+					p.code.toLowerCase().includes(query)
+				) {
+					return true;
+				}
+
+				// Tìm trong sản phẩm áp dụng
+				if (p.discountConfig) {
+					return p.discountConfig.products.some(
+						(product) =>
+							product.name.toLowerCase().includes(query) ||
+							product.code.toLowerCase().includes(query),
+					);
+				}
+
+				// Tìm trong sản phẩm cần mua hoặc tặng
+				if (p.buyThisGetThatConfig) {
+					const inPurchaseGroups =
+						p.buyThisGetThatConfig.purchaseGroups.some(
+							(group) =>
+								group.product.name
+									.toLowerCase()
+									.includes(query) ||
+								group.product.code
+									.toLowerCase()
+									.includes(query),
+						);
+					const inGiftProducts =
+						p.buyThisGetThatConfig.giftProducts.some(
+							(gift) =>
+								gift.product.name
+									.toLowerCase()
+									.includes(query) ||
+								gift.product.code.toLowerCase().includes(query),
+						);
+					return inPurchaseGroups || inGiftProducts;
+				}
+
+				return false;
+			});
 		}
 
 		// Lọc theo loại khuyến mãi
@@ -251,6 +298,18 @@ export const promotionService = {
 					p.endDate >= filters.dateRange!.start,
 			);
 		}
+
+		// Sắp xếp: active -> inactive -> expired
+		// Trong cùng trạng thái: sắp xếp theo startDate giảm dần (xa đến gần)
+		const statusOrder = { active: 1, inactive: 2, expired: 3 };
+		filtered.sort((a, b) => {
+			const statusDiff =
+				statusOrder[a.status as keyof typeof statusOrder] -
+				statusOrder[b.status as keyof typeof statusOrder];
+			if (statusDiff !== 0) return statusDiff;
+			// Nếu cùng trạng thái, sắp xếp theo startDate giảm dần
+			return b.startDate.getTime() - a.startDate.getTime();
+		});
 
 		return filtered;
 	},
@@ -376,13 +435,32 @@ export const promotionService = {
 		await new Promise((resolve) => setTimeout(resolve, 200));
 
 		const now = new Date();
-		const activePromotions = mockPromotions.filter(
-			(p) =>
-				p.product.id === productId &&
-				p.status === "active" &&
-				p.startDate <= now &&
-				p.endDate >= now,
-		);
+		const activePromotions = mockPromotions.filter((p) => {
+			if (p.status !== "active" || p.startDate > now || p.endDate < now) {
+				return false;
+			}
+
+			// Kiểm tra trong discount config
+			if (p.discountConfig) {
+				return p.discountConfig.products.some(
+					(product) => product.id === productId,
+				);
+			}
+
+			// Kiểm tra trong buyThisGetThat config
+			if (p.buyThisGetThatConfig) {
+				const inPurchaseGroups =
+					p.buyThisGetThatConfig.purchaseGroups.some(
+						(group) => group.product.id === productId,
+					);
+				const inGiftProducts = p.buyThisGetThatConfig.giftProducts.some(
+					(gift) => gift.product.id === productId,
+				);
+				return inPurchaseGroups || inGiftProducts;
+			}
+
+			return false;
+		});
 
 		return activePromotions.length > 0 ? activePromotions[0] : null;
 	},

@@ -43,7 +43,7 @@ export const ProductsChart: React.FC<ProductsChartProps> = ({
 		return value.toString();
 	};
 
-	const chartData = data.topSellingProducts.map((product) => ({
+	const chartData = data.topSellingProducts.slice(0, 5).map((product) => ({
 		name:
 			product.name.length > 15
 				? product.name.substring(0, 15) + "..."
@@ -157,7 +157,7 @@ export const ProductsChart: React.FC<ProductsChartProps> = ({
 							</Tr>
 						</Thead>
 						<Tbody>
-							{data.topSellingProducts.map((product, index) => (
+							{data.topSellingProducts.slice(0, 5).map((product, index) => (
 								<Tr
 									key={product.id}
 									_hover={{ bg: "gray.50" }}>

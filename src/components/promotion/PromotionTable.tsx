@@ -28,6 +28,7 @@ interface PromotionTableProps {
 	onViewDetail: (id: string) => void;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
+	searchQuery?: string;
 }
 
 export const PromotionTable: React.FC<PromotionTableProps> = ({
@@ -35,9 +36,37 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 	onViewDetail,
 	onEdit,
 	onDelete,
+	searchQuery = "",
 }) => {
 	// Create a key based on promotions to trigger animation on filter changes
 	const tableKey = promotions.map((p) => p.id).join("-");
+
+	// Highlight matching text
+	const highlightText = (text: string, query: string) => {
+		if (!query.trim()) return text;
+
+		const lowerText = text.toLowerCase();
+		const lowerQuery = query.toLowerCase();
+		const index = lowerText.indexOf(lowerQuery);
+
+		if (index === -1) return text;
+
+		return (
+			<>
+				{text.substring(0, index)}
+				<Text
+					as="span"
+					bg="yellow.200"
+					px={1}
+					borderRadius="sm"
+					fontWeight="700">
+					{text.substring(index, index + query.length)}
+				</Text>
+				{text.substring(index + query.length)}
+			</>
+		);
+	};
+
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
 			active: { color: "green", label: "Đang áp dụng" },
@@ -83,23 +112,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 				{config.label}
 			</Tag>
 		);
-	};
-
-	const getPromotionDetail = (promotion: Promotion) => {
-		switch (promotion.type) {
-			case "discount":
-				const productCount =
-					promotion.discountConfig?.products.length || 0;
-				return `Giảm ${promotion.discountConfig?.percentage}% (${productCount} SP)`;
-			case "buyThisGetThat":
-				const purchaseCount =
-					promotion.buyThisGetThatConfig?.purchaseGroups.length || 0;
-				const giftCount =
-					promotion.buyThisGetThatConfig?.giftProducts.length || 0;
-				return `Mua ${purchaseCount} SP → Tặng ${giftCount} SP`;
-			default:
-				return "";
-		}
 	};
 
 	return (
@@ -150,14 +162,6 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}>
-								Chi tiết
-							</Th>
-							<Th
-								fontSize="13px"
-								fontWeight="700"
-								color="gray.700"
-								textTransform="none"
-								py={4}>
 								Thời gian
 							</Th>
 							<Th
@@ -184,27 +188,34 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 							<Tr
 								key={promotion.id}
 								_hover={{ bg: "gray.50" }}
-								transition="all 0.2s">
+								transition="all 0.2s"
+								bg={
+									searchQuery &&
+									(promotion.code
+										.toLowerCase()
+										.includes(searchQuery.toLowerCase()) ||
+										promotion.name
+											.toLowerCase()
+											.includes(
+												searchQuery.toLowerCase(),
+											))
+										? "yellow.50"
+										: "transparent"
+								}>
 								<Td
 									fontSize="14px"
 									color="gray.700"
 									fontWeight="600">
-									{promotion.code}
+									{highlightText(promotion.code, searchQuery)}
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.800"
 									fontWeight="600"
 									maxW="200px">
-									{promotion.name}
+									{highlightText(promotion.name, searchQuery)}
 								</Td>
 								<Td>{getTypeBadge(promotion.type)}</Td>
-								<Td
-									fontSize="14px"
-									color="brand.600"
-									fontWeight="600">
-									{getPromotionDetail(promotion)}
-								</Td>
 								<Td fontSize="13px">
 									<VStack
 										align="flex-start"
@@ -251,6 +262,9 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 													icon={<EditIcon />}
 													onClick={() =>
 														onEdit(promotion.id)
+													}
+													isDisabled={
+														promotion.status !== "inactive"
 													}>
 													Chỉnh sửa
 												</MenuItem>

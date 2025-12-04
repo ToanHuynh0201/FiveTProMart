@@ -331,6 +331,7 @@ const PromotionPage = () => {
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
+								searchQuery={filters.searchQuery}
 							/>
 						</Box>
 

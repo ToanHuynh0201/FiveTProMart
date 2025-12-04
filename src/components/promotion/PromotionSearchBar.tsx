@@ -1,11 +1,14 @@
+import { useState, useEffect } from "react";
 import {
 	Flex,
 	Input,
 	InputGroup,
 	InputLeftElement,
+	InputRightElement,
 	Button,
+	IconButton,
 } from "@chakra-ui/react";
-import { SearchIcon, AddIcon } from "@chakra-ui/icons";
+import { SearchIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
 
 interface PromotionSearchBarProps {
 	searchQuery: string;
@@ -18,6 +21,27 @@ export const PromotionSearchBar: React.FC<PromotionSearchBarProps> = ({
 	onSearchChange,
 	onAddPromotion,
 }) => {
+	const [localQuery, setLocalQuery] = useState(searchQuery);
+
+	// Debounce search
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			onSearchChange(localQuery);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [localQuery]);
+
+	// Sync with external changes
+	useEffect(() => {
+		setLocalQuery(searchQuery);
+	}, [searchQuery]);
+
+	const handleClear = () => {
+		setLocalQuery("");
+		onSearchChange("");
+	};
+
 	return (
 		<Flex
 			gap={4}
@@ -26,19 +50,39 @@ export const PromotionSearchBar: React.FC<PromotionSearchBarProps> = ({
 			<InputGroup
 				size="lg"
 				flex={1}>
-				<InputLeftElement pointerEvents="none">
+				<InputLeftElement
+					pointerEvents="none"
+					h="52px">
 					<SearchIcon color="gray.400" />
 				</InputLeftElement>
 				<Input
 					placeholder="Tìm kiếm theo tên, mã khuyến mãi, sản phẩm..."
-					value={searchQuery}
-					onChange={(e) => onSearchChange(e.target.value)}
+					value={localQuery}
+					onChange={(e) => setLocalQuery(e.target.value)}
 					bg="white"
 					borderRadius="12px"
 					fontSize="15px"
 					h="52px"
+					pr={localQuery ? "45px" : "12px"}
 					_placeholder={{ color: "gray.400" }}
+					_focus={{
+						borderColor: "brand.400",
+						boxShadow: "0 0 0 1px var(--chakra-colors-brand-400)",
+					}}
 				/>
+				{localQuery && (
+					<InputRightElement h="52px">
+						<IconButton
+							aria-label="Xóa tìm kiếm"
+							icon={<CloseIcon />}
+							size="xs"
+							variant="ghost"
+							colorScheme="gray"
+							onClick={handleClear}
+							borderRadius="full"
+						/>
+					</InputRightElement>
+				)}
 			</InputGroup>
 
 			<Button

@@ -20,7 +20,6 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { CustomerDetail } from "@/types";
-import { customerService } from "@/services/customerService";
 import {
 	FiPhone,
 	FiMail,
@@ -59,10 +58,12 @@ const CustomerDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			const data = await customerService.getCustomerDetailById(
-				customerId,
-			);
-			setCustomerDetail(data || null);
+			// TODO: Implement API call to fetch customer detail by ID
+			// const data = await customerService.getCustomerDetailById(customerId);
+			// setCustomerDetail(data || null);
+
+			// Mock data for now
+			setCustomerDetail(null);
 		} catch (error) {
 			console.error("Error loading customer detail:", error);
 		} finally {

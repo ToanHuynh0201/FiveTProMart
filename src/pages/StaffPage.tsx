@@ -8,7 +8,6 @@ import {
 } from "@/components/staff";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { staffService } from "@/services/staffService";
 import type { Staff } from "@/types";
 import { Box, Text, Flex, Spinner } from "@chakra-ui/react";
 
@@ -32,19 +31,10 @@ const StaffPage = () => {
 
 	// Load staff data on mount
 	useEffect(() => {
-		const loadStaff = async () => {
-			setIsLoading(true);
-			try {
-				const data = await staffService.getAllStaff();
-				setStaffList(data);
-				setFilteredStaff(data);
-			} catch (error) {
-				console.error("Error loading staff:", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		loadStaff();
+		// TODO: Implement staffService.getAllStaff() API call
+		setStaffList([]);
+		setFilteredStaff([]);
+		setIsLoading(false);
 	}, []);
 
 	// Filter staff based on search query
@@ -76,12 +66,7 @@ const StaffPage = () => {
 	};
 
 	const handleAddStaffSubmit = async (newStaff: Omit<Staff, "id">) => {
-		try {
-			const addedStaff = await staffService.addStaff(newStaff);
-			setStaffList((prev) => [...prev, addedStaff]);
-		} catch (error) {
-			console.error("Error adding staff:", error);
-		}
+		// TODO: Implement staffService.addStaff() API call
 	};
 
 	const handleViewDetails = (id: string) => {
@@ -99,15 +84,7 @@ const StaffPage = () => {
 	};
 
 	const handleDeleteStaff = async (id: string) => {
-		try {
-			const success = await staffService.deleteStaff(id);
-			if (success) {
-				setStaffList((prev) => prev.filter((staff) => staff.id !== id));
-			}
-		} catch (error) {
-			console.error("Error deleting staff:", error);
-			throw error;
-		}
+		// TODO: Implement staffService.deleteStaff() API call
 	};
 
 	return (

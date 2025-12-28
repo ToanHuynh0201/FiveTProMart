@@ -24,7 +24,6 @@ import type {
 	WeekRange,
 	ShiftConfig,
 } from "@/types";
-import { scheduleService } from "@/services/scheduleService";
 
 const SchedulePage = () => {
 	const currentDate = new Date();
@@ -81,114 +80,23 @@ const SchedulePage = () => {
 	}, []);
 
 	const loadShiftConfig = async () => {
-		try {
-			const config = await scheduleService.getShiftConfig();
-			setShiftConfig(config);
-		} catch (error) {
-			console.error("Error loading shift config:", error);
-		}
+		// TODO: Replace with API call to scheduleService.getShiftConfig()
+		setShiftConfig(null);
 	};
 
 	const loadMonthData = async () => {
-		try {
-			const monthData = await scheduleService.getMonthData(
-				selectedMonth,
-				selectedYear,
-			);
-			setWeeks(monthData.weeks);
-			// Find the current week index
-			const today = new Date();
-			// Use local date to avoid timezone issues
-			const year = today.getFullYear();
-			const month = String(today.getMonth() + 1).padStart(2, "0");
-			const day = String(today.getDate()).padStart(2, "0");
-			const todayStr = `${year}-${month}-${day}`;
-
-			console.log("Today:", todayStr);
-			console.log("Weeks:", monthData.weeks);
-
-			// Find which week contains today's date
-			const currentWeekIndex = monthData.weeks.findIndex((week) => {
-				console.log(
-					`Checking week ${week.label}: ${week.start} <= ${todayStr} <= ${week.end}`,
-					todayStr >= week.start && todayStr <= week.end,
-				);
-				return todayStr >= week.start && todayStr <= week.end;
-			});
-
-			console.log("Current week index:", currentWeekIndex);
-
-			// If current week is found and we're viewing current month/year, select it
-			// Otherwise, default to first week
-			if (
-				currentWeekIndex !== -1 &&
-				selectedMonth === today.getMonth() + 1 &&
-				selectedYear === today.getFullYear()
-			) {
-				setSelectedWeekIndex(currentWeekIndex);
-			} else {
-				setSelectedWeekIndex(0);
-			}
-		} catch (error) {
-			console.error("Error loading month data:", error);
-		}
+		// TODO: Replace with API call to scheduleService.getMonthData()
+		setWeeks([]);
+		setSelectedWeekIndex(0);
 	};
 
 	const loadWeekSchedule = async () => {
 		if (!shiftConfig) return;
 
 		setIsLoading(true);
-		try {
-			const week = weeks[selectedWeekIndex];
-			const schedule = await scheduleService.getWeekSchedule(
-				week.start,
-				week.end,
-			);
-
-			// Convert to DaySchedule format
-			const days: DaySchedule[] = [];
-			const startDate = new Date(week.start);
-
-			for (let i = 0; i < 7; i++) {
-				const currentDate = new Date(startDate);
-				currentDate.setDate(startDate.getDate() + i);
-				const dateStr = currentDate.toISOString().split("T")[0];
-
-				const dayAssignments = schedule.assignments.filter(
-					(a) => a.date === dateStr,
-				);
-
-				const dayNames = [
-					"Chủ nhật",
-					"Thứ 2",
-					"Thứ 3",
-					"Thứ 4",
-					"Thứ 5",
-					"Thứ 6",
-					"Thứ 7",
-				];
-
-				// Group assignments by shift ID
-				const shifts: { [shiftId: string]: ShiftAssignment[] } = {};
-				shiftConfig.shifts.forEach((shift) => {
-					shifts[shift.id] = dayAssignments.filter(
-						(a) => a.shift === shift.id,
-					);
-				});
-
-				days.push({
-					date: dateStr,
-					dayOfWeek: dayNames[currentDate.getDay()],
-					shifts,
-				});
-			}
-
-			setWeekData(days);
-		} catch (error) {
-			console.error("Error loading week schedule:", error);
-		} finally {
-			setIsLoading(false);
-		}
+		// TODO: Replace with API call to scheduleService.getWeekSchedule()
+		setWeekData([]);
+		setIsLoading(false);
 	};
 
 	const handleCellClick = (date: string, shiftId: string) => {
@@ -229,43 +137,14 @@ const SchedulePage = () => {
 	};
 
 	const handleScheduleUpdate = async () => {
-		// Reload schedule after update
-		await loadWeekSchedule();
-
-		// Update modal data if edit modal is open
-		if (editModalData.isOpen && shiftConfig) {
-			try {
-				const week = weeks[selectedWeekIndex];
-				const schedule = await scheduleService.getWeekSchedule(
-					week.start,
-					week.end,
-				);
-
-				const dayAssignments = schedule.assignments.filter(
-					(a) =>
-						a.date === editModalData.date &&
-						a.shift === editModalData.shift,
-				);
-
-				setEditModalData({
-					...editModalData,
-					assignments: dayAssignments,
-				});
-			} catch (error) {
-				console.error("Error updating modal data:", error);
-			}
-		}
+		// TODO: Replace with API call to scheduleService.getWeekSchedule() to reload schedule
+		// TODO: Update modal data with API response
 	};
 
 	const handleSaveShiftConfig = async (config: ShiftConfig) => {
-		try {
-			await scheduleService.updateShiftConfig(config);
-			setShiftConfig(config);
-			// Reload schedule to reflect new shift configuration
-			loadWeekSchedule();
-		} catch (error) {
-			console.error("Error saving shift config:", error);
-		}
+		// TODO: Replace with API call to scheduleService.updateShiftConfig()
+		setShiftConfig(config);
+		// TODO: Call loadWeekSchedule() after successful API response
 	};
 
 	if (!shiftConfig) {

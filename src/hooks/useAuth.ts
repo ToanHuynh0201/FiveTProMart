@@ -8,14 +8,8 @@ interface AuthState {
 
 export function useAuth() {
 	const [authState, setAuthState] = useState<AuthState>({
-		// Mock user data for demo
-		user: {
-			id: "1",
-			name: "Nguyễn Văn A",
-			email: "nguyenvana@5tmart.com",
-			role: "Quản lí",
-		},
-		isAuthenticated: true,
+		user: null,
+		isAuthenticated: false,
 	});
 
 	const login = useCallback((user: User) => {

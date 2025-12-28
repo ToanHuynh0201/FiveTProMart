@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import type { ShiftAssignment } from "@/types";
-import { scheduleService } from "@/services/scheduleService";
 
 interface ViewShiftDetailModalProps {
 	isOpen: boolean;
@@ -59,13 +58,8 @@ const ViewShiftDetailModal = ({
 	}, [isOpen, shift]);
 
 	const loadShiftName = async () => {
-		try {
-			const config = await scheduleService.getShiftConfig();
-			const shiftTemplate = config.shifts.find((s) => s.id === shift);
-			setShiftName(shiftTemplate?.name || "");
-		} catch (error) {
-			console.error("Error loading shift name:", error);
-		}
+		// TODO: Fetch shift configuration from API
+		console.log("TODO: Load shift name from scheduleService.getShiftConfig()");
 	};
 
 	// Separate assignments by position

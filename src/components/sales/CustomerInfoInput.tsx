@@ -11,7 +11,6 @@ import {
 	HStack,
 	Badge,
 } from "@chakra-ui/react";
-import { salesService } from "@/services/salesService";
 
 interface Customer {
 	id: string;
@@ -49,9 +48,8 @@ export const CustomerInfoInput: React.FC<CustomerInfoInputProps> = ({
 		setIsSearching(true);
 
 		try {
-			const foundCustomer = await salesService.findCustomerByPhone(
-				phoneNumber,
-			);
+			// TODO: Replace with actual salesService.findCustomerByPhone() API call
+			const foundCustomer = null;
 
 			if (foundCustomer) {
 				setCustomer(foundCustomer);

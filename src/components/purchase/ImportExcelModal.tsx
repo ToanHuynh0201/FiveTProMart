@@ -22,7 +22,6 @@ import {
 } from "@chakra-ui/react";
 import { DownloadIcon, AttachmentIcon } from "@chakra-ui/icons";
 import type { PurchaseItem } from "../../types/purchase";
-import { purchaseService } from "../../services/purchaseService";
 
 interface ImportExcelModalProps {
 	isOpen: boolean;
@@ -41,7 +40,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 	const [previewItems, setPreviewItems] = useState<PurchaseItem[]>([]);
 
 	const handleDownloadTemplate = () => {
-		purchaseService.exportExcelTemplate();
+		// TODO: Call purchaseService.exportExcelTemplate()
 		toast({
 			title: "Tải xuống thành công",
 			description: "File mẫu đã được tải xuống",
@@ -77,7 +76,8 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			const items = await purchaseService.importFromExcel(file);
+			// TODO: Call purchaseService.importFromExcel(file)
+			const items: PurchaseItem[] = [];
 
 			if (items.length === 0) {
 				toast({

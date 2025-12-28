@@ -15,7 +15,6 @@ import {
 import { SearchIcon } from "@chakra-ui/icons";
 import { FiCamera } from "react-icons/fi";
 import type { Product } from "../../types/sales";
-import { salesService } from "../../services/salesService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductSearchBarProps {
@@ -63,8 +62,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		if (query.trim()) {
 			// Debounce search for better performance
 			searchTimeoutRef.current = setTimeout(async () => {
-				// Tìm theo tên/mã sản phẩm
-				const results = await salesService.searchProducts(query);
+				// TODO: Implement searchProducts API call from salesService
+				// const results = await salesService.searchProducts(query);
+				const results: Product[] = [];
 				setSearchResults(results);
 				setShowResults(true);
 			}, 300);

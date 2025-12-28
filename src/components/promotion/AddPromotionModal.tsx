@@ -33,7 +33,7 @@ import type {
 	PromotionType,
 	PromotionProduct,
 } from "../../types/promotion";
-import { promotionService } from "../../services/promotionService";
+// TODO: Import promotionService
 
 interface AddPromotionModalProps {
 	isOpen: boolean;
@@ -78,9 +78,8 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 	useEffect(() => {
 		if (isOpen) {
 			loadProducts();
-			// Generate promotion code
-			const code = promotionService.generatePromotionCode();
-			setFormData((prev) => ({ ...prev, code }));
+			// TODO: Generate promotion code
+			setFormData((prev) => ({ ...prev, code: "" }));
 		} else {
 			// Reset form when modal closes
 			resetForm();
@@ -104,8 +103,8 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 
 	const loadProducts = async () => {
 		try {
-			const data = await promotionService.getAvailableProducts();
-			setProducts(data);
+			// TODO: Fetch available products from API
+			setProducts([]);
 		} catch (error) {
 			console.error("Error loading products:", error);
 		}

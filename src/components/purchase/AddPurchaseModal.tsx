@@ -33,8 +33,6 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Purchase, PurchaseItem, Supplier } from "../../types/purchase";
-import { purchaseService } from "../../services/purchaseService";
-import { supplierService } from "../../services/supplierService";
 
 interface AddPurchaseModalProps {
 	isOpen: boolean;
@@ -78,8 +76,8 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 
 	useEffect(() => {
 		if (isOpen) {
-			// Generate purchase number
-			const purchaseNumber = purchaseService.generatePurchaseNumber();
+			// TODO: Call purchaseService.generatePurchaseNumber()
+			const purchaseNumber = `PN-${Date.now()}`;
 			setFormData((prev) => ({ ...prev, purchaseNumber }));
 
 			// Set initial items from Excel if provided
@@ -120,15 +118,11 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
-		// Load supplier's products
+		// TODO: Call supplierService.getSupplierById(supplierId)
 		setIsLoadingProducts(true);
 		try {
-			const supplierDetail = await supplierService.getSupplierById(
-				supplierId,
-			);
-			if (supplierDetail?.products) {
-				setSupplierProducts(supplierDetail.products);
-			}
+			// Mock empty products for now
+			setSupplierProducts([]);
 		} catch (error) {
 			console.error("Error loading supplier products:", error);
 			toast({

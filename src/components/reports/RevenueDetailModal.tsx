@@ -18,8 +18,7 @@ import {
 } from "@chakra-ui/react";
 import { RevenueChart } from "./RevenueChart";
 import type { RevenueReport, CategoryReport } from "@/types/reports";
-import { useEffect, useState } from "react";
-import { getCategoryReport } from "@/services/reportService";
+import { useState } from "react";
 
 interface RevenueDetailModalProps {
 	isOpen: boolean;
@@ -34,11 +33,10 @@ export const RevenueDetailModal: React.FC<RevenueDetailModalProps> = ({
 }) => {
 	const [categoryData, setCategoryData] = useState<CategoryReport | null>(null);
 
-	useEffect(() => {
-		if (isOpen) {
-			getCategoryReport(data.period).then(setCategoryData);
-		}
-	}, [isOpen, data.period]);
+	// TODO: Implement getCategoryReport service API call
+	// if (isOpen) {
+	//   getCategoryReport(data.period).then(setCategoryData);
+	// }
 
 	const formatCurrency = (value: number) => {
 		return new Intl.NumberFormat("vi-VN", {

@@ -33,9 +33,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { SupplierDetail } from "@/types/supplier";
-import { supplierService } from "@/services/supplierService";
 import { PurchaseDetailModal } from "@/components/purchase/PurchaseDetailModal";
-import { purchaseService } from "@/services/purchaseService";
 import type { Purchase } from "@/types/purchase";
 import {
 	FiPhone,
@@ -83,15 +81,10 @@ const SupplierDetailModal = ({
 
 	const loadPurchaseDetail = async (purchaseId: string) => {
 		try {
+			// TODO: Replace with actual API call to load purchase detail
+			// const purchase = await purchaseService.getPurchaseById(purchaseId);
 			console.log("Loading purchase with ID:", purchaseId);
-			const purchase = await purchaseService.getPurchaseById(purchaseId);
-			console.log("Loaded purchase:", purchase);
-			if (purchase) {
-				setSelectedPurchase(purchase);
-			} else {
-				console.warn("Purchase not found with ID:", purchaseId);
-				setSelectedPurchase(null);
-			}
+			setSelectedPurchase(null);
 		} catch (error) {
 			console.error("Error loading purchase detail:", error);
 			setSelectedPurchase(null);
@@ -115,8 +108,9 @@ const SupplierDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			const data = await supplierService.getSupplierById(supplierId);
-			setSupplierDetail(data || null);
+			// TODO: Replace with actual API call to load supplier detail
+			// const data = await supplierService.getSupplierById(supplierId);
+			setSupplierDetail(null);
 		} catch (error) {
 			console.error("Error loading supplier detail:", error);
 		} finally {

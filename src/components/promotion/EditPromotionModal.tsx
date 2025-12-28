@@ -34,7 +34,7 @@ import type {
 	PromotionType,
 	PromotionProduct,
 } from "../../types/promotion";
-import { promotionService } from "../../services/promotionService";
+// TODO: Import promotionService
 
 interface EditPromotionModalProps {
 	isOpen: boolean;
@@ -91,68 +91,24 @@ export const EditPromotionModal: React.FC<EditPromotionModalProps> = ({
 	const loadData = async () => {
 		setIsFetching(true);
 		try {
-			const [productsData, promotionData] = await Promise.all([
-				promotionService.getAvailableProducts(),
-				promotionService.getPromotionById(promotionId!),
-			]);
+			// TODO: Fetch available products
+			setProducts([]);
 
-			setProducts(productsData);
-
-			if (promotionData) {
-				setPromotion(promotionData);
-
-				// Convert promotion to form data based on type
-				let discountProducts: string[] = [];
-				let purchaseGroups: { productId: string; quantity: number }[] =
-					[];
-				let giftProducts: { productId: string; quantity: number }[] = [];
-
-				if (
-					promotionData.type === "discount" &&
-					promotionData.discountConfig
-				) {
-					discountProducts = promotionData.discountConfig.products.map(
-						(p) => p.id,
-					);
-				} else if (
-					promotionData.type === "buyThisGetThat" &&
-					promotionData.buyThisGetThatConfig
-				) {
-					purchaseGroups =
-						promotionData.buyThisGetThatConfig.purchaseGroups.map(
-							(group) => ({
-								productId: group.product.id,
-								quantity: group.quantity,
-							}),
-						);
-					giftProducts =
-						promotionData.buyThisGetThatConfig.giftProducts.map(
-							(gift) => ({
-								productId: gift.product.id,
-								quantity: gift.quantity,
-							}),
-						);
-				}
-
-				setFormData({
-					code: promotionData.code,
-					name: promotionData.name,
-					description: promotionData.description || "",
-					type: promotionData.type,
-					discountPercentage:
-						promotionData.discountConfig?.percentage || 0,
-					discountProducts,
-					purchaseGroups,
-					giftProducts,
-					startDate: new Date(promotionData.startDate)
-						.toISOString()
-						.slice(0, 16),
-					endDate: new Date(promotionData.endDate)
-						.toISOString()
-						.slice(0, 16),
-					status: promotionData.status,
-				});
-			}
+			// TODO: Fetch promotion data by ID
+			// TODO: Convert promotion to form data based on type
+			setFormData({
+				code: "",
+				name: "",
+				description: "",
+				type: "discount",
+				discountPercentage: 0,
+				discountProducts: [],
+				purchaseGroups: [],
+				giftProducts: [],
+				startDate: "",
+				endDate: "",
+				status: "inactive",
+			});
 		} catch (error) {
 			console.error("Error loading data:", error);
 			toast({

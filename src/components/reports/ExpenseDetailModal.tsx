@@ -38,7 +38,30 @@ import {
 } from "recharts";
 import Pagination from "@/components/common/Pagination";
 import type { ExpenseReport } from "@/types/reports";
-import { getExpenseCategoryLabel, getExpenseCategoryColor } from "@/services/expenseService";
+
+// TODO: Implement getExpenseCategoryLabel service
+const getExpenseCategoryLabel = (category: string): string => {
+	const labels: Record<string, string> = {
+		electricity: "Điện",
+		water: "Nước",
+		supplies: "Nhu yếu phẩm",
+		repairs: "Sửa chữa",
+		other: "Khác",
+	};
+	return labels[category] || category;
+};
+
+// TODO: Implement getExpenseCategoryColor service
+const getExpenseCategoryColor = (category: string): string => {
+	const colors: Record<string, string> = {
+		electricity: "#FF8C42",
+		water: "#4A90E2",
+		supplies: "#7ED321",
+		repairs: "#F5A623",
+		other: "#B8E986",
+	};
+	return colors[category] || "#999999";
+};
 
 interface ExpenseDetailModalProps {
 	isOpen: boolean;

@@ -3,14 +3,10 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Pagination, LoadingSpinner } from "@/components/common";
 import { AddExpenseModal, ExpenseDetailModal } from "@/components/expenses";
 import { usePagination } from "@/hooks";
-import {
-	getAllExpenses,
-	addExpense,
-	updateExpense,
-	deleteExpense,
-	getExpenseCategoryLabel,
-} from "@/services/expenseService";
-import type { Expense, ExpenseCategory } from "@/types/reports";
+import type { Expense } from "@/types/reports";
+
+// TODO: Import expenseService functions (getAllExpenses, addExpense, updateExpense, deleteExpense, getExpenseCategoryLabel)
+
 import {
 	Box,
 	Text,
@@ -54,9 +50,7 @@ import { AddIcon } from "@chakra-ui/icons";
 import {
 	FiSearch,
 	FiMoreVertical,
-	FiEdit2,
 	FiTrash2,
-	FiDollarSign,
 	FiBarChart2,
 } from "react-icons/fi";
 import { useRef } from "react";
@@ -65,7 +59,7 @@ const ITEMS_PER_PAGE = 10;
 
 const ExpensesPage = () => {
 	const toast = useToast();
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
+	const { currentPage, pageSize, pagination, goToPage, setTotal } =
 		usePagination({
 			initialPage: 1,
 			pageSize: ITEMS_PER_PAGE,
@@ -106,7 +100,8 @@ const ExpensesPage = () => {
 	const loadExpenses = async () => {
 		setIsLoading(true);
 		try {
-			const data = await getAllExpenses();
+			// TODO: Replace with API call to getAllExpenses()
+			const data: Expense[] = [];
 			setExpenseList(data);
 			setFilteredExpenses(data);
 		} catch (error) {
@@ -178,9 +173,9 @@ const ExpensesPage = () => {
 	const monthCount = uniqueMonths.size > 0 ? uniqueMonths.size : 1;
 	const averagePerMonth = totalExpense / monthCount;
 
-	const handleAddExpense = async (expense: Omit<Expense, "id">) => {
+	const handleAddExpense = async (_expense: Omit<Expense, "id">) => {
 		try {
-			await addExpense(expense);
+			// TODO: Replace with API call to addExpense(_expense)
 			await loadExpenses();
 			toast({
 				title: "Thành công",
@@ -207,7 +202,7 @@ const ExpensesPage = () => {
 		if (!expenseToDelete) return;
 
 		try {
-			await deleteExpense(expenseToDelete);
+			// TODO: Replace with API call to deleteExpense(expenseToDelete)
 			await loadExpenses();
 			toast({
 				title: "Thành công",
@@ -237,6 +232,18 @@ const ExpensesPage = () => {
 
 	const formatDate = (date: Date) => {
 		return new Date(date).toLocaleDateString("vi-VN");
+	};
+
+	// TODO: Replace with getExpenseCategoryLabel from expenseService
+	const getExpenseCategoryLabel = (category: string): string => {
+		const labels: Record<string, string> = {
+			electricity: "Điện",
+			water: "Nước",
+			supplies: "Nhu yếu phẩm",
+			repairs: "Sửa chữa",
+			other: "Khác",
+		};
+		return labels[category] || category;
 	};
 
 	if (isLoading) {

@@ -21,7 +21,6 @@ import {
 } from "@/components/promotion";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { promotionService } from "@/services/promotionService";
 import type {
 	Promotion,
 	PromotionFilter,
@@ -88,10 +87,15 @@ const PromotionPage = () => {
 	const loadData = async () => {
 		setIsLoading(true);
 		try {
-			const [promotionsData, statsData] = await Promise.all([
-				promotionService.getAllPromotions(),
-				promotionService.getStats(),
-			]);
+			// TODO: Replace with promotionService.getAllPromotions()
+			const promotionsData: Promotion[] = [];
+
+			// TODO: Replace with promotionService.getStats()
+			const statsData: PromotionStats = {
+				activePromotions: 0,
+				upcomingPromotions: 0,
+				expiredPromotions: 0,
+			};
 
 			setPromotions(promotionsData);
 			setStats(statsData);
@@ -112,7 +116,8 @@ const PromotionPage = () => {
 
 	const applyFilters = async () => {
 		try {
-			const filtered = await promotionService.filterPromotions(filters);
+			// TODO: Replace with promotionService.filterPromotions(filters)
+			const filtered: Promotion[] = [];
 			setFilteredPromotions(filtered);
 			setTotal(filtered.length);
 			goToPage(1); // Reset to first page when filtering
@@ -139,7 +144,7 @@ const PromotionPage = () => {
 
 	const handleAddPromotion = async (promotion: PromotionFormData) => {
 		try {
-			await promotionService.addPromotion(promotion);
+			// TODO: Replace with promotionService.addPromotion(promotion)
 			await loadData(); // Reload all data to update stats
 		} catch (error) {
 			console.error("Error adding promotion:", error);
@@ -152,7 +157,7 @@ const PromotionPage = () => {
 		updates: Partial<Promotion>,
 	) => {
 		try {
-			await promotionService.updatePromotion(id, updates);
+			// TODO: Replace with promotionService.updatePromotion(id, updates)
 			await loadData(); // Reload all data to update stats
 		} catch (error) {
 			console.error("Error updating promotion:", error);
@@ -162,7 +167,8 @@ const PromotionPage = () => {
 
 	const handleDeletePromotion = async (id: string) => {
 		try {
-			const success = await promotionService.deletePromotion(id);
+			// TODO: Replace with promotionService.deletePromotion(id)
+			const success = true;
 			if (success) {
 				await loadData(); // Reload all data to update stats
 				toast({

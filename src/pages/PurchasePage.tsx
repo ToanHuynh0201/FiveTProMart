@@ -31,7 +31,6 @@ import {
 } from "@/components/purchase";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { purchaseService } from "@/services/purchaseService";
 import type {
 	Purchase,
 	PurchaseFilter,
@@ -99,17 +98,13 @@ const PurchasePage = () => {
 	const loadData = async () => {
 		setIsLoading(true);
 		try {
-			const [purchasesData, suppliersData, statsData] = await Promise.all(
-				[
-					purchaseService.getAllPurchases(),
-					purchaseService.getSuppliers(),
-					purchaseService.getStats(),
-				],
-			);
+			// TODO: Implement API call to purchaseService.getAllPurchases()
+			// TODO: Implement API call to purchaseService.getSuppliers()
+			// TODO: Implement API call to purchaseService.getStats()
 
-			setPurchases(purchasesData);
-			setSuppliers(suppliersData);
-			setStats(statsData);
+			setPurchases([]);
+			setSuppliers([]);
+			setStats(null);
 		} catch (error) {
 			toast({
 				title: "Lỗi",
@@ -124,7 +119,8 @@ const PurchasePage = () => {
 
 	const applyFilters = async () => {
 		try {
-			const filtered = await purchaseService.filterPurchases(filters);
+			// TODO: Implement API call to purchaseService.filterPurchases(filters)
+			const filtered: Purchase[] = [];
 			setFilteredPurchases(filtered);
 			setTotal(filtered.length);
 			goToPage(1);
@@ -145,7 +141,7 @@ const PurchasePage = () => {
 	const handleAddPurchase = async (
 		purchase: Omit<Purchase, "id" | "createdAt" | "updatedAt">,
 	) => {
-		await purchaseService.createPurchase(purchase);
+		// TODO: Implement API call to purchaseService.createPurchase(purchase)
 		await loadData();
 		// Reset imported items after successfully creating purchase
 		setImportedItems([]);
@@ -172,7 +168,7 @@ const PurchasePage = () => {
 	const handleDelete = async (id: string) => {
 		if (window.confirm("Bạn có chắc chắn muốn xóa phiếu nhập này?")) {
 			try {
-				await purchaseService.deletePurchase(id);
+				// TODO: Implement API call to purchaseService.deletePurchase(id)
 				toast({
 					title: "Thành công",
 					description: "Đã xóa phiếu nhập",
@@ -211,7 +207,7 @@ const PurchasePage = () => {
 			return;
 		}
 
-		purchaseService.exportPurchasesToExcel(filteredPurchases);
+		// TODO: Implement API call to purchaseService.exportPurchasesToExcel(filteredPurchases)
 		toast({
 			title: "Thành công",
 			description: "Đã xuất file Excel",

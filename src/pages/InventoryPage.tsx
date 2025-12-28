@@ -24,7 +24,6 @@ import {
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { inventoryService } from "@/services/inventoryService";
 import type {
 	InventoryProduct,
 	ProductFilter,
@@ -102,13 +101,12 @@ const InventoryPage = () => {
 	const loadData = async () => {
 		setIsLoading(true);
 		try {
-			const [productsData, categoriesData, statsData] = await Promise.all(
-				[
-					inventoryService.getAllProducts(),
-					inventoryService.getCategories(),
-					inventoryService.getStats(),
-				],
-			);
+			// TODO: Replace with actual API call to inventoryService.getAllProducts()
+			const productsData: InventoryProduct[] = [];
+			// TODO: Replace with actual API call to inventoryService.getCategories()
+			const categoriesData: InventoryCategory[] = [];
+			// TODO: Replace with actual API call to inventoryService.getStats()
+			const statsData: InventoryStats | null = null;
 
 			setProducts(productsData);
 			setCategories(categoriesData);
@@ -130,7 +128,8 @@ const InventoryPage = () => {
 
 	const applyFilters = async () => {
 		try {
-			const filtered = await inventoryService.filterProducts(filters);
+			// TODO: Replace with actual API call to inventoryService.filterProducts(filters)
+			const filtered: InventoryProduct[] = [];
 			setFilteredProducts(filtered);
 			setTotal(filtered.length);
 			goToPage(1); // Reset to first page when filtering
@@ -157,7 +156,7 @@ const InventoryPage = () => {
 		updates: Partial<InventoryProduct>,
 	) => {
 		try {
-			await inventoryService.updateProduct(id, updates);
+			// TODO: Replace with actual API call to inventoryService.updateProduct(id, updates)
 			await loadData(); // Reload all data to update stats
 		} catch (error) {
 			console.error("Error updating product:", error);
@@ -167,7 +166,8 @@ const InventoryPage = () => {
 
 	const handleDeleteProduct = async (id: string) => {
 		try {
-			const success = await inventoryService.deleteProduct(id);
+			// TODO: Replace with actual API call to inventoryService.deleteProduct(id)
+			const success = true;
 			if (success) {
 				await loadData(); // Reload all data to update stats
 				toast({
@@ -214,11 +214,7 @@ const InventoryPage = () => {
 		if (!selectedProduct) return;
 
 		try {
-			await inventoryService.updateBatch(
-				selectedProduct.id,
-				batchId,
-				updates,
-			);
+			// TODO: Replace with actual API call to inventoryService.updateBatch(selectedProduct.id, batchId, updates)
 			await loadData();
 
 			// Update selected product for the modal
@@ -305,7 +301,7 @@ const InventoryPage = () => {
 		note: string,
 	) => {
 		try {
-			await inventoryService.createDisposal(items, note);
+			// TODO: Replace with actual API call to inventoryService.createDisposal(items, note)
 			await loadData(); // Reload data to update stats and inventory
 			toast({
 				title: "Thành công",

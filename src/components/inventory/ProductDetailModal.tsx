@@ -30,7 +30,6 @@ import {
 } from "@chakra-ui/react";
 import { FiPackage, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import type { InventoryProduct, ProductBatch } from "../../types/inventory";
-import { inventoryService } from "../../services/inventoryService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductDetailModalProps {
@@ -71,8 +70,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
 		setIsLoading(true);
 		try {
-			const data = await inventoryService.getProductById(productId);
-			setProduct(data || null);
+			// TODO: Implement API call to fetch product details by ID
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			setProduct(null);
 		} catch (error) {
 			toast({
 				title: "Lỗi",
@@ -181,18 +181,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 		if (!product) return;
 
 		try {
-			// Gọi API để lưu thay đổi
-			const updatedProduct = await inventoryService.updateBatch(
-				product.id,
-				batchId,
-				{
-					quantityInStock: editValues.quantityInStock,
-					quantityOnDisplay: editValues.quantityOnDisplay,
-				},
-			);
-
-			// Cập nhật UI với dữ liệu từ server
-			setProduct(updatedProduct);
+			// TODO: Implement API call to update batch quantities
+			// TODO: Update product with returned data from API
 
 			toast({
 				title: "Thành công",

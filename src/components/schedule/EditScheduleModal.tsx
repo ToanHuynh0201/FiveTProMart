@@ -17,7 +17,6 @@ import {
 import { useState, useEffect } from "react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { ShiftAssignment, Staff } from "@/types";
-import { scheduleService } from "@/services/scheduleService";
 
 interface EditScheduleModalProps {
 	isOpen: boolean;
@@ -78,64 +77,20 @@ const EditScheduleModal = ({
 	}, [isOpen, date, shift, assignments]);
 
 	const loadShiftName = async () => {
-		try {
-			const config = await scheduleService.getShiftConfig();
-			const shiftTemplate = config.shifts.find((s) => s.id === shift);
-			setShiftName(shiftTemplate?.name || "");
-			setRequiredWarehouseStaff(
-				shiftTemplate?.requiredWarehouseStaff || 0,
-			);
-			setRequiredSalesStaff(shiftTemplate?.requiredSalesStaff || 0);
-			setMaxShiftsPerWeek(config.maxShiftsPerWeek || 6);
-		} catch (error) {
-			console.error("Error loading shift name:", error);
-		}
+		// TODO: Fetch shift configuration from API
+		console.log("TODO: Load shift name from scheduleService.getShiftConfig()");
 	};
 
 	const loadAvailableStaff = async () => {
-		try {
-			const staff = await scheduleService.getAvailableStaff(date, shift);
-			setAvailableStaff(staff);
-
-			// Load shift counts for available staff
-			await loadStaffShiftCounts(staff.map((s) => s.id));
-		} catch (error) {
-			console.error("Error loading available staff:", error);
-		}
+		// TODO: Fetch available staff from scheduleService.getAvailableStaff()
+		setAvailableStaff([]);
+		console.log("TODO: Load available staff from API");
 	};
 
 	const loadStaffShiftCounts = async (staffIds: string[]) => {
-		try {
-			// Calculate week range
-			const currentDate = new Date(date);
-			const dayOfWeek = currentDate.getDay();
-			const monday = new Date(currentDate);
-			monday.setDate(
-				currentDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
-			);
-			const sunday = new Date(monday);
-			sunday.setDate(monday.getDate() + 6);
-
-			const weekStart = `${monday.getFullYear()}-${String(
-				monday.getMonth() + 1,
-			).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
-			const weekEnd = `${sunday.getFullYear()}-${String(
-				sunday.getMonth() + 1,
-			).padStart(2, "0")}-${String(sunday.getDate()).padStart(2, "0")}`;
-
-			const counts: { [staffId: string]: number } = {};
-			for (const staffId of staffIds) {
-				const count = await scheduleService.getStaffShiftCount(
-					staffId,
-					weekStart,
-					weekEnd,
-				);
-				counts[staffId] = count;
-			}
-			setStaffShiftCounts(counts);
-		} catch (error) {
-			console.error("Error loading staff shift counts:", error);
-		}
+		// TODO: Fetch staff shift counts from scheduleService.getStaffShiftCount()
+		setStaffShiftCounts({});
+		console.log("TODO: Load staff shift counts from API");
 	};
 
 	// Filter staff by position
@@ -172,38 +127,9 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
-		setIsLoading(true);
-		try {
-			await scheduleService.createAssignment({
-				staffId: selectedWarehouseStaffId,
-				date,
-				shift,
-			});
-
-			toast({
-				title: "Đã thêm nhân viên kho vào ca làm",
-				status: "success",
-				duration: 2000,
-			});
-
-			setSelectedWarehouseStaffId("");
-			loadAvailableStaff();
-			onUpdate();
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "Lỗi khi thêm nhân viên";
-			toast({
-				title: "Không thể thêm nhân viên",
-				description: errorMessage,
-				status: "error",
-				duration: 5000,
-				isClosable: true,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+		// TODO: Call scheduleService.createAssignment() to add warehouse staff
+		console.log("TODO: Create assignment for warehouse staff via API");
+		setSelectedWarehouseStaffId("");
 	};
 
 	const handleAddSalesStaff = async () => {
@@ -224,62 +150,14 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
-		setIsLoading(true);
-		try {
-			await scheduleService.createAssignment({
-				staffId: selectedSalesStaffId,
-				date,
-				shift,
-			});
-
-			toast({
-				title: "Đã thêm nhân viên bán hàng vào ca làm",
-				status: "success",
-				duration: 2000,
-			});
-
-			setSelectedSalesStaffId("");
-			loadAvailableStaff();
-			onUpdate();
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "Lỗi khi thêm nhân viên";
-			toast({
-				title: "Không thể thêm nhân viên",
-				description: errorMessage,
-				status: "error",
-				duration: 5000,
-				isClosable: true,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+		// TODO: Call scheduleService.createAssignment() to add sales staff
+		console.log("TODO: Create assignment for sales staff via API");
+		setSelectedSalesStaffId("");
 	};
 
 	const handleRemoveStaff = async (assignmentId: string) => {
-		setIsLoading(true);
-		try {
-			await scheduleService.deleteAssignment(assignmentId);
-
-			toast({
-				title: "Đã xóa nhân viên khỏi ca làm",
-				status: "success",
-				duration: 2000,
-			});
-
-			loadAvailableStaff();
-			onUpdate();
-		} catch (error) {
-			toast({
-				title: "Lỗi khi xóa nhân viên",
-				status: "error",
-				duration: 2000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+		// TODO: Call scheduleService.deleteAssignment() to remove staff
+		console.log("TODO: Delete assignment via API");
 	};
 
 	return (

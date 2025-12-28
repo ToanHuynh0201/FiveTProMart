@@ -32,7 +32,6 @@ import type {
 	PendingOrder,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
-import { salesService } from "../services/salesService";
 import { isExpired, isExpiringSoon } from "../utils/date";
 
 interface Customer {
@@ -101,10 +100,7 @@ const SalesPage = () => {
 	} = useDisclosure();
 
 	useEffect(() => {
-		// Load all products on mount if needed
-		salesService.getAllProducts().then(() => {
-			// Products loaded successfully
-		});
+		// TODO: Implement API call to load products
 
 		// Load orders for history
 		loadOrders();
@@ -168,14 +164,14 @@ const SalesPage = () => {
 	}, [orderItems, paymentMethod, customer, orderNumber, createdAt]);
 
 	const loadOrders = async () => {
-		const allOrders = await salesService.getAllOrders();
-		setOrders(allOrders);
-		setFilteredOrders(allOrders);
+		// TODO: Implement API call to load orders
+		setOrders([]);
+		setFilteredOrders([]);
 	};
 
 	const applyFilters = async () => {
-		const filtered = await salesService.filterOrders(filters);
-		setFilteredOrders(filtered);
+		// TODO: Implement API call to filter orders
+		setFilteredOrders([]);
 	};
 
 	const handleFiltersChange = (newFilters: OrderFilters) => {
@@ -325,7 +321,7 @@ const SalesPage = () => {
 	};
 
 	const calculateTotal = () => {
-		return salesService.calculateOrderTotal(orderItems);
+		return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
 	};
 
 	const calculateLoyaltyPoints = () => {
@@ -344,67 +340,29 @@ const SalesPage = () => {
 			return;
 		}
 
-		try {
-			const order = await salesService.createOrder({
-				orderNumber,
-				items: orderItems,
-				subtotal: calculateTotal(),
-				discount: 0,
-				total: calculateTotal(),
-				paymentMethod,
-				customer: customer
-					? {
-							id: customer.id,
-							name: customer.name,
-							phone: customer.phone,
-							points: customer.phone
-								? (customer.points || 0) +
-								  calculateLoyaltyPoints()
-								: 0,
-					  }
-					: {
-							id: `guest_${Date.now()}`,
-							name: "KHÁCH HÀNG",
-							phone: "",
-							points: 0,
-					  },
-				staff: {
-					id: "staff_1",
-					name: "Đặng V",
-				},
-				createdAt,
-				status: "completed",
-			});
+		// TODO: Implement API call to create and complete order
+		console.log("Create order:", {
+			orderNumber,
+			items: orderItems,
+			subtotal: calculateTotal(),
+			discount: 0,
+			total: calculateTotal(),
+			paymentMethod,
+			customer,
+		});
 
-			// Complete the order
-			await salesService.completeOrder(order.id);
+		// Clear localStorage
+		localStorage.removeItem("salesPage_currentOrder");
 
-			// Print logic here (could open print dialog)
-			alert(
-				`Đơn hàng ${orderNumber} đã được tạo thành công!\nTổng tiền: ${calculateTotal().toLocaleString(
-					"vi-VN",
-				)}đ`,
-			);
-
-			// Clear localStorage
-			localStorage.removeItem("salesPage_currentOrder");
-
-			// Reset form
-			setOrderItems([]);
-			setPaymentMethod(undefined);
-			setCustomer({
-				id: `guest_${Date.now()}`,
-				name: "KHÁCH VÃNG LAI",
-				phone: "",
-				points: 0,
-			});
-
-			// Reload page to get new order number
-			window.location.reload();
-		} catch (error) {
-			console.error("Error creating order:", error);
-			alert("Có lỗi xảy ra khi tạo đơn hàng");
-		}
+		// Reset form
+		setOrderItems([]);
+		setPaymentMethod(undefined);
+		setCustomer({
+			id: `guest_${Date.now()}`,
+			name: "KHÁCH VÃNG LAI",
+			phone: "",
+			points: 0,
+		});
 	};
 
 	const handleCustomerChange = (updatedCustomer: Customer | null) => {

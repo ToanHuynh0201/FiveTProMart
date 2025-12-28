@@ -33,14 +33,7 @@ import {
 	ExpenseDetailModal,
 } from "@/components/reports";
 import { LoadingSpinner } from "@/components/common";
-import {
-	getRevenueReport,
-	getOrdersReport,
-	getProductsReport,
-	getCategoryReport,
-	getCustomerStats,
-} from "@/services/reportService";
-import { getExpenseReport } from "@/services/expenseService";
+// TODO: Import API functions from @/services/reportService and @/services/expenseService
 import type {
 	DateRange,
 	DateRangeFilter,
@@ -104,44 +97,20 @@ export const ReportsPage: React.FC = () => {
 	} = useDisclosure();
 
 	// Fetch data
-	const fetchData = async () => {
-		setLoading(true);
-		try {
-			const period: DateRangeFilter = {
-				type: dateRange,
-			};
-
-			const [revenue, orders, products, category, customer, expense] =
-				await Promise.all([
-					getRevenueReport(period),
-					getOrdersReport(period),
-					getProductsReport(period),
-					getCategoryReport(period),
-					getCustomerStats(period),
-					getExpenseReport(period),
-				]);
-
-			setRevenueData(revenue);
-			setOrdersData(orders);
-			setProductsData(products);
-			setCategoryData(category);
-			setCustomerData(customer);
-			setExpenseData(expense);
-		} catch (error) {
-			toast({
-				title: "Lỗi tải dữ liệu",
-				description: "Không thể tải dữ liệu báo cáo. Vui lòng thử lại.",
-				status: "error",
-				duration: 3000,
-				isClosable: true,
-			});
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	useEffect(() => {
-		fetchData();
+		setLoading(false);
+		// TODO: Replace with API calls to getRevenueReport
+		setRevenueData(null);
+		// TODO: Replace with API calls to getOrdersReport
+		setOrdersData(null);
+		// TODO: Replace with API calls to getProductsReport
+		setProductsData(null);
+		// TODO: Replace with API calls to getCategoryReport
+		setCategoryData(null);
+		// TODO: Replace with API calls to getCustomerStats
+		setCustomerData(null);
+		// TODO: Replace with API calls to getExpenseReport
+		setExpenseData(null);
 	}, [dateRange]);
 
 	const formatCurrency = (value: number) => {

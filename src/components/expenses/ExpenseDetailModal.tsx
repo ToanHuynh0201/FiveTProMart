@@ -27,10 +27,6 @@ import {
 import Pagination from "@/components/common/Pagination";
 import { LoadingSpinner } from "@/components/common";
 import { ExpenseChart } from "@/components/reports";
-import {
-	getExpenseReport,
-	getExpenseCategoryLabel,
-} from "@/services/expenseService";
 import type { ExpenseReport, DateRangeFilter } from "@/types/reports";
 
 interface ExpenseDetailModalProps {
@@ -41,6 +37,17 @@ interface ExpenseDetailModalProps {
 const PAGE_SIZE = 10;
 
 type TimeFilter = "7days" | "30days" | "3months" | "year";
+
+const getExpenseCategoryLabel = (category: string): string => {
+	const labels: Record<string, string> = {
+		electricity: "Điện",
+		water: "Nước",
+		supplies: "Nhu yếu phẩm",
+		repairs: "Sửa chữa",
+		other: "Khác",
+	};
+	return labels[category] || category;
+};
 
 export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 	isOpen,
@@ -62,10 +69,26 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 	const fetchExpenseData = async () => {
 		setLoading(true);
 		try {
-			const period: DateRangeFilter = {
-				type: "year", // Get full year data to allow filtering
+			// TODO: Replace with API call to getExpenseReport(period)
+			// const period: DateRangeFilter = {
+			// 	type: "year", // Get full year data to allow filtering
+			// };
+			// const data = await getExpenseReport(period);
+
+			// Mock data for development
+			const data: ExpenseReport = {
+				totalExpense: 0,
+				byCategory: {
+					electricity: 0,
+					water: 0,
+					supplies: 0,
+					repairs: 0,
+					other: 0,
+				},
+				expenses: [],
+				data: [],
+				growth: 0,
 			};
-			const data = await getExpenseReport(period);
 			setExpenseData(data);
 		} catch (error) {
 			toast({

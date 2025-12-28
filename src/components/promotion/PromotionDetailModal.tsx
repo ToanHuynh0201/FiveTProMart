@@ -26,7 +26,7 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Promotion } from "../../types/promotion";
-import { promotionService } from "../../services/promotionService";
+// TODO: Import promotionService
 import { formatDate } from "../../utils/date";
 
 interface PromotionDetailModalProps {
@@ -57,8 +57,8 @@ export const PromotionDetailModal: React.FC<PromotionDetailModalProps> = ({
 	const loadPromotion = async () => {
 		setIsLoading(true);
 		try {
-			const data = await promotionService.getPromotionById(promotionId!);
-			setPromotion(data || null);
+			// TODO: Fetch promotion data by ID from API
+			setPromotion(null);
 		} catch (error) {
 			console.error("Error loading promotion:", error);
 		} finally {

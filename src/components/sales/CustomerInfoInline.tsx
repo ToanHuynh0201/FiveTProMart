@@ -11,7 +11,6 @@ import {
 	HStack,
 	VStack,
 } from "@chakra-ui/react";
-import { salesService } from "@/services/salesService";
 
 interface Customer {
 	id: string;
@@ -67,9 +66,8 @@ export const CustomerInfoInline: React.FC<CustomerInfoInlineProps> = ({
 		setIsSearching(true);
 
 		try {
-			const foundCustomer = await salesService.findCustomerByPhone(
-				phoneNumber,
-			);
+			// TODO: Replace with actual salesService.findCustomerByPhone() API call
+			const foundCustomer = null;
 
 			if (foundCustomer) {
 				onCustomerChange(foundCustomer);

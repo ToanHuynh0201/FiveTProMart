@@ -25,7 +25,6 @@
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { StaffDetail, UpdateStaffData } from "@/types";
-import { staffService } from "@/services/staffService";
 
 interface StaffDetailModalProps {
 	isOpen: boolean;
@@ -60,18 +59,31 @@ const StaffDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			const data = await staffService.getStaffDetailById(staffId);
-			setStaffDetail(data || null);
-			if (data) {
+			// TODO: Replace with actual API call - staffService.getStaffDetailById(staffId)
+			const mockData: StaffDetail = {
+				id: staffId,
+				name: "Nhân viên mẫu",
+				phone: "",
+				email: "",
+				address: "",
+				salary: 0,
+				status: "active" as const,
+				position: "Nhân viên bán hàng",
+				dateOfBirth: "",
+				hireDate: "",
+			};
+
+			setStaffDetail(mockData || null);
+			if (mockData) {
 				setFormData({
-					phone: data.phone,
-					email: data.email,
-					address: data.address,
-					salary: data.salary,
-					status: data.status,
-					position: data.position,
-					dateOfBirth: data.dateOfBirth,
-					hireDate: data.hireDate,
+					phone: mockData.phone,
+					email: mockData.email,
+					address: mockData.address,
+					salary: mockData.salary,
+					status: mockData.status,
+					position: mockData.position,
+					dateOfBirth: mockData.dateOfBirth,
+					hireDate: mockData.hireDate,
 				});
 			}
 		} catch (error) {
@@ -94,10 +106,9 @@ const StaffDetailModal = ({
 
 		setIsSaving(true);
 		try {
-			const updatedStaff = await staffService.updateStaff(
-				staffId,
-				formData,
-			);
+			// TODO: Replace with actual API call - staffService.updateStaff(staffId, formData)
+			const updatedStaff: StaffDetail | null = null;
+
 			if (updatedStaff) {
 				setStaffDetail(updatedStaff);
 				setIsEditing(false);
@@ -144,7 +155,9 @@ const StaffDetailModal = ({
 
 		setIsDeleting(true);
 		try {
-			const success = await staffService.deleteStaff(staffId);
+			// TODO: Replace with actual API call - staffService.deleteStaff(staffId)
+			const success = false;
+
 			if (success) {
 				onDelete(staffId);
 				onClose();

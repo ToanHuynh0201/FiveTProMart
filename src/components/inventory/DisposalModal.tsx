@@ -47,7 +47,6 @@ import type {
 	DisposalRecord,
 } from "@/types/inventory";
 import { formatDate, isExpired } from "@/utils/date";
-import { inventoryService } from "@/services/inventoryService";
 
 interface DisposalModalProps {
 	isOpen: boolean;
@@ -92,8 +91,10 @@ const DisposalModal = ({
 	const loadDisposalHistory = async () => {
 		setIsLoadingHistory(true);
 		try {
-			const history = await inventoryService.getDisposalHistory();
-			setDisposalHistory(history);
+			// TODO: Implement API call to fetch disposal history
+			// const history = await inventoryService.getDisposalHistory();
+			// For now, set empty history
+			setDisposalHistory([]);
 		} catch (error) {
 			console.error("Error loading disposal history:", error);
 			toast({

@@ -11,7 +11,6 @@ import {
 } from "@chakra-ui/react";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import type { PaymentMethod } from "@/types/sales";
-import { salesService } from "@/services/salesService";
 
 interface Customer {
 	id: string;
@@ -65,9 +64,8 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 
 		setIsSearching(true);
 		try {
-			const foundCustomer = await salesService.findCustomerByPhone(
-				phoneInput,
-			);
+			// TODO: Replace with actual salesService.findCustomerByPhone() API call
+			const foundCustomer = null;
 			if (foundCustomer) {
 				onCustomerChange(foundCustomer);
 				setPhoneInput(foundCustomer.phone);

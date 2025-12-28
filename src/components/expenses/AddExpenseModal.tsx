@@ -22,7 +22,6 @@ import {
 	Textarea,
 } from "@chakra-ui/react";
 import type { Expense, ExpenseCategory } from "@/types/reports";
-import { getExpenseCategoryLabel } from "@/services/expenseService";
 
 interface AddExpenseModalProps {
 	isOpen: boolean;
@@ -37,6 +36,17 @@ const expenseCategories: ExpenseCategory[] = [
 	"repairs",
 	"other",
 ];
+
+const getExpenseCategoryLabel = (category: ExpenseCategory): string => {
+	const labels: Record<ExpenseCategory, string> = {
+		electricity: "Điện",
+		water: "Nước",
+		supplies: "Nhu yếu phẩm",
+		repairs: "Sửa chữa",
+		other: "Khác",
+	};
+	return labels[category];
+};
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 	isOpen,

@@ -20,7 +20,6 @@ import {
 } from "@chakra-ui/react";
 import { FiCamera, FiCheck, FiX, FiVideo, FiVideoOff } from "react-icons/fi";
 import type { Product } from "../../types/sales";
-import { salesService } from "../../services/salesService";
 
 interface BarcodeScannerProps {
 	isOpen: boolean;
@@ -126,8 +125,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 		setLastScanned(barcode);
 
 		try {
-			// Chỉ tìm theo mã lô hàng (batch code)
-			const batchResult = await salesService.searchProductByBatchCode(barcode);
+			// TODO: Implement searchProductByBatchCode API call from salesService
+			// const batchResult = await salesService.searchProductByBatchCode(barcode);
+			const batchResult = null;
 
 			if (batchResult) {
 				// Tìm thấy lô hàng

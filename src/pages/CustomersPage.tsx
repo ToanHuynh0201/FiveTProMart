@@ -10,7 +10,6 @@ import {
 } from "@/components/customer";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { customerService } from "@/services/customerService";
 import type { Customer } from "@/types";
 import {
 	Box,
@@ -55,19 +54,10 @@ const CustomersPage = () => {
 
 	// Load customer data on mount
 	useEffect(() => {
-		const loadCustomers = async () => {
-			setIsLoading(true);
-			try {
-				const data = await customerService.getAllCustomers();
-				setCustomerList(data);
-				setFilteredCustomers(data);
-			} catch (error) {
-				console.error("Error loading customers:", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		loadCustomers();
+		// TODO: Implement API call to load customers
+		setIsLoading(false);
+		setCustomerList([]);
+		setFilteredCustomers([]);
 	}, []);
 
 	// Filter customers based on search query, gender, and points
@@ -169,48 +159,29 @@ const CustomersPage = () => {
 	};
 
 	const handleDeleteCustomer = async (id: string) => {
-		try {
-			const success = await customerService.deleteCustomer(id);
-			if (success) {
-				setCustomerList((prev) =>
-					prev.filter((customer) => customer.id !== id),
-				);
-			}
-		} catch (error) {
-			console.error("Error deleting customer:", error);
-			throw error;
-		}
+		// TODO: Implement API call to delete customer
+		setCustomerList((prev) =>
+			prev.filter((customer) => customer.id !== id),
+		);
 	};
 
 	const handleAddCustomer = async (customer: Omit<Customer, "id">) => {
-		try {
-			const newCustomer = await customerService.addCustomer(customer);
-			setCustomerList((prev) => [...prev, newCustomer]);
-		} catch (error) {
-			console.error("Error adding customer:", error);
-			throw error;
-		}
+		// TODO: Implement API call to add customer
+		console.log("Add customer:", customer);
 	};
 
 	const handleUpdateCustomer = async (
 		id: string,
 		updates: Partial<Customer>,
 	) => {
-		try {
-			const success = await customerService.updateCustomer(id, updates);
-			if (success) {
-				setCustomerList((prev) =>
-					prev.map((customer) =>
-						customer.id === id
-							? { ...customer, ...updates }
-							: customer,
-					),
-				);
-			}
-		} catch (error) {
-			console.error("Error updating customer:", error);
-			throw error;
-		}
+		// TODO: Implement API call to update customer
+		setCustomerList((prev) =>
+			prev.map((customer) =>
+				customer.id === id
+					? { ...customer, ...updates }
+					: customer,
+			),
+		);
 	};
 
 	return (

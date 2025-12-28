@@ -38,7 +38,6 @@ import {
 	Icon,
 } from "@chakra-ui/react";
 import type { UpdateSupplierData, SupplierProduct } from "@/types/supplier";
-import { supplierService } from "@/services/supplierService";
 import { FiX, FiPlus } from "react-icons/fi";
 
 interface EditSupplierModalProps {
@@ -101,24 +100,9 @@ export const EditSupplierModal: React.FC<EditSupplierModalProps> = ({
 
 		setIsFetching(true);
 		try {
-			const supplier = await supplierService.getSupplierById(supplierId);
-			if (supplier) {
-				setFormData({
-					code: supplier.code,
-					name: supplier.name,
-					phone: supplier.phone,
-					email: supplier.email || "",
-					address: supplier.address || "",
-					taxCode: supplier.taxCode || "",
-					contactPerson: supplier.contactPerson || "",
-					contactPhone: supplier.contactPhone || "",
-					bankAccount: supplier.bankAccount || "",
-					bankName: supplier.bankName || "",
-					status: supplier.status,
-					notes: supplier.notes || "",
-				});
-				setSupplierProducts(supplier.products || []);
-			}
+			// TODO: Replace with actual API call to load supplier data
+			// const supplier = await supplierService.getSupplierById(supplierId);
+			// For now, keep form empty until API is implemented
 		} catch (error) {
 			console.error("Error loading supplier:", error);
 			toast({

@@ -10,7 +10,6 @@ import {
 } from "@/components/supplier";
 import { Pagination } from "@/components/common";
 import { usePagination } from "@/hooks";
-import { supplierService } from "@/services/supplierService";
 import type {
 	Supplier,
 	SupplierStats,
@@ -70,8 +69,13 @@ const SupplierPage = () => {
 
 	// Load supplier data on mount
 	useEffect(() => {
-		loadSuppliers();
-		loadStats();
+		// TODO: Implement API call to load suppliers
+		setSupplierList([]);
+		setFilteredSuppliers([]);
+		setIsLoading(false);
+
+		// TODO: Implement API call to load supplier stats
+		setStats(null);
 	}, []);
 
 	// Filter suppliers when search or filter changes
@@ -83,9 +87,9 @@ const SupplierPage = () => {
 	const loadSuppliers = async () => {
 		setIsLoading(true);
 		try {
-			const data = await supplierService.getAllSuppliers();
-			setSupplierList(data);
-			setFilteredSuppliers(data);
+			// TODO: Implement API call to get all suppliers
+			setSupplierList([]);
+			setFilteredSuppliers([]);
 		} catch (error) {
 			console.error("Error loading suppliers:", error);
 		} finally {
@@ -95,20 +99,17 @@ const SupplierPage = () => {
 
 	const loadStats = async () => {
 		try {
-			const statsData = await supplierService.getSupplierStats();
-			setStats(statsData);
+			// TODO: Implement API call to get supplier stats
+			setStats(null);
 		} catch (error) {
 			console.error("Error loading stats:", error);
 		}
 	};
 
 	const applyFilters = async () => {
-		const filtered = await supplierService.filterSuppliers({
-			searchQuery,
-			status: statusFilter,
-		});
-		setFilteredSuppliers(filtered);
-		setTotal(filtered.length);
+		// TODO: Implement API call to filter suppliers
+		setFilteredSuppliers([]);
+		setTotal(0);
 		goToPage(1);
 	};
 
@@ -138,9 +139,8 @@ const SupplierPage = () => {
 
 	const handleDelete = async (id: string) => {
 		try {
-			await supplierService.deleteSupplier(id);
-			await loadSuppliers();
-			await loadStats();
+			// TODO: Implement API call to delete supplier
+			// TODO: Reload suppliers and stats after deletion
 		} catch (error) {
 			console.error("Error deleting supplier:", error);
 			throw error;
@@ -151,9 +151,8 @@ const SupplierPage = () => {
 		supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
 	) => {
 		try {
-			await supplierService.addSupplier(supplierData);
-			await loadSuppliers();
-			await loadStats();
+			// TODO: Implement API call to add new supplier
+			// TODO: Reload suppliers and stats after adding
 		} catch (error) {
 			console.error("Error adding supplier:", error);
 			throw error;
@@ -165,9 +164,8 @@ const SupplierPage = () => {
 		updates: UpdateSupplierData,
 	) => {
 		try {
-			await supplierService.updateSupplier(id, updates);
-			await loadSuppliers();
-			await loadStats();
+			// TODO: Implement API call to update supplier
+			// TODO: Reload suppliers and stats after updating
 		} catch (error) {
 			console.error("Error updating supplier:", error);
 			throw error;

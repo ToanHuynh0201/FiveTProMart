@@ -1,5 +1,5 @@
 import { Flex, IconButton, Tooltip, Text } from "@chakra-ui/react";
-import { SmallCloseIcon } from "@chakra-ui/icons";
+import { IoMdExit } from "react-icons/io";
 
 interface SidebarHeaderProps {
 	onLogout: () => void;
@@ -21,7 +21,7 @@ export function SidebarHeader({ onLogout, isCollapsed }: SidebarHeaderProps) {
 					hasArrow>
 					<IconButton
 						aria-label="Logout"
-						icon={<SmallCloseIcon boxSize={5} />}
+						icon={<IoMdExit size={20} />}
 						size="md"
 						variant="solid"
 						bg="rgba(255, 99, 71, 0.2)"
@@ -84,7 +84,7 @@ export function SidebarHeader({ onLogout, isCollapsed }: SidebarHeaderProps) {
 					}}
 					transition="all 0.2s"
 					onClick={onLogout}>
-					<SmallCloseIcon boxSize={5} />
+					<IoMdExit size={20} />
 					<Text
 						fontSize="sm"
 						fontWeight="600">

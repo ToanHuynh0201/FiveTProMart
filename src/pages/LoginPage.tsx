@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Box, Container, VStack, Heading, Text, Link } from "@chakra-ui/react";
+import { Box, Container, VStack, Heading, Text, Link, useDisclosure } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
 import { LoadingSpinner } from "../components/common";
 import { PersonIcon, LockIcon } from "../components/icons/AuthIcons";
+import { ForgotPasswordModal } from "../components/auth";
 import { ROUTES } from "../constants";
 
 export default function LoginPage() {
@@ -13,6 +14,7 @@ export default function LoginPage() {
 	const [password, setPassword] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
+	const { isOpen, onOpen, onClose } = useDisclosure();
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
@@ -200,8 +202,7 @@ export default function LoginPage() {
 									transition="all 0.2s ease"
 									onClick={(e) => {
 										e.preventDefault();
-										// TODO: Handle forgot password
-										console.log("Forgot password clicked");
+										onOpen();
 									}}>
 									Quên mật khẩu?
 								</Link>
@@ -210,6 +211,9 @@ export default function LoginPage() {
 					</VStack>
 				</Box>
 			</Container>
+
+			{/* Forgot Password Modal */}
+			<ForgotPasswordModal isOpen={isOpen} onClose={onClose} />
 		</Box>
 	);
 }

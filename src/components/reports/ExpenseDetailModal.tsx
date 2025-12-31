@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
 	Modal,
 	ModalOverlay,
@@ -37,6 +37,7 @@ import {
 	Legend,
 } from "recharts";
 import Pagination from "@/components/common/Pagination";
+import { usePagination } from "@/hooks";
 import type { ExpenseReport } from "@/types/reports";
 
 // TODO: Implement getExpenseCategoryLabel service
@@ -78,7 +79,6 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 	onClose,
 	data,
 }) => {
-	const [currentPage, setCurrentPage] = useState(1);
 	const [timeFilter, setTimeFilter] = useState<TimeFilter>("30days");
 
 	// Filter expenses by time
@@ -109,14 +109,24 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 		});
 	}, [data.expenses, timeFilter]);
 
-	// Paginate expenses
-	const paginatedExpenses = useMemo(() => {
-		const startIndex = (currentPage - 1) * PAGE_SIZE;
-		const endIndex = startIndex + PAGE_SIZE;
-		return filteredExpenses.slice(startIndex, endIndex);
-	}, [filteredExpenses, currentPage]);
+	// usePagination for metadata
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: 1,
+		pageSize: PAGE_SIZE,
+		initialTotal: filteredExpenses.length,
+	});
 
-	const totalPages = Math.ceil(filteredExpenses.length / PAGE_SIZE);
+	// Update total when filtered data changes
+	useEffect(() => {
+		goToPage(1); // Reset to first page when filter changes
+	}, [timeFilter]);
+
+	// Paginate expenses (client-side)
+	const paginatedExpenses = useMemo(() => {
+		const startIndex = (currentPage - 1) * pageSize;
+		const endIndex = startIndex + pageSize;
+		return filteredExpenses.slice(startIndex, endIndex);
+	}, [filteredExpenses, currentPage, pageSize]);
 
 	// Recalculate statistics based on filtered data
 	const filteredStats = useMemo(() => {
@@ -229,7 +239,6 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 							value={timeFilter}
 							onChange={(e) => {
 								setTimeFilter(e.target.value as TimeFilter);
-								setCurrentPage(1); // Reset to first page
 							}}
 							w="200px"
 							size="sm">
@@ -389,12 +398,14 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 							</Table>
 						</Box>
 
-						{totalPages > 1 && (
+						{pagination.totalPages > 1 && (
 							<Flex justify="center" mt={4}>
 								<Pagination
 									currentPage={currentPage}
-									totalPages={totalPages}
-									onPageChange={setCurrentPage}
+									totalPages={pagination.totalPages}
+									totalItems={filteredExpenses.length}
+									pageSize={pageSize}
+									onPageChange={goToPage}
 								/>
 							</Flex>
 						)}

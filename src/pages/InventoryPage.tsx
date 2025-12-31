@@ -23,43 +23,27 @@ import {
 	DisposalModal,
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type {
 	InventoryProduct,
-	ProductFilter,
 	InventoryCategory,
 	InventoryStats,
 	ProductBatch,
 	DisposalItem,
 } from "@/types";
+import type { InventoryFilters } from "@/types/filters";
+import { inventoryService } from "@/services/inventoryService";
 
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
 	const toast = useToast();
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
-		usePagination({
-			initialPage: 1,
-			pageSize: ITEMS_PER_PAGE,
-			initialTotal: 0,
-		});
 
-	// Data states
+	// State for data from API
 	const [products, setProducts] = useState<InventoryProduct[]>([]);
-	const [filteredProducts, setFilteredProducts] = useState<
-		InventoryProduct[]
-	>([]);
+	const [totalItems, setTotalItems] = useState(0);
 	const [categories, setCategories] = useState<InventoryCategory[]>([]);
 	const [stats, setStats] = useState<InventoryStats | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-
-	// Filter states
-	const [filters, setFilters] = useState<ProductFilter>({
-		searchQuery: "",
-		category: "all",
-		status: "all",
-		stockLevel: "all",
-	});
 
 	// Modal states
 	const [selectedProductId, setSelectedProductId] = useState<string | null>(
@@ -88,99 +72,78 @@ const InventoryPage = () => {
 		onClose: onDisposalModalClose,
 	} = useDisclosure();
 
-	// Load initial data
-	useEffect(() => {
-		loadData();
-	}, []);
-
-	// Apply filters when filters or products change
-	useEffect(() => {
-		applyFilters();
-	}, [filters, products]);
-
-	const loadData = async () => {
-		setIsLoading(true);
-		try {
-			// TODO: Replace with actual API call to inventoryService.getAllProducts()
-			const productsData: InventoryProduct[] = [];
-			// TODO: Replace with actual API call to inventoryService.getCategories()
-			const categoriesData: InventoryCategory[] = [];
-			// TODO: Replace with actual API call to inventoryService.getStats()
-			const statsData: InventoryStats | null = null;
-
-			setProducts(productsData);
-			setCategories(categoriesData);
-			setStats(statsData);
-			setFilteredProducts(productsData);
-			setTotal(productsData.length);
-		} catch (error) {
-			console.error("Error loading data:", error);
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải dữ liệu",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+	// Fetch function for API call
+	const fetchProducts = async (filters: InventoryFilters) => {
+		const response = await inventoryService.getProducts(filters);
+		setProducts(response.data);
+		setTotalItems(response.pagination.totalItems);
 	};
 
-	const applyFilters = async () => {
-		try {
-			// TODO: Replace with actual API call to inventoryService.filterProducts(filters)
-			const filtered: InventoryProduct[] = [];
-			setFilteredProducts(filtered);
-			setTotal(filtered.length);
-			goToPage(1); // Reset to first page when filtering
-		} catch (error) {
-			console.error("Error filtering products:", error);
-		}
-	};
-
-	const handleFiltersChange = (newFilters: ProductFilter) => {
-		setFilters(newFilters);
-	};
-
-	const handleResetFilters = () => {
-		setFilters({
+	// useFilters for filtering + pagination state
+	const {
+		filters,
+		loading,
+		error,
+		handleFilterChange,
+		handlePageChange,
+		resetFilters,
+	} = useFilters<InventoryFilters>(
+		{
+			page: 1,
+			pageSize: ITEMS_PER_PAGE,
 			searchQuery: "",
 			category: "all",
 			status: "all",
 			stockLevel: "all",
-		});
-	};
+		},
+		fetchProducts,
+		500,
+	);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
+	useEffect(() => {
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
+		}
+	}, [filters.page, currentPage, goToPage]);
+
+	// Load categories and stats on mount
+	useEffect(() => {
+		// TODO: Implement API call to load categories
+		setCategories([]);
+		// TODO: Implement API call to load stats
+		setStats(null);
+	}, []);
 
 	const handleUpdateProduct = async (
 		id: string,
 		updates: Partial<InventoryProduct>,
 	) => {
-		try {
-			// TODO: Replace with actual API call to inventoryService.updateProduct(id, updates)
-			await loadData(); // Reload all data to update stats
-		} catch (error) {
-			console.error("Error updating product:", error);
-			throw error;
-		}
+		await inventoryService.updateProduct(id, updates);
+		// Refresh data after updating
+		await fetchProducts(filters);
+		onEditModalClose();
+		// TODO: Reload stats after updating
 	};
 
 	const handleDeleteProduct = async (id: string) => {
-		try {
-			// TODO: Replace with actual API call to inventoryService.deleteProduct(id)
-			const success = true;
-			if (success) {
-				await loadData(); // Reload all data to update stats
-				toast({
-					title: "Thành công",
-					description: "Đã xóa sản phẩm",
-					status: "success",
-					duration: 3000,
-				});
-			}
-		} catch (error) {
-			console.error("Error deleting product:", error);
-			throw error;
-		}
+		await inventoryService.deleteProduct(id);
+		// Refresh data after deleting
+		await fetchProducts(filters);
+		toast({
+			title: "Thành công",
+			description: "Đã xóa sản phẩm",
+			status: "success",
+			duration: 3000,
+		});
+		// TODO: Reload stats after deletion
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -208,14 +171,14 @@ const InventoryPage = () => {
 	};
 
 	const handleUpdateBatch = async (
-		batchId: string,
-		updates: Partial<ProductBatch>,
+		_batchId: string,
+		_updates: Partial<ProductBatch>,
 	) => {
 		if (!selectedProduct) return;
 
 		try {
 			// TODO: Replace with actual API call to inventoryService.updateBatch(selectedProduct.id, batchId, updates)
-			await loadData();
+			await fetchProducts(filters);
 
 			// Update selected product for the modal
 			const updatedProduct = products.find(
@@ -231,6 +194,7 @@ const InventoryPage = () => {
 				status: "success",
 				duration: 3000,
 			});
+			// TODO: Reload stats after updating
 		} catch (error) {
 			console.error("Error updating batch:", error);
 			toast({
@@ -244,51 +208,11 @@ const InventoryPage = () => {
 	};
 
 	// Stats card click handlers
-	const handleLowStockClick = () => {
-		if (filters.stockLevel === "low") {
-			handleResetFilters();
+	const handleStatClick = (stockLevel: string) => {
+		if (filters.stockLevel === stockLevel) {
+			handleFilterChange("stockLevel", "all");
 		} else {
-			setFilters({
-				...filters,
-				stockLevel: "low",
-				searchQuery: "",
-			});
-		}
-	};
-
-	const handleOutOfStockClick = () => {
-		if (filters.stockLevel === "out") {
-			handleResetFilters();
-		} else {
-			setFilters({
-				...filters,
-				stockLevel: "out",
-				searchQuery: "",
-			});
-		}
-	};
-
-	const handleExpiringSoonClick = () => {
-		if (filters.stockLevel === "expiring-soon") {
-			handleResetFilters();
-		} else {
-			setFilters({
-				...filters,
-				stockLevel: "expiring-soon",
-				searchQuery: "",
-			});
-		}
-	};
-
-	const handleExpiredClick = () => {
-		if (filters.stockLevel === "expired") {
-			handleResetFilters();
-		} else {
-			setFilters({
-				...filters,
-				stockLevel: "expired",
-				searchQuery: "",
-			});
+			handleFilterChange("stockLevel", stockLevel);
 		}
 	};
 
@@ -298,27 +222,23 @@ const InventoryPage = () => {
 
 	const handleSubmitDisposal = async (
 		items: DisposalItem[],
-		note: string,
+		_note: string,
 	) => {
 		try {
 			// TODO: Replace with actual API call to inventoryService.createDisposal(items, note)
-			await loadData(); // Reload data to update stats and inventory
+			await fetchProducts(filters); // Reload data to update stats and inventory
 			toast({
 				title: "Thành công",
 				description: `Đã hủy ${items.length} lô hàng`,
 				status: "success",
 				duration: 3000,
 			});
+			// TODO: Reload stats after disposal
 		} catch (error) {
 			console.error("Error creating disposal:", error);
 			throw error;
 		}
 	};
-
-	// Pagination
-	const startIndex = (currentPage - 1) * pageSize;
-	const endIndex = startIndex + pageSize;
-	const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
 	return (
 		<MainLayout>
@@ -358,7 +278,7 @@ const InventoryPage = () => {
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
-							onClick={handleLowStockClick}
+							onClick={() => handleStatClick("low")}
 						/>
 						<StatsCard
 							title="Hết hàng"
@@ -366,7 +286,7 @@ const InventoryPage = () => {
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
-							onClick={handleOutOfStockClick}
+							onClick={() => handleStatClick("out")}
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
@@ -374,7 +294,7 @@ const InventoryPage = () => {
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
-							onClick={handleExpiringSoonClick}
+							onClick={() => handleStatClick("expiring-soon")}
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
@@ -382,19 +302,41 @@ const InventoryPage = () => {
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"
-							onClick={handleExpiredClick}
+							onClick={() => handleStatClick("expired")}
 						/>
 					</SimpleGrid>
 				)}
 
 				{/* Search & Filter Bar */}
 				<ProductSearchBar
-					filters={filters}
+					filters={{
+						searchQuery: filters.searchQuery || "",
+						category: (filters.category || "all") as "all" | string,
+						status: (filters.status || "all") as
+							| "all"
+							| "active"
+							| "inactive",
+						stockLevel: (filters.stockLevel || "all") as
+							| "all"
+							| "normal"
+							| "low"
+							| "out"
+							| "expiring-soon"
+							| "expired",
+					}}
 					categories={categories}
-					onFiltersChange={handleFiltersChange}
+					onFiltersChange={(newFilters) => {
+						handleFilterChange(
+							"searchQuery",
+							newFilters.searchQuery,
+						);
+						handleFilterChange("category", newFilters.category);
+						handleFilterChange("status", newFilters.status);
+						handleFilterChange("stockLevel", newFilters.stockLevel);
+					}}
 				/>
 				{/* Loading State */}
-				{isLoading && (
+				{loading && (
 					<Flex
 						justify="center"
 						align="center"
@@ -406,8 +348,22 @@ const InventoryPage = () => {
 						/>
 					</Flex>
 				)}
+
+				{/* Error State */}
+				{error && (
+					<Flex
+						justify="center"
+						align="center"
+						minH="400px">
+						<Text
+							fontSize="18px"
+							color="red.500">
+							{error}
+						</Text>
+					</Flex>
+				)}
 				{/* Product Table */}
-				{!isLoading && (
+				{!loading && !error && (
 					<>
 						<Box mb={6}>
 							<Flex
@@ -420,8 +376,7 @@ const InventoryPage = () => {
 									fontSize="18px"
 									fontWeight="600"
 									color="gray.700">
-									Danh sách hàng hóa (
-									{filteredProducts.length})
+									Danh sách hàng hóa ({totalItems})
 								</Text>
 								{(filters.category !== "all" ||
 									filters.status !== "all" ||
@@ -431,7 +386,7 @@ const InventoryPage = () => {
 										leftIcon={<RepeatIcon />}
 										variant="ghost"
 										colorScheme="gray"
-										onClick={handleResetFilters}
+										onClick={resetFilters}
 										fontSize="14px"
 										fontWeight="600">
 										Đặt lại bộ lọc
@@ -440,7 +395,7 @@ const InventoryPage = () => {
 							</Flex>
 
 							<ProductTable
-								products={currentProducts}
+								products={products}
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
@@ -448,13 +403,13 @@ const InventoryPage = () => {
 						</Box>
 
 						{/* Pagination */}
-						{filteredProducts.length > 0 && (
+						{products.length > 0 && (
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}
-								totalItems={total}
+								totalItems={totalItems}
 								pageSize={pageSize}
-								onPageChange={goToPage}
+								onPageChange={handlePageChange}
 								showInfo={true}
 								itemLabel="sản phẩm"
 							/>
@@ -462,7 +417,7 @@ const InventoryPage = () => {
 					</>
 				)}
 				{/* Empty State */}
-				{!isLoading && filteredProducts.length === 0 && (
+				{!loading && !error && products.length === 0 && (
 					<Flex
 						direction="column"
 						justify="center"

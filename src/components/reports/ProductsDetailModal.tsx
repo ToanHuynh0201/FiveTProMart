@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
 	Modal,
 	ModalOverlay,
@@ -30,6 +30,7 @@ import {
 	Cell,
 } from "recharts";
 import Pagination from "@/components/common/Pagination";
+import { usePagination } from "@/hooks";
 import type { ProductsReport } from "@/types/reports";
 
 interface ProductsDetailModalProps {
@@ -47,7 +48,6 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 	data,
 }) => {
 	const [tableTopLimit, setTableTopLimit] = useState<number | "all">(10);
-	const [currentPage, setCurrentPage] = useState(1);
 
 	// Chart data: Always show top 10
 	const chartProducts = useMemo(() => {
@@ -62,20 +62,29 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 		return data.topSellingProducts.slice(0, tableTopLimit);
 	}, [data.topSellingProducts, tableTopLimit]);
 
-	// Paginate table data
-	const paginatedProducts = useMemo(() => {
-		const startIndex = (currentPage - 1) * PAGE_SIZE;
-		const endIndex = startIndex + PAGE_SIZE;
-		return filteredTableProducts.slice(startIndex, endIndex);
-	}, [filteredTableProducts, currentPage]);
+	// usePagination for metadata
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: 1,
+		pageSize: PAGE_SIZE,
+		initialTotal: filteredTableProducts.length,
+	});
 
-	const totalPages = Math.ceil(filteredTableProducts.length / PAGE_SIZE);
+	// Reset to page 1 when filter changes
+	useEffect(() => {
+		goToPage(1);
+	}, [tableTopLimit]);
+
+	// Paginate table data (client-side)
+	const paginatedProducts = useMemo(() => {
+		const startIndex = (currentPage - 1) * pageSize;
+		const endIndex = startIndex + pageSize;
+		return filteredTableProducts.slice(startIndex, endIndex);
+	}, [filteredTableProducts, currentPage, pageSize]);
 
 	// Reset to page 1 when filter changes
 	const handleTableTopLimitChange = (value: string) => {
 		const newLimit = value === "all" ? "all" : Number.parseInt(value);
 		setTableTopLimit(newLimit);
-		setCurrentPage(1);
 	};
 
 	const formatCurrency = (value: number) => {
@@ -338,10 +347,10 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 						{/* Pagination Controls */}
 						<Pagination
 							currentPage={currentPage}
-							totalPages={totalPages}
+							totalPages={pagination.totalPages}
 							totalItems={filteredTableProducts.length}
-							pageSize={PAGE_SIZE}
-							onPageChange={setCurrentPage}
+							pageSize={pageSize}
+							onPageChange={goToPage}
 							itemLabel="sản phẩm"
 						/>
 					</Box>

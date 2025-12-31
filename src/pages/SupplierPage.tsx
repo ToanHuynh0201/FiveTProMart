@@ -9,12 +9,14 @@ import {
 	EditSupplierModal,
 } from "@/components/supplier";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type {
 	Supplier,
 	SupplierStats,
 	UpdateSupplierData,
 } from "@/types/supplier";
+import type { SupplierFilters } from "@/types/filters";
+import { supplierService } from "@/services/supplierService";
 import {
 	Box,
 	Text,
@@ -35,17 +37,9 @@ import { FiCheckCircle, FiXCircle } from "react-icons/fi";
 const ITEMS_PER_PAGE = 10;
 
 const SupplierPage = () => {
-	const { currentPage, total, pageSize, goToPage, setTotal } = usePagination({
-		initialPage: 1,
-		pageSize: ITEMS_PER_PAGE,
-		initialTotal: 0,
-	});
-
+	// State for data from API
 	const [supplierList, setSupplierList] = useState<Supplier[]>([]);
-	const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [statusFilter, setStatusFilter] = useState("all");
-	const [isLoading, setIsLoading] = useState(true);
+	const [totalItems, setTotalItems] = useState(0);
 	const [stats, setStats] = useState<SupplierStats | null>(null);
 	const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
 		null,
@@ -67,63 +61,62 @@ const SupplierPage = () => {
 		onClose: onDetailModalClose,
 	} = useDisclosure();
 
-	// Load supplier data on mount
-	useEffect(() => {
-		// TODO: Implement API call to load suppliers
-		setSupplierList([]);
-		setFilteredSuppliers([]);
-		setIsLoading(false);
+	// Fetch function for API call
+	const fetchSuppliers = async (filters: SupplierFilters) => {
+		const response = await supplierService.getSuppliers(filters);
+		setSupplierList(response.data);
+		setTotalItems(response.pagination.totalItems);
+	};
 
+	// useFilters for filtering + pagination state
+	const {
+		filters,
+		loading,
+		error,
+		handleFilterChange,
+		handlePageChange,
+		resetFilters,
+	} = useFilters<SupplierFilters>(
+		{
+			page: 1,
+			pageSize: ITEMS_PER_PAGE,
+			searchQuery: "",
+			status: "all",
+		},
+		fetchSuppliers,
+		500,
+	);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
+	useEffect(() => {
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
+		}
+	}, [filters.page, currentPage, goToPage]);
+
+	// Load stats on mount
+	useEffect(() => {
 		// TODO: Implement API call to load supplier stats
 		setStats(null);
 	}, []);
 
-	// Filter suppliers when search or filter changes
-	useEffect(() => {
-		applyFilters();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [searchQuery, statusFilter, supplierList]);
-
-	const loadSuppliers = async () => {
-		setIsLoading(true);
-		try {
-			// TODO: Implement API call to get all suppliers
-			setSupplierList([]);
-			setFilteredSuppliers([]);
-		} catch (error) {
-			console.error("Error loading suppliers:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const loadStats = async () => {
-		try {
-			// TODO: Implement API call to get supplier stats
-			setStats(null);
-		} catch (error) {
-			console.error("Error loading stats:", error);
-		}
-	};
-
-	const applyFilters = async () => {
-		// TODO: Implement API call to filter suppliers
-		setFilteredSuppliers([]);
-		setTotal(0);
-		goToPage(1);
-	};
-
 	const handleResetFilters = () => {
-		setSearchQuery("");
-		setStatusFilter("all");
+		resetFilters();
 	};
 
 	const handleStatClick = (status: string) => {
 		// Toggle filter: if already filtering by this status, reset to "all"
-		if (statusFilter === status) {
-			setStatusFilter("all");
+		if (filters.status === status) {
+			handleFilterChange("status", "all");
 		} else {
-			setStatusFilter(status);
+			handleFilterChange("status", status);
 		}
 	};
 
@@ -138,45 +131,32 @@ const SupplierPage = () => {
 	};
 
 	const handleDelete = async (id: string) => {
-		try {
-			// TODO: Implement API call to delete supplier
-			// TODO: Reload suppliers and stats after deletion
-		} catch (error) {
-			console.error("Error deleting supplier:", error);
-			throw error;
-		}
+		await supplierService.deleteSupplier(id);
+		// Refresh data after deleting
+		await fetchSuppliers(filters);
+		// TODO: Reload stats after deletion
 	};
 
 	const handleAddSupplier = async (
 		supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
 	) => {
-		try {
-			// TODO: Implement API call to add new supplier
-			// TODO: Reload suppliers and stats after adding
-		} catch (error) {
-			console.error("Error adding supplier:", error);
-			throw error;
-		}
+		await supplierService.createSupplier(supplierData);
+		// Refresh data after adding
+		await fetchSuppliers(filters);
+		onAddModalClose();
+		// TODO: Reload stats after adding
 	};
 
 	const handleUpdateSupplier = async (
 		id: string,
 		updates: UpdateSupplierData,
 	) => {
-		try {
-			// TODO: Implement API call to update supplier
-			// TODO: Reload suppliers and stats after updating
-		} catch (error) {
-			console.error("Error updating supplier:", error);
-			throw error;
-		}
+		await supplierService.updateSupplier(id, updates);
+		// Refresh data after updating
+		await fetchSuppliers(filters);
+		onEditModalClose();
+		// TODO: Reload stats after updating
 	};
-
-	// Pagination
-	const paginatedSuppliers = filteredSuppliers.slice(
-		(currentPage - 1) * pageSize,
-		currentPage * pageSize,
-	);
 
 	return (
 		<MainLayout>
@@ -245,12 +225,12 @@ const SupplierPage = () => {
 									}}
 									position="relative"
 									overflow="hidden"
-									{...(statusFilter === "active" && {
+									{...(filters.status === "active" && {
 										boxShadow: "lg",
 										borderColor: "green.400",
 										borderWidth: "2px",
 									})}>
-									{statusFilter === "active" && (
+									{filters.status === "active" && (
 										<Box
 											position="absolute"
 											top={2}
@@ -318,12 +298,12 @@ const SupplierPage = () => {
 									}}
 									position="relative"
 									overflow="hidden"
-									{...(statusFilter === "inactive" && {
+									{...(filters.status === "inactive" && {
 										boxShadow: "lg",
 										borderColor: "gray.400",
 										borderWidth: "2px",
 									})}>
-									{statusFilter === "inactive" && (
+									{filters.status === "inactive" && (
 										<Box
 											position="absolute"
 											top={2}
@@ -374,20 +354,25 @@ const SupplierPage = () => {
 					{/* Search Bar */}
 					<Box mb={4}>
 						<SupplierSearchBar
-							value={searchQuery}
-							onChange={setSearchQuery}
+							value={filters.searchQuery || ""}
+							onChange={(value) =>
+								handleFilterChange("searchQuery", value)
+							}
 						/>
 					</Box>
 					{/* Filter Bar */}
 					<Box mb={6}>
 						<SupplierFilterBar
-							statusFilter={statusFilter}
-							onStatusFilterChange={setStatusFilter}
+							statusFilter={filters.status || "all"}
+							onStatusFilterChange={(value) =>
+								handleFilterChange("status", value)
+							}
 							onReset={handleResetFilters}
 						/>
 					</Box>
-					{/* Table */}
-					{isLoading ? (
+
+					{/* Loading State */}
+					{loading && (
 						<Flex
 							justify="center"
 							align="center"
@@ -398,32 +383,50 @@ const SupplierPage = () => {
 								thickness="4px"
 							/>
 						</Flex>
-					) : (
+					)}
+
+					{/* Error State */}
+					{error && (
+						<Flex
+							justify="center"
+							align="center"
+							minH="400px">
+							<Text
+								fontSize="18px"
+								color="red.500">
+								{error}
+							</Text>
+						</Flex>
+					)}
+
+					{/* Table */}
+					{!loading && !error && (
 						<>
 							<SupplierTable
-								supplierList={paginatedSuppliers}
+								supplierList={supplierList}
 								onViewDetails={handleViewDetails}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
 							/>
 
 							{/* Pagination */}
-							{filteredSuppliers.length > 0 && (
+							{supplierList.length > 0 && (
 								<Box mt={6}>
 									<Pagination
 										currentPage={currentPage}
-										totalPages={Math.ceil(total / pageSize)}
-										totalItems={total}
+										totalPages={pagination.totalPages}
+										totalItems={totalItems}
 										pageSize={pageSize}
-										onPageChange={goToPage}
+										onPageChange={handlePageChange}
 										itemLabel="nhà cung cấp"
 									/>
 								</Box>
 							)}
 						</>
-					)}{" "}
+					)}
+
 					{/* Show result count */}
-					{!isLoading && (
+					{!loading && !error && supplierList.length > 0 && (
 						<Text
 							mt={4}
 							fontSize="14px"
@@ -433,14 +436,15 @@ const SupplierPage = () => {
 							<strong>
 								{Math.min(
 									(currentPage - 1) * pageSize + 1,
-									total,
+									totalItems,
 								)}
 							</strong>{" "}
 							-{" "}
 							<strong>
-								{Math.min(currentPage * pageSize, total)}
+								{Math.min(currentPage * pageSize, totalItems)}
 							</strong>{" "}
-							trong tổng số <strong>{total}</strong> nhà cung cấp
+							trong tổng số <strong>{totalItems}</strong> nhà cung
+							cấp
 						</Text>
 					)}
 				</Box>

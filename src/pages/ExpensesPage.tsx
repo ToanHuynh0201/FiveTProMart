@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Pagination, LoadingSpinner } from "@/components/common";
 import { AddExpenseModal, ExpenseDetailModal } from "@/components/expenses";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type { Expense } from "@/types/reports";
-
-// TODO: Import expenseService functions (getAllExpenses, addExpense, updateExpense, deleteExpense, getExpenseCategoryLabel)
+import type { ExpenseFilters } from "@/types/filters";
+import { expenseService } from "@/services/expenseService";
 
 import {
 	Box,
@@ -59,18 +59,10 @@ const ITEMS_PER_PAGE = 10;
 
 const ExpensesPage = () => {
 	const toast = useToast();
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
-		usePagination({
-			initialPage: 1,
-			pageSize: ITEMS_PER_PAGE,
-			initialTotal: 0,
-		});
 
+	// State for data from API
 	const [expenseList, setExpenseList] = useState<Expense[]>([]);
-	const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedCategory, setSelectedCategory] = useState<string>("all");
-	const [isLoading, setIsLoading] = useState(true);
+	const [totalItems, setTotalItems] = useState(0);
 	const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
 	const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -92,60 +84,39 @@ const ExpensesPage = () => {
 		onClose: onDetailModalClose,
 	} = useDisclosure();
 
-	// Load expense data on mount
-	useEffect(() => {
-		loadExpenses();
-	}, []);
-
-	const loadExpenses = async () => {
-		setIsLoading(true);
-		try {
-			// TODO: Replace with API call to getAllExpenses()
-			const data: Expense[] = [];
-			setExpenseList(data);
-			setFilteredExpenses(data);
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải danh sách chi phí",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+	// Fetch function for API call
+	const fetchExpenses = async (filters: ExpenseFilters) => {
+		const response = await expenseService.getExpenses(filters);
+		setExpenseList(response.data);
+		setTotalItems(response.pagination.totalItems);
 	};
 
-	// Filter expenses based on search query and category
+	// useFilters for filtering + pagination state
+	const { filters, loading, handleFilterChange, handlePageChange } =
+		useFilters<ExpenseFilters>(
+			{
+				page: 1,
+				pageSize: ITEMS_PER_PAGE,
+				searchQuery: "",
+				category: "all",
+			},
+			fetchExpenses,
+			500,
+		);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
 	useEffect(() => {
-		let filtered = expenseList;
-
-		// Filter by search query
-		if (searchQuery.trim() !== "") {
-			const lowerQuery = searchQuery.toLowerCase();
-			filtered = filtered.filter(
-				(expense) =>
-					expense.description.toLowerCase().includes(lowerQuery) ||
-					expense.notes?.toLowerCase().includes(lowerQuery),
-			);
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
 		}
-
-		// Filter by category
-		if (selectedCategory !== "all") {
-			filtered = filtered.filter(
-				(expense) => expense.category === selectedCategory,
-			);
-		}
-
-		setFilteredExpenses(filtered);
-		setTotal(filtered.length);
-		goToPage(1);
-	}, [searchQuery, selectedCategory, expenseList, setTotal, goToPage]);
-
-	// Pagination logic
-	const startIndex = (currentPage - 1) * pageSize;
-	const endIndex = startIndex + pageSize;
-	const currentExpenses = filteredExpenses.slice(startIndex, endIndex);
+	}, [filters.page, currentPage, goToPage]);
 
 	// Calculate statistics
 	const totalExpense = expenseList.reduce(
@@ -175,8 +146,9 @@ const ExpensesPage = () => {
 
 	const handleAddExpense = async (_expense: Omit<Expense, "id">) => {
 		try {
-			// TODO: Replace with API call to addExpense(_expense)
-			await loadExpenses();
+			await expenseService.createExpense(_expense);
+			await fetchExpenses(filters);
+			onAddModalClose();
 			toast({
 				title: "Thành công",
 				description: "Đã thêm chi phí mới",
@@ -202,8 +174,8 @@ const ExpensesPage = () => {
 		if (!expenseToDelete) return;
 
 		try {
-			// TODO: Replace with API call to deleteExpense(expenseToDelete)
-			await loadExpenses();
+			await expenseService.deleteExpense(expenseToDelete);
+			await fetchExpenses(filters);
 			toast({
 				title: "Thành công",
 				description: "Đã xóa chi phí",
@@ -234,7 +206,6 @@ const ExpensesPage = () => {
 		return new Date(date).toLocaleDateString("vi-VN");
 	};
 
-	// TODO: Replace with getExpenseCategoryLabel from expenseService
 	const getExpenseCategoryLabel = (category: string): string => {
 		const labels: Record<string, string> = {
 			electricity: "Điện",
@@ -246,7 +217,7 @@ const ExpensesPage = () => {
 		return labels[category] || category;
 	};
 
-	if (isLoading) {
+	if (loading) {
 		return (
 			<MainLayout>
 				<Box
@@ -405,17 +376,23 @@ const ExpensesPage = () => {
 									</InputLeftElement>
 									<Input
 										placeholder="Tìm kiếm theo mô tả, ghi chú..."
-										value={searchQuery}
+										value={filters.searchQuery || ""}
 										onChange={(e) =>
-											setSearchQuery(e.target.value)
+											handleFilterChange(
+												"searchQuery",
+												e.target.value,
+											)
 										}
 										bg="white"
 									/>
 								</InputGroup>
 								<Select
-									value={selectedCategory}
+									value={filters.category || "all"}
 									onChange={(e) =>
-										setSelectedCategory(e.target.value)
+										handleFilterChange(
+											"category",
+											e.target.value,
+										)
 									}
 									bg="white"
 									w={{ base: "full", md: "250px" }}>
@@ -449,7 +426,7 @@ const ExpensesPage = () => {
 										</Tr>
 									</Thead>
 									<Tbody>
-										{currentExpenses.length === 0 ? (
+										{expenseList.length === 0 ? (
 											<Tr>
 												<Td
 													colSpan={7}
@@ -462,7 +439,7 @@ const ExpensesPage = () => {
 												</Td>
 											</Tr>
 										) : (
-											currentExpenses.map((expense) => (
+											expenseList.map((expense) => (
 												<Tr key={expense.id}>
 													<Td>
 														{formatDate(
@@ -553,16 +530,16 @@ const ExpensesPage = () => {
 							</Box>
 
 							{/* Pagination */}
-							{filteredExpenses.length > pageSize && (
+							{expenseList.length > 0 && (
 								<Flex
 									justify="center"
 									mt={6}>
 									<Pagination
 										currentPage={currentPage}
 										totalPages={pagination.totalPages}
-										totalItems={total}
+										totalItems={totalItems}
 										pageSize={pageSize}
-										onPageChange={goToPage}
+										onPageChange={handlePageChange}
 										showInfo={true}
 										itemLabel="chi phí"
 									/>

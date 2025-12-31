@@ -20,39 +20,20 @@ import {
 	PromotionDetailModal,
 } from "@/components/promotion";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
-import type {
-	Promotion,
-	PromotionFilter,
-	PromotionStats,
-	PromotionFormData,
-} from "@/types";
+import { usePagination, useFilters } from "@/hooks";
+import type { Promotion, PromotionStats, PromotionFormData } from "@/types";
+import type { PromotionFilters } from "@/types/filters";
+import { promotionService } from "@/services/promotionService";
 
 const ITEMS_PER_PAGE = 10;
 
 const PromotionPage = () => {
 	const toast = useToast();
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
-		usePagination({
-			initialPage: 1,
-			pageSize: ITEMS_PER_PAGE,
-			initialTotal: 0,
-		});
 
-	// Data states
+	// State for data from API
 	const [promotions, setPromotions] = useState<Promotion[]>([]);
-	const [filteredPromotions, setFilteredPromotions] = useState<Promotion[]>(
-		[],
-	);
+	const [totalItems, setTotalItems] = useState(0);
 	const [stats, setStats] = useState<PromotionStats | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-
-	// Filter states
-	const [filters, setFilters] = useState<PromotionFilter>({
-		searchQuery: "",
-		type: "all",
-		status: "all",
-	});
 
 	// Modal states
 	const [selectedPromotionId, setSelectedPromotionId] = useState<
@@ -74,114 +55,85 @@ const PromotionPage = () => {
 		onClose: onDetailModalClose,
 	} = useDisclosure();
 
-	// Load initial data
-	useEffect(() => {
-		loadData();
-	}, []);
-
-	// Apply filters when filters or promotions change
-	useEffect(() => {
-		applyFilters();
-	}, [filters, promotions]);
-
-	const loadData = async () => {
-		setIsLoading(true);
-		try {
-			// TODO: Replace with promotionService.getAllPromotions()
-			const promotionsData: Promotion[] = [];
-
-			// TODO: Replace with promotionService.getStats()
-			const statsData: PromotionStats = {
-				activePromotions: 0,
-				upcomingPromotions: 0,
-				expiredPromotions: 0,
-			};
-
-			setPromotions(promotionsData);
-			setStats(statsData);
-			setFilteredPromotions(promotionsData);
-			setTotal(promotionsData.length);
-		} catch (error) {
-			console.error("Error loading data:", error);
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải dữ liệu",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+	// Fetch function for API call
+	const fetchPromotions = async (filters: PromotionFilters) => {
+		const response = await promotionService.getPromotions(filters);
+		setPromotions(response.data);
+		setTotalItems(response.pagination.totalItems);
 	};
 
-	const applyFilters = async () => {
-		try {
-			// TODO: Replace with promotionService.filterPromotions(filters)
-			const filtered: Promotion[] = [];
-			setFilteredPromotions(filtered);
-			setTotal(filtered.length);
-			goToPage(1); // Reset to first page when filtering
-		} catch (error) {
-			console.error("Error filtering promotions:", error);
-		}
-	};
-
-	const handleFiltersChange = (newFilters: PromotionFilter) => {
-		setFilters(newFilters);
-	};
-
-	const handleResetFilters = () => {
-		setFilters({
+	// useFilters for filtering + pagination state
+	const {
+		filters,
+		loading,
+		error,
+		handleFilterChange,
+		handlePageChange,
+		resetFilters,
+	} = useFilters<PromotionFilters>(
+		{
+			page: 1,
+			pageSize: ITEMS_PER_PAGE,
 			searchQuery: "",
 			type: "all",
 			status: "all",
-		});
-	};
+		},
+		fetchPromotions,
+		500,
+	);
 
-	const handleSearchChange = (query: string) => {
-		setFilters({ ...filters, searchQuery: query });
-	};
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
+	useEffect(() => {
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
+		}
+	}, [filters.page, currentPage, goToPage]);
+
+	// Load stats on mount
+	useEffect(() => {
+		// TODO: Implement API call to load promotion stats
+		setStats(null);
+	}, []);
 
 	const handleAddPromotion = async (promotion: PromotionFormData) => {
-		try {
-			// TODO: Replace with promotionService.addPromotion(promotion)
-			await loadData(); // Reload all data to update stats
-		} catch (error) {
-			console.error("Error adding promotion:", error);
-			throw error;
-		}
+		await promotionService.createPromotion(
+			promotion as Omit<Promotion, "id">,
+		);
+		// Refresh data after adding
+		await fetchPromotions(filters);
+		onAddModalClose();
+		// TODO: Reload stats after adding
 	};
 
 	const handleUpdatePromotion = async (
 		id: string,
 		updates: Partial<Promotion>,
 	) => {
-		try {
-			// TODO: Replace with promotionService.updatePromotion(id, updates)
-			await loadData(); // Reload all data to update stats
-		} catch (error) {
-			console.error("Error updating promotion:", error);
-			throw error;
-		}
+		await promotionService.updatePromotion(id, updates);
+		// Refresh data after updating
+		await fetchPromotions(filters);
+		onEditModalClose();
+		// TODO: Reload stats after updating
 	};
 
 	const handleDeletePromotion = async (id: string) => {
-		try {
-			// TODO: Replace with promotionService.deletePromotion(id)
-			const success = true;
-			if (success) {
-				await loadData(); // Reload all data to update stats
-				toast({
-					title: "Thành công",
-					description: "Đã xóa khuyến mãi",
-					status: "success",
-					duration: 3000,
-				});
-			}
-		} catch (error) {
-			console.error("Error deleting promotion:", error);
-			throw error;
-		}
+		await promotionService.deletePromotion(id);
+		// Refresh data after deleting
+		await fetchPromotions(filters);
+		toast({
+			title: "Thành công",
+			description: "Đã xóa khuyến mãi",
+			status: "success",
+			duration: 3000,
+		});
+		// TODO: Reload stats after deletion
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -201,46 +153,13 @@ const PromotionPage = () => {
 	};
 
 	// Stats card click handlers
-	const handleActiveClick = () => {
-		if (filters.status === "active") {
-			handleResetFilters();
+	const handleStatClick = (status: string) => {
+		if (filters.status === status) {
+			handleFilterChange("status", "all");
 		} else {
-			setFilters({
-				...filters,
-				status: "active",
-				searchQuery: "",
-			});
+			handleFilterChange("status", status);
 		}
 	};
-
-	const handleUpcomingClick = () => {
-		if (filters.status === "inactive") {
-			handleResetFilters();
-		} else {
-			setFilters({
-				...filters,
-				status: "inactive",
-				searchQuery: "",
-			});
-		}
-	};
-
-	const handleExpiredClick = () => {
-		if (filters.status === "expired") {
-			handleResetFilters();
-		} else {
-			setFilters({
-				...filters,
-				status: "expired",
-				searchQuery: "",
-			});
-		}
-	};
-
-	// Pagination
-	const startIndex = (currentPage - 1) * pageSize;
-	const endIndex = startIndex + pageSize;
-	const currentPromotions = filteredPromotions.slice(startIndex, endIndex);
 
 	return (
 		<MainLayout>
@@ -267,41 +186,50 @@ const PromotionPage = () => {
 							value={stats.activePromotions}
 							icon={FiPercent}
 							bgGradient="linear(135deg, #48BB78 0%, #38A169 100%)"
-							onClick={handleActiveClick}
+							onClick={() => handleStatClick("active")}
 						/>
 						<StatsCard
 							title="Sắp diễn ra"
 							value={stats.upcomingPromotions}
 							icon={FiClock}
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
-							onClick={handleUpcomingClick}
+							onClick={() => handleStatClick("inactive")}
 						/>
 						<StatsCard
 							title="Đã hết hạn"
 							value={stats.expiredPromotions}
 							icon={FiShoppingBag}
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
-							onClick={handleExpiredClick}
+							onClick={() => handleStatClick("expired")}
 						/>
 					</SimpleGrid>
 				)}
 
 				{/* Search Bar */}
 				<PromotionSearchBar
-					searchQuery={filters.searchQuery}
-					onSearchChange={handleSearchChange}
+					searchQuery={filters.searchQuery || ""}
+					onSearchChange={(value) =>
+						handleFilterChange("searchQuery", value)
+					}
 					onAddPromotion={onAddModalOpen}
 				/>
 
 				{/* Filter Bar */}
 				<PromotionFilterBar
-					filters={filters}
-					onFiltersChange={handleFiltersChange}
-					onReset={handleResetFilters}
+					filters={{
+						searchQuery: filters.searchQuery || "",
+						type: filters.type || "all",
+						status: filters.status || "all",
+					}}
+					onFiltersChange={(newFilters) => {
+						handleFilterChange("type", newFilters.type);
+						handleFilterChange("status", newFilters.status);
+					}}
+					onReset={resetFilters}
 				/>
 
 				{/* Loading State */}
-				{isLoading && (
+				{loading && (
 					<Flex
 						justify="center"
 						align="center"
@@ -314,8 +242,22 @@ const PromotionPage = () => {
 					</Flex>
 				)}
 
+				{/* Error State */}
+				{error && (
+					<Flex
+						justify="center"
+						align="center"
+						minH="400px">
+						<Text
+							fontSize="18px"
+							color="red.500">
+							{error}
+						</Text>
+					</Flex>
+				)}
+
 				{/* Promotion Table */}
-				{!isLoading && (
+				{!loading && !error && (
 					<>
 						<Box mb={6}>
 							<Flex
@@ -327,28 +269,27 @@ const PromotionPage = () => {
 									fontSize="18px"
 									fontWeight="600"
 									color="gray.700">
-									Danh sách khuyến mãi (
-									{filteredPromotions.length})
+									Danh sách khuyến mãi ({totalItems})
 								</Text>
 							</Flex>
 
 							<PromotionTable
-								promotions={currentPromotions}
+								promotions={promotions}
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
-								searchQuery={filters.searchQuery}
+								searchQuery={filters.searchQuery || ""}
 							/>
 						</Box>
 
 						{/* Pagination */}
-						{filteredPromotions.length > 0 && (
+						{promotions.length > 0 && (
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}
-								totalItems={total}
+								totalItems={totalItems}
 								pageSize={pageSize}
-								onPageChange={goToPage}
+								onPageChange={handlePageChange}
 								showInfo={true}
 								itemLabel="khuyến mãi"
 							/>
@@ -357,7 +298,7 @@ const PromotionPage = () => {
 				)}
 
 				{/* Empty State */}
-				{!isLoading && filteredPromotions.length === 0 && (
+				{!loading && !error && promotions.length === 0 && (
 					<Flex
 						direction="column"
 						justify="center"

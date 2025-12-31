@@ -7,58 +7,57 @@ import {
 	AddStaffModal,
 } from "@/components/staff";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type { Staff } from "@/types";
+import type { StaffFilters } from "@/types/filters";
+import { staffService } from "@/services/staffService";
 import { Box, Text, Flex, Spinner } from "@chakra-ui/react";
 
 const ITEMS_PER_PAGE = 10;
 
 const StaffPage = () => {
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
-		usePagination({
-			initialPage: 1,
-			pageSize: ITEMS_PER_PAGE,
-			initialTotal: 0,
-		});
-
+	// State for data from API
 	const [staffList, setStaffList] = useState<Staff[]>([]);
-	const [filteredStaff, setFilteredStaff] = useState<Staff[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [isLoading, setIsLoading] = useState(true);
+	const [totalItems, setTotalItems] = useState(0);
 	const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-	// Load staff data on mount
-	useEffect(() => {
-		// TODO: Implement staffService.getAllStaff() API call
-		setStaffList([]);
-		setFilteredStaff([]);
-		setIsLoading(false);
-	}, []);
+	// Fetch function for API call
+	const fetchStaff = async (filters: StaffFilters) => {
+		const response = await staffService.getStaff(filters);
+		setStaffList(response.data);
+		setTotalItems(response.pagination.totalItems);
+	};
 
-	// Filter staff based on search query
+	// useFilters for filtering + pagination state
+	const { filters, loading, error, handleFilterChange, handlePageChange } =
+		useFilters<StaffFilters>(
+			{
+				page: 1,
+				pageSize: ITEMS_PER_PAGE,
+				searchQuery: "",
+			},
+			fetchStaff,
+			500,
+		);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
 	useEffect(() => {
-		if (searchQuery.trim() === "") {
-			setFilteredStaff(staffList);
-			setTotal(staffList.length);
-		} else {
-			const filtered = staffList.filter((staff) =>
-				staff.name.toLowerCase().includes(searchQuery.toLowerCase()),
-			);
-			setFilteredStaff(filtered);
-			setTotal(filtered.length);
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
 		}
-		goToPage(1); // Reset to first page when searching
-	}, [searchQuery, staffList, setTotal, goToPage]);
-
-	// Pagination logic
-	const startIndex = (currentPage - 1) * pageSize;
-	const endIndex = startIndex + pageSize;
-	const currentStaff = filteredStaff.slice(startIndex, endIndex);
+	}, [filters.page, currentPage, goToPage]);
 
 	const handleSearchChange = (query: string) => {
-		setSearchQuery(query);
+		handleFilterChange("searchQuery", query);
 	};
 
 	const handleAddStaff = () => {
@@ -66,7 +65,10 @@ const StaffPage = () => {
 	};
 
 	const handleAddStaffSubmit = async (newStaff: Omit<Staff, "id">) => {
-		// TODO: Implement staffService.addStaff() API call
+		await staffService.createStaff(newStaff);
+		// Refresh data after adding
+		await fetchStaff(filters);
+		setIsAddModalOpen(false);
 	};
 
 	const handleViewDetails = (id: string) => {
@@ -84,7 +86,9 @@ const StaffPage = () => {
 	};
 
 	const handleDeleteStaff = async (id: string) => {
-		// TODO: Implement staffService.deleteStaff() API call
+		await staffService.deleteStaff(id);
+		// Refresh data after deleting
+		await fetchStaff(filters);
 	};
 
 	return (
@@ -103,13 +107,13 @@ const StaffPage = () => {
 
 				{/* Search Bar */}
 				<StaffSearchBar
-					searchQuery={searchQuery}
+					searchQuery={filters.searchQuery || ""}
 					onSearchChange={handleSearchChange}
 					onAddStaff={handleAddStaff}
 				/>
 
 				{/* Loading State */}
-				{isLoading && (
+				{loading && (
 					<Flex
 						justify="center"
 						align="center"
@@ -122,11 +126,25 @@ const StaffPage = () => {
 					</Flex>
 				)}
 
+				{/* Error State */}
+				{error && (
+					<Flex
+						justify="center"
+						align="center"
+						minH="400px">
+						<Text
+							fontSize="18px"
+							color="red.500">
+							{error}
+						</Text>
+					</Flex>
+				)}
+
 				{/* Staff Table */}
-				{!isLoading && currentStaff.length > 0 && (
+				{!loading && !error && staffList.length > 0 && (
 					<>
 						<StaffTable
-							staffList={currentStaff}
+							staffList={staffList}
 							onViewDetails={handleViewDetails}
 							onDelete={handleDeleteStaff}
 						/>
@@ -136,9 +154,9 @@ const StaffPage = () => {
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}
-								totalItems={total}
+								totalItems={totalItems}
 								pageSize={pageSize}
-								onPageChange={goToPage}
+								onPageChange={handlePageChange}
 								showInfo={true}
 								itemLabel="nhân viên"
 							/>
@@ -147,7 +165,7 @@ const StaffPage = () => {
 				)}
 
 				{/* Empty State */}
-				{!isLoading && currentStaff.length === 0 && (
+				{!loading && !error && staffList.length === 0 && (
 					<Flex
 						direction="column"
 						justify="center"
@@ -158,7 +176,7 @@ const StaffPage = () => {
 							fontSize="20px"
 							fontWeight="500"
 							color="gray.500">
-							{searchQuery
+							{filters.searchQuery
 								? "Không tìm thấy nhân viên nào"
 								: "Chưa có nhân viên"}
 						</Text>

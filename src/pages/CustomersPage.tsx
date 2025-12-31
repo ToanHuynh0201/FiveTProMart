@@ -9,8 +9,10 @@ import {
 	EditCustomerModal,
 } from "@/components/customer";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type { Customer } from "@/types";
+import type { CustomerFilters } from "@/types/filters";
+import { customerService } from "@/services/customerService";
 import {
 	Box,
 	Text,
@@ -24,19 +26,9 @@ import { AddIcon } from "@chakra-ui/icons";
 const ITEMS_PER_PAGE = 10;
 
 const CustomersPage = () => {
-	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
-		usePagination({
-			initialPage: 1,
-			pageSize: ITEMS_PER_PAGE,
-			initialTotal: 0,
-		});
-
+	// State for data from API
 	const [customerList, setCustomerList] = useState<Customer[]>([]);
-	const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedGender, setSelectedGender] = useState("all");
-	const [selectedPointRange, setSelectedPointRange] = useState("all");
-	const [isLoading, setIsLoading] = useState(true);
+	const [totalItems, setTotalItems] = useState(0);
 	const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
 		null,
 	);
@@ -52,95 +44,51 @@ const CustomersPage = () => {
 		onClose: onEditModalClose,
 	} = useDisclosure();
 
-	// Load customer data on mount
+	// Fetch function for API call
+	const fetchCustomers = async (filters: CustomerFilters) => {
+		const response = await customerService.getCustomers(filters);
+		setCustomerList(response.data);
+		setTotalItems(response.pagination.totalItems);
+	};
+
+	// useFilters for filtering + pagination state
+	const { filters, loading, error, handleFilterChange, handlePageChange } =
+		useFilters<CustomerFilters>(
+			{
+				page: 1,
+				pageSize: ITEMS_PER_PAGE,
+				searchQuery: "",
+				gender: "all",
+				pointRange: "all",
+			},
+			fetchCustomers,
+			500,
+		);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
 	useEffect(() => {
-		// TODO: Implement API call to load customers
-		setIsLoading(false);
-		setCustomerList([]);
-		setFilteredCustomers([]);
-	}, []);
-
-	// Filter customers based on search query, gender, and points
-	useEffect(() => {
-		let filtered = customerList;
-
-		// Filter by search query
-		if (searchQuery.trim() !== "") {
-			const lowerQuery = searchQuery.toLowerCase();
-			filtered = filtered.filter(
-				(customer) =>
-					customer.name.toLowerCase().includes(lowerQuery) ||
-					customer.phone.includes(searchQuery),
-			);
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
 		}
-
-		// Filter by gender
-		if (selectedGender !== "all") {
-			filtered = filtered.filter(
-				(customer) => customer.gender === selectedGender,
-			);
-		}
-
-		// Filter by points range
-		if (selectedPointRange !== "all") {
-			if (selectedPointRange === "0-500") {
-				filtered = filtered.filter(
-					(customer) =>
-						customer.loyaltyPoints >= 0 &&
-						customer.loyaltyPoints <= 500,
-				);
-			} else if (selectedPointRange === "501-1000") {
-				filtered = filtered.filter(
-					(customer) =>
-						customer.loyaltyPoints >= 501 &&
-						customer.loyaltyPoints <= 1000,
-				);
-			} else if (selectedPointRange === "1001-1500") {
-				filtered = filtered.filter(
-					(customer) =>
-						customer.loyaltyPoints >= 1001 &&
-						customer.loyaltyPoints <= 1500,
-				);
-			} else if (selectedPointRange === "1501-2000") {
-				filtered = filtered.filter(
-					(customer) =>
-						customer.loyaltyPoints >= 1501 &&
-						customer.loyaltyPoints <= 2000,
-				);
-			} else if (selectedPointRange === "2001+") {
-				filtered = filtered.filter(
-					(customer) => customer.loyaltyPoints > 2000,
-				);
-			}
-		}
-
-		setFilteredCustomers(filtered);
-		setTotal(filtered.length);
-		goToPage(1); // Reset to first page when filtering
-	}, [
-		searchQuery,
-		selectedGender,
-		selectedPointRange,
-		customerList,
-		setTotal,
-		goToPage,
-	]);
-
-	// Pagination logic
-	const startIndex = (currentPage - 1) * pageSize;
-	const endIndex = startIndex + pageSize;
-	const currentCustomers = filteredCustomers.slice(startIndex, endIndex);
+	}, [filters.page, currentPage, goToPage]);
 
 	const handleSearchChange = (query: string) => {
-		setSearchQuery(query);
+		handleFilterChange("searchQuery", query);
 	};
 
 	const handleGenderChange = (gender: string) => {
-		setSelectedGender(gender);
+		handleFilterChange("gender", gender);
 	};
 
 	const handlePointRangeChange = (range: string) => {
-		setSelectedPointRange(range);
+		handleFilterChange("pointRange", range);
 	};
 
 	const handleViewDetails = (id: string) => {
@@ -159,29 +107,26 @@ const CustomersPage = () => {
 	};
 
 	const handleDeleteCustomer = async (id: string) => {
-		// TODO: Implement API call to delete customer
-		setCustomerList((prev) =>
-			prev.filter((customer) => customer.id !== id),
-		);
+		await customerService.deleteCustomer(id);
+		// Refresh data after deleting
+		await fetchCustomers(filters);
 	};
 
 	const handleAddCustomer = async (customer: Omit<Customer, "id">) => {
-		// TODO: Implement API call to add customer
-		console.log("Add customer:", customer);
+		await customerService.createCustomer(customer);
+		// Refresh data after adding
+		await fetchCustomers(filters);
+		onAddModalClose();
 	};
 
 	const handleUpdateCustomer = async (
 		id: string,
 		updates: Partial<Customer>,
 	) => {
-		// TODO: Implement API call to update customer
-		setCustomerList((prev) =>
-			prev.map((customer) =>
-				customer.id === id
-					? { ...customer, ...updates }
-					: customer,
-			),
-		);
+		await customerService.updateCustomer(id, updates);
+		// Refresh data after updating
+		await fetchCustomers(filters);
+		onEditModalClose();
 	};
 
 	return (
@@ -229,20 +174,21 @@ const CustomersPage = () => {
 				<Flex direction="row">
 					{/* Search Bar */}
 					<CustomerSearchBar
-						searchQuery={searchQuery}
+						searchQuery={filters.searchQuery || ""}
 						onSearchChange={handleSearchChange}
 					/>
 
 					{/* Filter Bar */}
 					<CustomerFilterBar
-						selectedGender={selectedGender}
-						selectedPointRange={selectedPointRange}
+						selectedGender={filters.gender || "all"}
+						selectedPointRange={filters.pointRange || "all"}
 						onGenderChange={handleGenderChange}
 						onPointRangeChange={handlePointRangeChange}
 					/>
 				</Flex>
+
 				{/* Loading State */}
-				{isLoading && (
+				{loading && (
 					<Flex
 						justify="center"
 						align="center"
@@ -254,11 +200,26 @@ const CustomersPage = () => {
 						/>
 					</Flex>
 				)}
+
+				{/* Error State */}
+				{error && (
+					<Flex
+						justify="center"
+						align="center"
+						minH="400px">
+						<Text
+							fontSize="18px"
+							color="red.500">
+							{error}
+						</Text>
+					</Flex>
+				)}
+
 				{/* Customer Table */}
-				{!isLoading && currentCustomers.length > 0 && (
+				{!loading && !error && customerList.length > 0 && (
 					<>
 						<CustomerTable
-							customerList={currentCustomers}
+							customerList={customerList}
 							onViewDetails={handleViewDetails}
 							onEdit={handleEdit}
 							onDelete={handleDeleteCustomer}
@@ -269,17 +230,18 @@ const CustomersPage = () => {
 							<Pagination
 								currentPage={currentPage}
 								totalPages={pagination.totalPages}
-								totalItems={total}
+								totalItems={totalItems}
 								pageSize={pageSize}
-								onPageChange={goToPage}
+								onPageChange={handlePageChange}
 								showInfo={true}
 								itemLabel="khách hàng"
 							/>
 						</Box>
 					</>
-				)}{" "}
+				)}
+
 				{/* Empty State */}
-				{!isLoading && currentCustomers.length === 0 && (
+				{!loading && !error && customerList.length === 0 && (
 					<Flex
 						direction="column"
 						justify="center"
@@ -290,9 +252,9 @@ const CustomersPage = () => {
 							fontSize="20px"
 							fontWeight="500"
 							color="gray.500">
-							{searchQuery ||
-							selectedGender !== "all" ||
-							selectedPointRange !== "all"
+							{filters.searchQuery ||
+							filters.gender !== "all" ||
+							filters.pointRange !== "all"
 								? "Không tìm thấy khách hàng nào"
 								: "Chưa có khách hàng"}
 						</Text>

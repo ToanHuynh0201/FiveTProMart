@@ -11,9 +11,10 @@ import {
 	Progress,
 	Flex,
 } from "@chakra-ui/react";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { CategoryChart } from "./CategoryChart";
 import Pagination from "@/components/common/Pagination";
+import { usePagination } from "@/hooks";
 import type { CategoryReport } from "@/types/reports";
 
 interface CategoryDetailModalProps {
@@ -22,13 +23,19 @@ interface CategoryDetailModalProps {
 	data: CategoryReport;
 }
 
+const PAGE_SIZE = 10;
+
 export const CategoryDetailModal: React.FC<CategoryDetailModalProps> = ({
 	isOpen,
 	onClose,
 	data,
 }) => {
-	const [currentPage, setCurrentPage] = useState(1);
-	const pageSize = 10;
+	// usePagination for metadata
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: 1,
+		pageSize: PAGE_SIZE,
+		initialTotal: data.categories.length,
+	});
 
 	const formatCurrency = (value: number) => {
 		return new Intl.NumberFormat("vi-VN", {
@@ -41,17 +48,12 @@ export const CategoryDetailModal: React.FC<CategoryDetailModalProps> = ({
 		return `${value.toFixed(1)}%`;
 	};
 
-	// Calculate pagination
-	const totalPages = Math.ceil(data.categories.length / pageSize);
+	// Paginate categories (client-side)
 	const paginatedCategories = useMemo(() => {
 		const startIndex = (currentPage - 1) * pageSize;
 		const endIndex = startIndex + pageSize;
 		return data.categories.slice(startIndex, endIndex);
 	}, [data.categories, currentPage, pageSize]);
-
-	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
-	};
 
 	return (
 		<Modal
@@ -263,10 +265,10 @@ export const CategoryDetailModal: React.FC<CategoryDetailModalProps> = ({
 						{/* Pagination */}
 						<Pagination
 							currentPage={currentPage}
-							totalPages={totalPages}
+							totalPages={pagination.totalPages}
 							totalItems={data.categories.length}
 							pageSize={pageSize}
-							onPageChange={handlePageChange}
+							onPageChange={goToPage}
 							itemLabel="danh mục"
 						/>
 					</Box>

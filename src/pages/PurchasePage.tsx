@@ -30,7 +30,7 @@ import {
 	ImportExcelModal,
 } from "@/components/purchase";
 import { Pagination } from "@/components/common";
-import { usePagination } from "@/hooks";
+import { usePagination, useFilters } from "@/hooks";
 import type {
 	Purchase,
 	PurchaseFilter,
@@ -38,31 +38,19 @@ import type {
 	Supplier,
 	PurchaseItem,
 } from "@/types";
+import type { PurchaseFilters } from "@/types/filters";
+import { purchaseService } from "@/services/purchaseService";
 
 const ITEMS_PER_PAGE = 10;
 
 const PurchasePage = () => {
 	const toast = useToast();
-	const { currentPage, total, pageSize, goToPage, setTotal } = usePagination({
-		initialPage: 1,
-		pageSize: ITEMS_PER_PAGE,
-		initialTotal: 0,
-	});
 
-	// Data states
+	// State for data from API
 	const [purchases, setPurchases] = useState<Purchase[]>([]);
-	const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
+	const [totalItems, setTotalItems] = useState(0);
 	const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 	const [stats, setStats] = useState<PurchaseStats | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-
-	// Filter states
-	const [filters, setFilters] = useState<PurchaseFilter>({
-		searchQuery: "",
-		status: "all",
-		paymentStatus: "all",
-		supplierId: "all",
-	});
 
 	// Modal states
 	const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
@@ -85,66 +73,66 @@ const PurchasePage = () => {
 		onClose: onImportModalClose,
 	} = useDisclosure();
 
-	// Load initial data
-	useEffect(() => {
-		loadData();
-	}, []);
-
-	// Apply filters when filters or purchases change
-	useEffect(() => {
-		applyFilters();
-	}, [filters, purchases]);
-
-	const loadData = async () => {
-		setIsLoading(true);
-		try {
-			// TODO: Implement API call to purchaseService.getAllPurchases()
-			// TODO: Implement API call to purchaseService.getSuppliers()
-			// TODO: Implement API call to purchaseService.getStats()
-
-			setPurchases([]);
-			setSuppliers([]);
-			setStats(null);
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải dữ liệu",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+	// Fetch function for API call
+	const fetchPurchases = async (filters: PurchaseFilters) => {
+		const response = await purchaseService.getPurchases(filters);
+		setPurchases(response.data);
+		setTotalItems(response.pagination.totalItems);
 	};
 
-	const applyFilters = async () => {
-		try {
-			// TODO: Implement API call to purchaseService.filterPurchases(filters)
-			const filtered: Purchase[] = [];
-			setFilteredPurchases(filtered);
-			setTotal(filtered.length);
-			goToPage(1);
-		} catch (error) {
-			console.error("Error applying filters:", error);
-		}
-	};
-
-	const handleResetFilters = () => {
-		setFilters({
+	// useFilters for filtering + pagination state
+	const {
+		filters,
+		loading,
+		error,
+		handleFilterChange,
+		handlePageChange,
+		resetFilters,
+	} = useFilters<PurchaseFilters>(
+		{
+			page: 1,
+			pageSize: ITEMS_PER_PAGE,
 			searchQuery: "",
 			status: "all",
 			paymentStatus: "all",
 			supplierId: "all",
-		});
-	};
+		},
+		fetchPurchases,
+		500,
+	);
+
+	// usePagination for metadata only
+	const { currentPage, pageSize, pagination, goToPage } = usePagination({
+		initialPage: filters.page,
+		pageSize: filters.pageSize,
+		initialTotal: totalItems,
+	});
+
+	// Sync pagination with filters
+	useEffect(() => {
+		if (currentPage !== filters.page) {
+			goToPage(filters.page);
+		}
+	}, [filters.page, currentPage, goToPage]);
+
+	// Load suppliers and stats on mount
+	useEffect(() => {
+		// TODO: Implement API call to load suppliers
+		setSuppliers([]);
+		// TODO: Implement API call to load stats
+		setStats(null);
+	}, []);
 
 	const handleAddPurchase = async (
 		purchase: Omit<Purchase, "id" | "createdAt" | "updatedAt">,
 	) => {
-		// TODO: Implement API call to purchaseService.createPurchase(purchase)
-		await loadData();
+		await purchaseService.createPurchase(purchase);
+		// Refresh data after adding
+		await fetchPurchases(filters);
+		onAddModalClose();
 		// Reset imported items after successfully creating purchase
 		setImportedItems([]);
+		// TODO: Reload stats after adding
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -168,14 +156,16 @@ const PurchasePage = () => {
 	const handleDelete = async (id: string) => {
 		if (window.confirm("Bạn có chắc chắn muốn xóa phiếu nhập này?")) {
 			try {
-				// TODO: Implement API call to purchaseService.deletePurchase(id)
+				await purchaseService.deletePurchase(id);
+				// Refresh data after deleting
+				await fetchPurchases(filters);
 				toast({
 					title: "Thành công",
 					description: "Đã xóa phiếu nhập",
 					status: "success",
 					duration: 2000,
 				});
-				await loadData();
+				// TODO: Reload stats after deletion
 			} catch (error) {
 				toast({
 					title: "Lỗi",
@@ -197,7 +187,7 @@ const PurchasePage = () => {
 	};
 
 	const handleExportToExcel = () => {
-		if (filteredPurchases.length === 0) {
+		if (purchases.length === 0) {
 			toast({
 				title: "Thông báo",
 				description: "Không có dữ liệu để xuất",
@@ -207,7 +197,7 @@ const PurchasePage = () => {
 			return;
 		}
 
-		// TODO: Implement API call to purchaseService.exportPurchasesToExcel(filteredPurchases)
+		// TODO: Implement API call to purchaseService.exportPurchasesToExcel(purchases)
 		toast({
 			title: "Thành công",
 			description: "Đã xuất file Excel",
@@ -215,12 +205,6 @@ const PurchasePage = () => {
 			duration: 2000,
 		});
 	};
-
-	// Paginated purchases
-	const paginatedPurchases = filteredPurchases.slice(
-		(currentPage - 1) * pageSize,
-		currentPage * pageSize,
-	);
 
 	return (
 		<MainLayout>
@@ -286,7 +270,7 @@ const PurchasePage = () => {
 					</Flex>
 				</Flex>
 
-				{isLoading ? (
+				{loading ? (
 					<Flex
 						justify="center"
 						py={6}>
@@ -294,6 +278,17 @@ const PurchasePage = () => {
 							size="xl"
 							color="brand.500"
 						/>
+					</Flex>
+				) : error ? (
+					<Flex
+						justify="center"
+						align="center"
+						minH="400px">
+						<Text
+							fontSize="18px"
+							color="red.500">
+							{error}
+						</Text>
 					</Flex>
 				) : (
 					<>
@@ -324,13 +319,12 @@ const PurchasePage = () => {
 										bg: "orange.50",
 									}}
 									onClick={() => {
-										setFilters({
-											...filters,
-											status:
-												filters.status === "ordered"
-													? "all"
-													: "ordered",
-										});
+										handleFilterChange(
+											"status",
+											filters.status === "ordered"
+												? "all"
+												: "ordered",
+										);
 									}}>
 									<Flex
 										bg="orange.50"
@@ -364,9 +358,18 @@ const PurchasePage = () => {
 								flex={1}
 								width="100%">
 								<PurchaseFilterBar
-									filters={filters}
+									filters={{
+										searchQuery: filters.searchQuery || "",
+										status: filters.status || "all",
+										paymentStatus: filters.paymentStatus || "all",
+										supplierId: filters.supplierId || "all",
+									}}
 									suppliers={suppliers}
-									onFiltersChange={setFilters}
+									onFiltersChange={(newFilters) => {
+										handleFilterChange("status", newFilters.status);
+										handleFilterChange("paymentStatus", newFilters.paymentStatus);
+										handleFilterChange("supplierId", newFilters.supplierId);
+									}}
 								/>
 							</Box>
 						</HStack>
@@ -381,12 +384,9 @@ const PurchasePage = () => {
 								<input
 									type="text"
 									placeholder="Tìm kiếm theo mã phiếu nhập, nhà cung cấp..."
-									value={filters.searchQuery}
+									value={filters.searchQuery || ""}
 									onChange={(e) =>
-										setFilters({
-											...filters,
-											searchQuery: e.target.value,
-										})
+										handleFilterChange("searchQuery", e.target.value)
 									}
 									style={{
 										width: "100%",
@@ -406,7 +406,7 @@ const PurchasePage = () => {
 									leftIcon={<RepeatIcon />}
 									variant="ghost"
 									colorScheme="gray"
-									onClick={handleResetFilters}
+									onClick={resetFilters}
 									fontSize="14px"
 									fontWeight="600"
 									px={4}
@@ -418,23 +418,23 @@ const PurchasePage = () => {
 
 						{/* Purchase Table */}
 						<PurchaseTable
-							purchases={paginatedPurchases}
+							purchases={purchases}
 							onViewDetail={handleViewDetail}
 							onEdit={handleEdit}
 							onDelete={handleDelete}
 						/>
 
 						{/* Pagination */}
-						{total > pageSize && (
+						{purchases.length > 0 && (
 							<Flex
 								justify="center"
 								mt={4}>
 								<Pagination
 									currentPage={currentPage}
-									totalPages={Math.ceil(total / pageSize)}
-									totalItems={total}
+									totalPages={pagination.totalPages}
+									totalItems={totalItems}
 									pageSize={pageSize}
-									onPageChange={goToPage}
+									onPageChange={handlePageChange}
 									itemLabel="phiếu nhập"
 								/>
 							</Flex>

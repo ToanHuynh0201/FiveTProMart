@@ -59,7 +59,7 @@ const ITEMS_PER_PAGE = 10;
 
 const ExpensesPage = () => {
 	const toast = useToast();
-	const { currentPage, pageSize, pagination, goToPage, setTotal } =
+	const { currentPage, total, pageSize, pagination, goToPage, setTotal } =
 		usePagination({
 			initialPage: 1,
 			pageSize: ITEMS_PER_PAGE,
@@ -557,7 +557,15 @@ const ExpensesPage = () => {
 								<Flex
 									justify="center"
 									mt={6}>
-									<Pagination {...pagination} />
+									<Pagination
+										currentPage={currentPage}
+										totalPages={pagination.totalPages}
+										totalItems={total}
+										pageSize={pageSize}
+										onPageChange={goToPage}
+										showInfo={true}
+										itemLabel="chi phí"
+									/>
 								</Flex>
 							)}
 						</CardBody>

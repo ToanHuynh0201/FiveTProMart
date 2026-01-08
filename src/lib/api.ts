@@ -1,46 +1,18 @@
-import axios, {
-	type AxiosInstance,
-	type AxiosRequestConfig,
-	AxiosError,
-	type InternalAxiosRequestConfig,
-} from "axios";
-import { API_CONFIG, AUTH_CONFIG, ROUTES } from "../constants";
+import { API_CONFIG, AUTH_CONFIG, ROUTES } from "@/constants";
 import {
-	getStorageItem,
-	setStorageItem,
 	clearStorageItems,
+	getStorageItem,
 	logError,
 	parseError,
+	setStorageItem,
 	shouldLogout,
-} from "../utils";
+} from "@/utils";
+import axios, { type AxiosInstance } from "axios";
 
-interface RefreshTokenData {
-	accessToken: string;
-	refreshToken?: string;
-}
-
-interface RefreshTokenResponse {
-	data: {
-		status: string;
-		data: RefreshTokenData;
-	};
-}
-
-/**
- * API Service Class
- * Handles all API calls with automatic token refresh and authentication
- */
 class ApiService {
 	private baseUrl: string;
 	private api: AxiosInstance;
-	private isRefreshing = false;
-	private refreshSubscribers: Array<(token: string) => void> = [];
-
-	/**
-	 * Create API service instance
-	 * @param customBaseUrl - Optional custom base URL
-	 */
-	constructor(customBaseUrl: string | null = null) {
+	constructor(customBaseUrl = null) {
 		this.baseUrl = customBaseUrl || API_CONFIG.BASE_URL;
 		this.api = this._createAxiosInstance();
 		this._setupInterceptors();
@@ -49,9 +21,9 @@ class ApiService {
 	/**
 	 * Create axios instance with base configuration
 	 * @private
-	 * @returns Configured axios instance
+	 * @returns {axios.AxiosInstance} Configured axios instance
 	 */
-	private _createAxiosInstance(): AxiosInstance {
+	_createAxiosInstance() {
 		return axios.create({
 			baseURL: this.baseUrl,
 			timeout: API_CONFIG.TIMEOUT,
@@ -65,7 +37,7 @@ class ApiService {
 	 * Setup request and response interceptors
 	 * @private
 	 */
-	private _setupInterceptors(): void {
+	_setupInterceptors() {
 		this._setupRequestInterceptor();
 		this._setupResponseInterceptor();
 	}
@@ -74,16 +46,16 @@ class ApiService {
 	 * Setup request interceptor to add auth token
 	 * @private
 	 */
-	private _setupRequestInterceptor(): void {
+	_setupRequestInterceptor() {
 		this.api.interceptors.request.use(
-			(config: InternalAxiosRequestConfig) => {
+			(config: any) => {
 				const token = getStorageItem(AUTH_CONFIG.TOKEN_STORAGE_KEY);
 				if (token) {
 					config.headers.Authorization = `Bearer ${token}`;
 				}
 				return config;
 			},
-			(error: AxiosError) => {
+			(error: any) => {
 				const parsedError = parseError(error);
 				logError(parsedError, { context: "api.request" });
 				return Promise.reject(parsedError);
@@ -95,10 +67,10 @@ class ApiService {
 	 * Setup response interceptor to handle auth errors
 	 * @private
 	 */
-	private _setupResponseInterceptor(): void {
+	_setupResponseInterceptor() {
 		this.api.interceptors.response.use(
-			(response) => response,
-			async (error: AxiosError) => {
+			(response: any) => response,
+			async (error: any) => {
 				const parsedError = parseError(error);
 
 				// Don't trigger logout for login endpoint errors
@@ -128,24 +100,21 @@ class ApiService {
 	/**
 	 * Check if URL is login endpoint
 	 * @private
-	 * @param url - Request URL
-	 * @returns Whether URL is login endpoint
+	 * @param {string} url - Request URL
+	 * @returns {boolean} Whether URL is login endpoint
 	 */
-	private _isLoginEndpoint(url?: string): boolean {
-		return url?.includes("/auth/login") || false;
+	_isLoginEndpoint(url: string) {
+		return url?.includes("/users/login");
 	}
 
 	/**
 	 * Handle authentication errors
 	 * @private
-	 * @param originalError - Original error object
-	 * @param parsedError - Parsed error object
-	 * @returns Retry result or false
+	 * @param {Object} originalError - Original error object
+	 * @param {Object} parsedError - Parsed error object
+	 * @returns {Promise<Object|false>} Retry result or false
 	 */
-	private async _handleAuthError(
-		originalError: AxiosError,
-		parsedError: any,
-	): Promise<any> {
+	async _handleAuthError(originalError: any, parsedError: any) {
 		// Try token refresh for 401 errors only
 		if (parsedError.status === 401) {
 			return await this._tryTokenRefresh(originalError);
@@ -156,22 +125,10 @@ class ApiService {
 	/**
 	 * Attempt to refresh token and retry original request
 	 * @private
-	 * @param originalError - Original error object
-	 * @returns Retry result or false
+	 * @param {Object} originalError - Original error object
+	 * @returns {Promise<Object|false>} Retry result or false
 	 */
-	private async _tryTokenRefresh(originalError: AxiosError): Promise<any> {
-		// If already refreshing, queue this request
-		if (this.isRefreshing) {
-			return new Promise((resolve) => {
-				this.refreshSubscribers.push((token: string) => {
-					if (originalError.config) {
-						originalError.config.headers.Authorization = `Bearer ${token}`;
-						resolve(this.api(originalError.config));
-					}
-				});
-			});
-		}
-
+	async _tryTokenRefresh(originalError: any) {
 		const refreshToken = getStorageItem(
 			AUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY,
 		);
@@ -179,16 +136,15 @@ class ApiService {
 			return false;
 		}
 
-		this.isRefreshing = true;
-
 		try {
 			const refreshResponse = await this._performTokenRefresh(
 				refreshToken,
 			);
 
-			if (refreshResponse.data.status === "success") {
-				const { accessToken, refreshToken: newRefreshToken } =
-					refreshResponse.data.data;
+			if (refreshResponse.data.success === true) {
+				// Tokens are inside the `data` object
+				const accessToken = refreshResponse.data.data.accessToken;
+				const newRefreshToken = refreshResponse.data.data.refreshToken;
 				setStorageItem(AUTH_CONFIG.TOKEN_STORAGE_KEY, accessToken);
 
 				if (newRefreshToken) {
@@ -198,19 +154,10 @@ class ApiService {
 					);
 				}
 
-				// Notify all queued requests
-				this.refreshSubscribers.forEach((callback) =>
-					callback(accessToken),
-				);
-				this.refreshSubscribers = [];
-
 				return this._retryOriginalRequest(originalError, accessToken);
 			}
 		} catch (refreshError) {
 			logError(parseError(refreshError), { context: "api.refresh" });
-			this.refreshSubscribers = [];
-		} finally {
-			this.isRefreshing = false;
 		}
 
 		return false;
@@ -219,45 +166,33 @@ class ApiService {
 	/**
 	 * Perform token refresh API call
 	 * @private
-	 * @param refreshToken - Refresh token
-	 * @returns Refresh response
+	 * @param {string} refreshToken - Refresh token
+	 * @returns {Promise<Object>} Refresh response
 	 */
-	private async _performTokenRefresh(
-		refreshToken: string,
-	): Promise<RefreshTokenResponse> {
-		const response = await axios.post<RefreshTokenResponse["data"]>(
-			`${API_CONFIG.BASE_URL}/auth/token/refresh`,
-			{
-				refreshToken,
-			},
-		);
-		return response;
+	async _performTokenRefresh(refreshToken: any) {
+		return axios.post(`${API_CONFIG.BASE_URL}/auth/refresh-token`, {
+			refreshToken,
+		});
 	}
 
 	/**
 	 * Retry original request with new token
 	 * @private
-	 * @param originalError - Original error object
-	 * @param accessToken - New access token
-	 * @returns Request response
+	 * @param {Object} originalError - Original error object
+	 * @param {string} accessToken - New access token
+	 * @returns {Promise<Object>} Request response
 	 */
-	private _retryOriginalRequest(
-		originalError: AxiosError,
-		accessToken: string,
-	): Promise<any> {
-		if (!originalError.config) {
-			return Promise.reject(new Error("No config available"));
-		}
+	_retryOriginalRequest(originalError: any, accessToken: any) {
 		const originalRequest = originalError.config;
 		originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-		return this.api(originalRequest);
+		return axios(originalRequest);
 	}
 
 	/**
 	 * Handle logout by clearing storage and redirecting
 	 * @private
 	 */
-	private _handleLogout(): void {
+	_handleLogout() {
 		clearStorageItems([
 			AUTH_CONFIG.TOKEN_STORAGE_KEY,
 			AUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY,
@@ -266,80 +201,31 @@ class ApiService {
 		window.location.href = ROUTES.LOGIN;
 	}
 
-	// ============================================
-	// Public API Methods
-	// ============================================
-
-	/**
-	 * GET request
-	 */
-	public async get<T = any>(
-		url: string,
-		config?: AxiosRequestConfig,
-	): Promise<T> {
-		const response = await this.api.get<T>(url, config);
-		return response.data;
+	// Proxy methods to axios instance
+	get(url: any, config?: any) {
+		return this.api.get(url, config);
 	}
 
-	/**
-	 * POST request
-	 */
-	public async post<T = any>(
-		url: string,
-		data?: any,
-		config?: AxiosRequestConfig,
-	): Promise<T> {
-		const response = await this.api.post<T>(url, data, config);
-		return response.data;
+	post(url: any, data: any, config?: any) {
+		return this.api.post(url, data, config);
 	}
 
-	/**
-	 * PUT request
-	 */
-	public async put<T = any>(
-		url: string,
-		data?: any,
-		config?: AxiosRequestConfig,
-	): Promise<T> {
-		const response = await this.api.put<T>(url, data, config);
-		return response.data;
+	put(url: any, data: any, config?: any) {
+		return this.api.put(url, data, config);
 	}
 
-	/**
-	 * PATCH request
-	 */
-	public async patch<T = any>(
-		url: string,
-		data?: any,
-		config?: AxiosRequestConfig,
-	): Promise<T> {
-		const response = await this.api.patch<T>(url, data, config);
-		return response.data;
+	patch(url: any, data: any, config?: any) {
+		return this.api.patch(url, data, config);
 	}
 
-	/**
-	 * DELETE request
-	 */
-	public async delete<T = any>(
-		url: string,
-		config?: AxiosRequestConfig,
-	): Promise<T> {
-		const response = await this.api.delete<T>(url, config);
-		return response.data;
-	}
-
-	/**
-	 * Get axios instance for advanced usage
-	 */
-	public getAxiosInstance(): AxiosInstance {
-		return this.api;
+	delete(url: any, config?: any) {
+		return this.api.delete(url, config);
 	}
 }
 
-// Export singleton instance
 const apiService = new ApiService();
 
-// Export class for custom instances
+// * Use this for custom instances
 export { ApiService };
 
 export default apiService;

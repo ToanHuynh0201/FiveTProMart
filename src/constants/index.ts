@@ -18,10 +18,17 @@ export const ROLES = {
 
 // Auth Configuration
 export const AUTH_CONFIG = {
-	TOKEN_STORAGE_KEY: "access_token",
-	REFRESH_TOKEN_STORAGE_KEY: "refresh_token",
-	USER_STORAGE_KEY: "user",
+	TOKEN_STORAGE_KEY: "auth_access_token",
+	REFRESH_TOKEN_STORAGE_KEY: "auth_refresh_token",
+	USER_STORAGE_KEY: "auth_user",
 	REQUIRED_ROLE: ROLES.ADMIN,
+};
+
+// Storage Keys
+export const STORAGE_KEYS = {
+	USER: "auth_user",
+	ACCESS_TOKEN: "auth_access_token",
+	REFRESH_TOKEN: "auth_refresh_token",
 };
 
 // Route Paths
@@ -94,6 +101,7 @@ export const SUCCESS_MESSAGES = {
 export default {
 	API_CONFIG,
 	AUTH_CONFIG,
+	STORAGE_KEYS,
 	ROUTES,
 	VALIDATION,
 	ERROR_CODES,

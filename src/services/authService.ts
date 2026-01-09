@@ -10,6 +10,7 @@ import type {
 	AuthTokens,
 } from "../types/auth";
 import {STORAGE_KEYS, API_CONFIG} from "../constants";
+import apiService from "../lib/api";
 
 class AuthService {
 	/**
@@ -53,7 +54,7 @@ class AuthService {
 	}
 
 	/**
-	 * Get user details from server
+	 * Get user details from server (uses axios with auto token refresh)
 	 */
 	async getUserDetail(): Promise<User | null> {
 		try {
@@ -63,25 +64,8 @@ class AuthService {
 				throw new Error("No access token found");
 			}
 
-			const response = await fetch(`${API_CONFIG.BASE_URL}/auth/me`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${accessToken}`,
-				},
-			});
-
-			if (!response.ok) {
-				if (response.status === 401) {
-					const refreshed = await this.refreshAccessToken();
-					if (refreshed) {
-						return this.getUserDetail();
-					}
-				}
-				throw new Error("Failed to get user details");
-			}
-
-			const user: User = await response.json();
+			const response = await apiService.get("/auth/me");
+			const user: User = response.data;
 
 			this.saveUser(user);
 

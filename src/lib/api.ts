@@ -1,13 +1,16 @@
-import { API_CONFIG, AUTH_CONFIG, ROUTES } from "@/constants";
+import { API_CONFIG, ROUTES } from "@/constants";
 import {
-	clearStorageItems,
-	getStorageItem,
 	logError,
 	parseError,
-	setStorageItem,
 	shouldLogout,
 } from "@/utils";
-import axios, { type AxiosInstance } from "axios";
+import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "@/store/authStore";
+import {
+	refreshAccessToken,
+	isRefreshInProgress,
+	waitForRefresh,
+} from "@/lib/tokenManager";
 
 class ApiService {
 	private baseUrl: string;
@@ -30,6 +33,7 @@ class ApiService {
 			headers: {
 				"Content-Type": "application/json",
 			},
+			withCredentials: true, // CRITICAL: Send HttpOnly cookies for refresh tokens
 		});
 	}
 
@@ -42,20 +46,23 @@ class ApiService {
 		this._setupResponseInterceptor();
 	}
 
-	/**
-	 * Setup request interceptor to add auth token
+	/** from store
 	 * @private
 	 */
 	_setupRequestInterceptor() {
 		this.api.interceptors.request.use(
-			(config: any) => {
-				const token = getStorageItem(AUTH_CONFIG.TOKEN_STORAGE_KEY);
-				if (token) {
-					config.headers.Authorization = `Bearer ${token}`;
+			(config: InternalAxiosRequestConfig) => {
+				// Read token from Zustand store (in-memory, XSS-safe)
+				const state = useAuthStore.getState();
+				const accessToken = state.accessToken;
+
+				if (accessToken) {
+					config.headers.set('Authorization', `Bearer ${accessToken}`);
 				}
+
 				return config;
 			},
-			(error: any) => {
+			(error: AxiosError) => {
 				const parsedError = parseError(error);
 				logError(parsedError, { context: "api.request" });
 				return Promise.reject(parsedError);
@@ -64,31 +71,65 @@ class ApiService {
 	}
 
 	/**
-	 * Setup response interceptor to handle auth errors
+	 * Setup response interceptor with production-grade token refresh
 	 * @private
 	 */
 	_setupResponseInterceptor() {
 		this.api.interceptors.response.use(
 			(response: any) => response,
-			async (error: any) => {
+			async (error: AxiosError) => {
 				const parsedError = parseError(error);
+				const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
 				// Don't trigger logout for login endpoint errors
-				if (this._isLoginEndpoint(error.config?.url)) {
+				if (this._isLoginEndpoint(error.config?.url || '')) {
 					logError(parsedError, { context: "api.response" });
 					return Promise.reject(parsedError);
 				}
 
-				// Handle auth errors with token refresh attempt
-				if (shouldLogout(parsedError)) {
-					const refreshResult = await this._handleAuthError(
-						error,
-						parsedError,
-					);
-					if (refreshResult) {
-						return refreshResult;
+				// ----------------------------------------------------------------
+				// HANDLE 401 UNAUTHORIZED WITH CENTRALIZED REFRESH
+				// ----------------------------------------------------------------
+				if (
+					error.response?.status === 401 &&
+					originalRequest &&
+					!originalRequest._retry
+				) {
+					originalRequest._retry = true;
+
+					// If refresh already in progress, wait for it
+					if (isRefreshInProgress()) {
+						const result = await waitForRefresh();
+						if (result.success && result.token) {
+							// Retry with new token
+							originalRequest.headers.set('Authorization', `Bearer ${result.token}`);
+							return this.api(originalRequest);
+						}
+						// Refresh failed, logout
+						this._handleLogout();
+						return Promise.reject(parsedError);
 					}
+
+					// Initiate refresh
+					const onTokenRefreshed = (newToken: string) => {
+						useAuthStore.setState({ accessToken: newToken });
+					};
+
+					const onSessionExpired = () => {
+						this._handleLogout();
+					};
+
+					const result = await refreshAccessToken(onTokenRefreshed, onSessionExpired);
+
+					if (result.success && result.token) {
+						// Retry original request with new token
+						originalRequest.headers.set('Authorization', `Bearer ${result.token}`);
+						return this.api(originalRequest);
+					}
+
+					// Refresh failed, logout
 					this._handleLogout();
+					return Promise.reject(parsedError);
 				}
 
 				logError(parsedError, { context: "api.response" });
@@ -104,100 +145,15 @@ class ApiService {
 	 * @returns {boolean} Whether URL is login endpoint
 	 */
 	_isLoginEndpoint(url: string) {
-		return url?.includes("/users/login");
+		return url?.includes("/users/login") || url?.includes("/auth/login");
 	}
 
 	/**
-	 * Handle authentication errors
-	 * @private
-	 * @param {Object} originalError - Original error object
-	 * @param {Object} parsedError - Parsed error object
-	 * @returns {Promise<Object|false>} Retry result or false
-	 */
-	async _handleAuthError(originalError: any, parsedError: any) {
-		// Try token refresh for 401 errors only
-		if (parsedError.status === 401) {
-			return await this._tryTokenRefresh(originalError);
-		}
-		return false;
-	}
-
-	/**
-	 * Attempt to refresh token and retry original request
-	 * @private
-	 * @param {Object} originalError - Original error object
-	 * @returns {Promise<Object|false>} Retry result or false
-	 */
-	async _tryTokenRefresh(originalError: any) {
-		const refreshToken = getStorageItem(
-			AUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY,
-		);
-		if (!refreshToken) {
-			return false;
-		}
-
-		try {
-			const refreshResponse = await this._performTokenRefresh(
-				refreshToken,
-			);
-
-			if (refreshResponse.data.success === true) {
-				// Tokens are inside the `data` object
-				const accessToken = refreshResponse.data.data.accessToken;
-				const newRefreshToken = refreshResponse.data.data.refreshToken;
-				setStorageItem(AUTH_CONFIG.TOKEN_STORAGE_KEY, accessToken);
-
-				if (newRefreshToken) {
-					setStorageItem(
-						AUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY,
-						newRefreshToken,
-					);
-				}
-
-				return this._retryOriginalRequest(originalError, accessToken);
-			}
-		} catch (refreshError) {
-			logError(parseError(refreshError), { context: "api.refresh" });
-		}
-
-		return false;
-	}
-
-	/**
-	 * Perform token refresh API call
-	 * @private
-	 * @param {string} refreshToken - Refresh token
-	 * @returns {Promise<Object>} Refresh response
-	 */
-	async _performTokenRefresh(refreshToken: any) {
-		return axios.post(`${API_CONFIG.BASE_URL}/auth/refresh-token`, {
-			refreshToken,
-		});
-	}
-
-	/**
-	 * Retry original request with new token
-	 * @private
-	 * @param {Object} originalError - Original error object
-	 * @param {string} accessToken - New access token
-	 * @returns {Promise<Object>} Request response
-	 */
-	_retryOriginalRequest(originalError: any, accessToken: any) {
-		const originalRequest = originalError.config;
-		originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-		return axios(originalRequest);
-	}
-
-	/**
-	 * Handle logout by clearing storage and redirecting
+	 * Handle logout by clearing store and redirecting
 	 * @private
 	 */
 	_handleLogout() {
-		clearStorageItems([
-			AUTH_CONFIG.TOKEN_STORAGE_KEY,
-			AUTH_CONFIG.REFRESH_TOKEN_STORAGE_KEY,
-			AUTH_CONFIG.USER_STORAGE_KEY,
-		]);
+		useAuthStore.getState().logout();
 		window.location.href = ROUTES.LOGIN;
 	}
 

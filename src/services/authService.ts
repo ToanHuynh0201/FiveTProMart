@@ -1,16 +1,20 @@
-import {
-	getStorageItem,
-	setStorageItem,
-	clearStorageItems,
-} from "../utils/storage";
 import type {
 	User,
 	LoginCredentials,
 	LoginResponse,
-	AuthTokens,
 } from "../types/auth";
-import {STORAGE_KEYS, API_CONFIG} from "../constants";
+import { API_CONFIG } from "../constants";
 import apiService from "../lib/api";
+import { useAuthStore } from "@/store/authStore";
+
+/**
+ * AuthService - Business logic for authentication
+ * 
+ * SECURITY: No longer stores tokens in localStorage.
+ * - Access tokens: Managed by Zustand store (in-memory, cleared on tab close)
+ * - Refresh tokens: HttpOnly cookies managed by backend
+ * - User profile: Persisted via Zustand persist middleware
+ */
 
 class AuthService {
 	/**
@@ -18,11 +22,13 @@ class AuthService {
 	 */
 	async login(credentials: LoginCredentials): Promise<LoginResponse> {
 		try {
+			// Use fetch for login to avoid axios interceptors during auth flow
 			const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
+				credentials: "include", // CRITICAL: Accept HttpOnly refresh token cookie
 				body: JSON.stringify(credentials),
 			});
 
@@ -31,11 +37,16 @@ class AuthService {
 				throw new Error(error.message || "Login failed");
 			}
 
-			const data: LoginResponse = await response.json();
+			const apiResponse = await response.json();
+			const data = apiResponse.data; // Extract from ApiResponse wrapper
 
-			this.saveAuthData(data.user, data.tokens);
+			// Store access token in Zustand (in-memory)
+			useAuthStore.getState().login(data.accessToken);
+			
+			// Fetch user profile (backend doesn't return it in login response)
+			await this.getUserDetail();
 
-			return data;
+			return apiResponse;
 		} catch (error) {
 			console.error("Login error:", error);
 			throw error;
@@ -43,14 +54,17 @@ class AuthService {
 	}
 
 	/**
-	 * Logout user and clear storage
+	 * Logout user and clear store
 	 */
 	logout(): void {
-		clearStorageItems([
-			STORAGE_KEYS.USER,
-			STORAGE_KEYS.ACCESS_TOKEN,
-			STORAGE_KEYS.REFRESH_TOKEN,
-		]);
+		// Call backend to invalidate refresh token cookie
+		fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
+			method: "POST",
+			credentials: "include",
+		}).catch(err => console.error("Logout API error:", err));
+
+		// Clear Zustand store
+		useAuthStore.getState().logout();
 	}
 
 	/**
@@ -58,16 +72,11 @@ class AuthService {
 	 */
 	async getUserDetail(): Promise<User | null> {
 		try {
-			const accessToken = this.getAccessToken();
-
-			if (!accessToken) {
-				throw new Error("No access token found");
-			}
-
 			const response = await apiService.get("/auth/me");
 			const user: User = response.data;
 
-			this.saveUser(user);
+			// Update store with fresh user data
+			useAuthStore.getState().setUser(user);
 
 			return user;
 		} catch (error) {
@@ -77,92 +86,17 @@ class AuthService {
 	}
 
 	/**
-	 * Refresh access token using refresh token
-	 */
-	async refreshAccessToken(): Promise<boolean> {
-		try {
-			const refreshToken = this.getRefreshToken();
-
-			if (!refreshToken) {
-				throw new Error("No refresh token found");
-			}
-
-			const response = await fetch(`${API_CONFIG.BASE_URL}/auth/refresh`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ refreshToken }),
-			});
-
-			if (!response.ok) {
-				this.logout();
-				return false;
-			}
-
-			const data: AuthTokens = await response.json();
-
-			this.saveTokens(data);
-
-			return true;
-		} catch (error) {
-			console.error("Refresh token error:", error);
-			this.logout();
-			return false;
-		}
-	}
-
-	/**
-	 * Save authentication data to storage
-	 */
-	private saveAuthData(user: User, tokens: AuthTokens): void {
-		this.saveUser(user);
-		this.saveTokens(tokens);
-	}
-
-	/**
-	 * Save user to storage
-	 */
-	private saveUser(user: User): void {
-		setStorageItem(STORAGE_KEYS.USER, user);
-	}
-
-	/**
-	 * Save tokens to storage
-	 */
-	private saveTokens(tokens: AuthTokens): void {
-		setStorageItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
-		setStorageItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
-	}
-
-	/**
-	 * Get user from storage
+	 * Get user from store
 	 */
 	getUser(): User | null {
-		return getStorageItem(STORAGE_KEYS.USER, null);
-	}
-
-	/**
-	 * Get access token from storage
-	 */
-	getAccessToken(): string | null {
-		return getStorageItem(STORAGE_KEYS.ACCESS_TOKEN, null);
-	}
-
-	/**
-	 * Get refresh token from storage
-	 */
-	getRefreshToken(): string | null {
-		return getStorageItem(STORAGE_KEYS.REFRESH_TOKEN, null);
+		return useAuthStore.getState().user;
 	}
 
 	/**
 	 * Check if user is authenticated
 	 */
 	isAuthenticated(): boolean {
-		const accessToken = this.getAccessToken();
-		const user = this.getUser();
-		return !!(accessToken && user);
+		return useAuthStore.getState().isAuthenticated;
 	}
 }
 

@@ -20,34 +20,36 @@ import CustomersPage from "./pages/CustomersPage";
 import SupplierPage from "./pages/SupplierPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import { AuthProvider } from "./contexts/AuthContext";
+import { TokenRefreshProvider } from "./components/providers/TokenRefreshProvider";
 
 function App() {
 	return (
 		<AuthProvider>
-			<Router>
-				<Routes>
-					<Route
-						path={ROUTES.LOGIN}
-						element={<LoginPage />}
-					/>
-					<Route
-						path={ROUTES.HOME}
-						element={<HomePage />}
-					/>
-					<Route
-						path={ROUTES.DASHBOARD}
-						element={<DashboardPage />}
-					/>
-					<Route
-						path={ROUTES.STAFF}
-						element={<StaffPage />}
-					/>
-					<Route
-						path={ROUTES.SCHEDULE}
-						element={<SchedulePage />}
-					/>
-					<Route
-						path={ROUTES.SALES}
+			<TokenRefreshProvider>
+				<Router>
+					<Routes>
+						<Route
+							path={ROUTES.LOGIN}
+							element={<LoginPage />}
+						/>
+						<Route
+							path={ROUTES.HOME}
+							element={<HomePage />}
+						/>
+						<Route
+							path={ROUTES.DASHBOARD}
+							element={<DashboardPage />}
+						/>
+						<Route
+							path={ROUTES.STAFF}
+							element={<StaffPage />}
+						/>
+						<Route
+							path={ROUTES.SCHEDULE}
+							element={<SchedulePage />}
+						/>
+						<Route
+							path={ROUTES.SALES}
 						element={<SalesPage />}
 					/>
 					<Route
@@ -98,6 +100,7 @@ function App() {
 					/>
 				</Routes>
 			</Router>
+		</TokenRefreshProvider>
 		</AuthProvider>
 	);
 }

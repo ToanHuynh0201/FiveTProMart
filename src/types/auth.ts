@@ -17,9 +17,21 @@ export interface AuthTokens {
     refreshToken: string;
 }
 
+// Backend login response (wrapped in ApiResponse)
+export interface LoginApiData {
+    accessToken: string;
+    refreshToken: null; // Always null (stored in HttpOnly cookie)
+    idToken: string;
+    scope: string;
+    authenticated: boolean;
+    lastLogin: string;
+}
+
 export interface LoginResponse {
-    user: User;
-    tokens: AuthTokens;
+    success: boolean;
+    statusCode: number;
+    message: string;
+    data: LoginApiData;
 }
 
 export interface AuthContextType {

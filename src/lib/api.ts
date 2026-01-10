@@ -1,10 +1,10 @@
 import { API_CONFIG, ROUTES } from "@/constants";
-import {
-	logError,
-	parseError,
-	shouldLogout,
-} from "@/utils";
-import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { logError, parseError } from "@/utils";
+import axios, {
+	type AxiosInstance,
+	type AxiosError,
+	type InternalAxiosRequestConfig,
+} from "axios";
 import { useAuthStore } from "@/store/authStore";
 import {
 	refreshAccessToken,
@@ -57,7 +57,10 @@ class ApiService {
 				const accessToken = state.accessToken;
 
 				if (accessToken) {
-					config.headers.set('Authorization', `Bearer ${accessToken}`);
+					config.headers.set(
+						"Authorization",
+						`Bearer ${accessToken}`,
+					);
 				}
 
 				return config;
@@ -79,10 +82,13 @@ class ApiService {
 			(response: any) => response,
 			async (error: AxiosError) => {
 				const parsedError = parseError(error);
-				const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+				const originalRequest =
+					error.config as InternalAxiosRequestConfig & {
+						_retry?: boolean;
+					};
 
 				// Don't trigger logout for login endpoint errors
-				if (this._isLoginEndpoint(error.config?.url || '')) {
+				if (this._isLoginEndpoint(error.config?.url || "")) {
 					logError(parsedError, { context: "api.response" });
 					return Promise.reject(parsedError);
 				}
@@ -102,7 +108,10 @@ class ApiService {
 						const result = await waitForRefresh();
 						if (result.success && result.token) {
 							// Retry with new token
-							originalRequest.headers.set('Authorization', `Bearer ${result.token}`);
+							originalRequest.headers.set(
+								"Authorization",
+								`Bearer ${result.token}`,
+							);
 							return this.api(originalRequest);
 						}
 						// Refresh failed, logout
@@ -119,11 +128,17 @@ class ApiService {
 						this._handleLogout();
 					};
 
-					const result = await refreshAccessToken(onTokenRefreshed, onSessionExpired);
+					const result = await refreshAccessToken(
+						onTokenRefreshed,
+						onSessionExpired,
+					);
 
 					if (result.success && result.token) {
 						// Retry original request with new token
-						originalRequest.headers.set('Authorization', `Bearer ${result.token}`);
+						originalRequest.headers.set(
+							"Authorization",
+							`Bearer ${result.token}`,
+						);
 						return this.api(originalRequest);
 					}
 

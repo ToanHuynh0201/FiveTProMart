@@ -87,8 +87,8 @@ class ApiService {
 						_retry?: boolean;
 					};
 
-				// Don't trigger logout for login endpoint errors
-				if (this._isLoginEndpoint(error.config?.url || "")) {
+				// Don't trigger logout/refresh for login and logout endpoint errors
+				if (this._isAuthEndpoint(error.config?.url || "")) {
 					logError(parsedError, { context: "api.response" });
 					return Promise.reject(parsedError);
 				}
@@ -154,13 +154,13 @@ class ApiService {
 	}
 
 	/**
-	 * Check if URL is login endpoint
+	 * Check if URL is auth endpoint (login/logout) that should skip refresh logic
 	 * @private
 	 * @param {string} url - Request URL
-	 * @returns {boolean} Whether URL is login endpoint
+	 * @returns {boolean} Whether URL is auth endpoint
 	 */
-	_isLoginEndpoint(url: string) {
-		return url?.includes("/users/login") || url?.includes("/auth/login");
+	_isAuthEndpoint(url: string) {
+		return url?.includes("/auth/login") || url?.includes("/auth/logout");
 	}
 
 	/**

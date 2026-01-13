@@ -1,17 +1,19 @@
 import { createContext, useState, useEffect, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import type { User, LoginCredentials, AuthContextType } from "../types/auth";
 import { useAuthStore } from "@/store/authStore";
 import { waitForVisibilityRefresh } from "@/components/providers/TokenRefreshProvider";
+import { ROUTES } from "@/constants";
 
 /**
  * AuthContext - React Context wrapper for Zustand auth store
- * 
+ *
  * ARCHITECTURE:
  * - State managed by Zustand store (authStore.ts)
  * - This context provides React Context API for component compatibility
  * - Token refresh handled by TokenRefreshProvider + tokenManager
- * 
+ *
  * MIGRATION NOTE: Maintains the same API as the old Context-based implementation
  * so existing components don't need changes.
  */
@@ -25,6 +27,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+	const navigate = useNavigate();
+
 	// Subscribe to Zustand store
 	const {
 		user,
@@ -36,7 +40,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		setHydrated: storeSetHydrated,
 	} = useAuthStore();
 
-	const storeLogout = useAuthStore(state => state.logout);
+	const storeLogout = useAuthStore((state) => state.logout);
 
 	const [isInitialized, setIsInitialized] = useState(false);
 
@@ -81,10 +85,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	const login = async (credentials: LoginCredentials): Promise<void> => {
 		try {
 			storeSetLoading(true);
-			
+
 			// authService.login() updates the store internally
 			await authService.login(credentials);
-			
 		} catch (error) {
 			console.error("Login error:", error);
 			throw error;
@@ -94,10 +97,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 	};
 
 	/**
-	 * Logout action
+	 * Logout action - invalidates session and redirects to login
 	 */
-	const logout = (): void => {
-		authService.logout();
+	const logout = async (): Promise<void> => {
+		await authService.logout();
+		navigate(ROUTES.LOGIN);
 	};
 
 	/**

@@ -1,15 +1,11 @@
-import type {
-	User,
-	LoginCredentials,
-	LoginResponse,
-} from "../types/auth";
+import type { User, LoginCredentials, LoginResponse } from "../types/auth";
 import { API_CONFIG } from "../constants";
 import apiService from "../lib/api";
 import { useAuthStore } from "@/store/authStore";
 
 /**
  * AuthService - Business logic for authentication
- * 
+ *
  * SECURITY: No longer stores tokens in localStorage.
  * - Access tokens: Managed by Zustand store (in-memory, cleared on tab close)
  * - Refresh tokens: HttpOnly cookies managed by backend
@@ -39,10 +35,11 @@ class AuthService {
 
 			const apiResponse = await response.json();
 			const data = apiResponse.data; // Extract from ApiResponse wrapper
+			console.log(data);
 
 			// Store access token in Zustand (in-memory)
 			useAuthStore.getState().login(data.accessToken);
-			
+
 			// Fetch user profile (backend doesn't return it in login response)
 			await this.getUserDetail();
 
@@ -56,15 +53,27 @@ class AuthService {
 	/**
 	 * Logout user and clear store
 	 */
-	logout(): void {
-		// Call backend to invalidate refresh token cookie
-		fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
-			method: "POST",
-			credentials: "include",
-		}).catch(err => console.error("Logout API error:", err));
+	async logout(): Promise<void> {
+		const { accessToken } = useAuthStore.getState();
 
-		// Clear Zustand store
-		useAuthStore.getState().logout();
+		try {
+			// Only call logout API if we have a valid token
+			// If session already expired, just clear client-side state
+			if (accessToken) {
+				const data = await apiService.post("/auth/logout", {});
+				console.log(data);
+
+				await apiService.post("/auth/logout", {});
+			} else {
+				console.log("Logout: No access token, skipping API call");
+			}
+		} catch (err) {
+			console.error("Logout API error:", err);
+			// Swallow error - logout should always succeed client-side
+		} finally {
+			// Always clear Zustand store, even if API call fails
+			useAuthStore.getState().logout();
+		}
 	}
 
 	/**

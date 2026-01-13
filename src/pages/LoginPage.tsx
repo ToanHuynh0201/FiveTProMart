@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Box, Container, VStack, Heading, Text, Link, useDisclosure } from "@chakra-ui/react";
+import { Box, Container, VStack, Heading, Text, Link, useDisclosure, useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
@@ -8,27 +8,50 @@ import { LoadingSpinner } from "../components/common";
 import { PersonIcon, LockIcon } from "../components/icons/AuthIcons";
 import { ForgotPasswordModal } from "../components/auth";
 import { ROUTES } from "../constants";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
-	const [username, setUsername] = useState("");
+	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
 	const { isOpen, onOpen, onClose } = useDisclosure();
+	const { login } = useAuth();
+	const toast = useToast();
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsLoading(true);
 
-		// Mô phỏng loading delay
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		try {
+			// Call authentication service
+			await login({ email, password });
 
-		// TODO: Handle login logic
-		console.log({ username, password });
+			// Show success message
+			toast({
+				title: "Đăng nhập thành công",
+				description: "Chào mừng bạn quay trở lại!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top-right",
+			});
 
-		// Navigate to home page
-		navigate(ROUTES.STAFF);
-		setIsLoading(false);
+			// Navigate to home page
+			navigate(ROUTES.STAFF);
+		} catch (error: any) {
+			// Show error message
+			toast({
+				title: "Đăng nhập thất bại",
+				description: error?.message || "Tên đăng nhập hoặc mật khẩu không đúng",
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "top-right",
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	// Hiển thị LoadingSpinner khi đang loading
@@ -150,13 +173,14 @@ export default function LoginPage() {
 							<VStack
 								spacing={{ base: 4, md: 5 }}
 								align="stretch">
-								{/* Username Input */}
+								{/* Email Input */}
 								<Input
-									label="Tên đăng nhập"
-									placeholder="abc123"
-									value={username}
+									label="Email"
+									type="email"
+									placeholder="example@gmail.com"
+									value={email}
 									onChange={(e) =>
-										setUsername(e.target.value)
+										setEmail(e.target.value)
 									}
 									leftIcon={<PersonIcon />}
 									required

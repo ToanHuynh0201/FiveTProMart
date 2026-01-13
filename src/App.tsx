@@ -24,9 +24,9 @@ import { TokenRefreshProvider } from "./components/providers/TokenRefreshProvide
 
 function App() {
 	return (
-		<AuthProvider>
-			<TokenRefreshProvider>
-				<Router>
+		<Router>
+			<AuthProvider>
+				<TokenRefreshProvider>
 					<Routes>
 						<Route
 							path={ROUTES.LOGIN}
@@ -99,9 +99,9 @@ function App() {
 						}
 					/>
 				</Routes>
-			</Router>
-		</TokenRefreshProvider>
-		</AuthProvider>
+				</TokenRefreshProvider>
+			</AuthProvider>
+		</Router>
 	);
 }
 

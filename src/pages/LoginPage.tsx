@@ -1,6 +1,15 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Box, Container, VStack, Heading, Text, Link, useDisclosure, useToast } from "@chakra-ui/react";
+import {
+	Box,
+	Container,
+	VStack,
+	Heading,
+	Text,
+	Link,
+	useDisclosure,
+	useToast,
+} from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
@@ -38,12 +47,13 @@ export default function LoginPage() {
 			});
 
 			// Navigate to home page
-			navigate(ROUTES.STAFF);
+			navigate(ROUTES.SALES);
 		} catch (error: any) {
 			// Show error message
 			toast({
 				title: "Đăng nhập thất bại",
-				description: error?.message || "Tên đăng nhập hoặc mật khẩu không đúng",
+				description:
+					error?.message || "Tên đăng nhập hoặc mật khẩu không đúng",
 				status: "error",
 				duration: 5000,
 				isClosable: true,
@@ -179,9 +189,7 @@ export default function LoginPage() {
 									type="email"
 									placeholder="example@gmail.com"
 									value={email}
-									onChange={(e) =>
-										setEmail(e.target.value)
-									}
+									onChange={(e) => setEmail(e.target.value)}
 									leftIcon={<PersonIcon />}
 									required
 								/>
@@ -237,7 +245,10 @@ export default function LoginPage() {
 			</Container>
 
 			{/* Forgot Password Modal */}
-			<ForgotPasswordModal isOpen={isOpen} onClose={onClose} />
+			<ForgotPasswordModal
+				isOpen={isOpen}
+				onClose={onClose}
+			/>
 		</Box>
 	);
 }

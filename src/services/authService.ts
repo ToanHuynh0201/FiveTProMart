@@ -60,9 +60,6 @@ class AuthService {
 			// Only call logout API if we have a valid token
 			// If session already expired, just clear client-side state
 			if (accessToken) {
-				const data = await apiService.post("/auth/logout", {});
-				console.log(data);
-
 				await apiService.post("/auth/logout", {});
 			} else {
 				console.log("Logout: No access token, skipping API call");

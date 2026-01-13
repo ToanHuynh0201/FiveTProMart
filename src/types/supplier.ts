@@ -1,23 +1,21 @@
+/**
+ * Supplier type enum - matches backend enum
+ */
+export type SupplierType = "Doanh nghiệp" | "Tư nhân";
+
+/**
+ * Supplier model - matches backend response
+ */
 export interface Supplier {
-	id: string;
-	code: string; // Mã nhà cung cấp
-	name: string;
-	phone: string;
-	email?: string;
-	address?: string;
-	taxCode?: string; // Mã số thuế
-	contactPerson?: string; // Người liên hệ
-	contactPhone?: string; // SĐT người liên hệ
-	bankAccount?: string; // Số tài khoản
-	bankName?: string; // Tên ngân hàng
-	totalProducts?: number; // Tổng số sản phẩm cung cấp
-	totalPurchases?: number; // Tổng số đơn nhập hàng
-	totalValue?: number; // Tổng giá trị nhập hàng
-	lastPurchaseDate?: Date; // Ngày nhập hàng gần nhất
-	status: "active" | "inactive";
-	notes?: string;
-	createdAt: Date;
-	updatedAt: Date;
+	supplierId: string;
+	supplierName: string;
+	address: string;
+	phoneNumber: string;
+	representName: string | null;
+	representPhoneNumber: string | null;
+	supplierType: SupplierType;
+	suppliedProductType: string;
+	currentDebt: number;
 }
 
 export interface SupplierDetail extends Supplier {
@@ -62,18 +60,30 @@ export interface SupplierFilter {
 	status: string; // all, active, inactive
 }
 
-export interface UpdateSupplierData {
-	code?: string;
-	name?: string;
-	phone?: string;
-	email?: string;
+/**
+ * DTO for creating a new supplier
+ */
+export interface CreateSupplierDTO {
+	supplierName: string;
+	supplierType: SupplierType;
+	phoneNumber: string;
+	address: string;
+	suppliedProductType: string;
+	currentDebt?: number;
+	representName?: string;
+	representPhoneNumber?: string;
+}
+
+/**
+ * DTO for updating supplier
+ */
+export interface UpdateSupplierDTO {
+	supplierName?: string;
+	supplierType?: SupplierType;
+	phoneNumber?: string;
 	address?: string;
-	taxCode?: string;
-	contactPerson?: string;
-	contactPhone?: string;
-	bankAccount?: string;
-	bankName?: string;
-	status?: "active" | "inactive";
-	notes?: string;
-	productIds?: string[]; // List of product IDs that this supplier provides
+	suppliedProductType?: string;
+	currentDebt?: number;
+	representName?: string;
+	representPhoneNumber?: string;
 }

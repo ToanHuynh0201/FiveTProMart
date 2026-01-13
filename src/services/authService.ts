@@ -19,14 +19,17 @@ class AuthService {
 	async login(credentials: LoginCredentials): Promise<LoginResponse> {
 		try {
 			// Use fetch for login to avoid axios interceptors during auth flow
-			const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			const response = await fetch(
+				`${API_CONFIG.BASE_URL}/v1/auth/login`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					credentials: "include", // CRITICAL: Accept HttpOnly refresh token cookie
+					body: JSON.stringify(credentials),
 				},
-				credentials: "include", // CRITICAL: Accept HttpOnly refresh token cookie
-				body: JSON.stringify(credentials),
-			});
+			);
 
 			if (!response.ok) {
 				const error = await response.json();
@@ -34,14 +37,18 @@ class AuthService {
 			}
 
 			const apiResponse = await response.json();
+
 			const data = apiResponse.data; // Extract from ApiResponse wrapper
-			console.log(data);
 
 			// Store access token in Zustand (in-memory)
-			useAuthStore.getState().login(data.accessToken);
+			if (data?.accessToken) {
+				await useAuthStore.getState().login(data.accessToken);
+			} else {
+				throw new Error("No access token in login response");
+			}
 
 			// Fetch user profile (backend doesn't return it in login response)
-			await this.getUserDetail();
+			// await this.getUserDetail();
 
 			return apiResponse;
 		} catch (error) {
@@ -60,7 +67,7 @@ class AuthService {
 			// Only call logout API if we have a valid token
 			// If session already expired, just clear client-side state
 			if (accessToken) {
-				await apiService.post("/auth/logout", {});
+				await apiService.post("/v1/auth/logout", {});
 			} else {
 				console.log("Logout: No access token, skipping API call");
 			}
@@ -78,7 +85,7 @@ class AuthService {
 	 */
 	async getUserDetail(): Promise<User | null> {
 		try {
-			const response = await apiService.get("/auth/me");
+			const response = await apiService.get("/v1/auth/me");
 			const user: User = response.data;
 
 			// Update store with fresh user data

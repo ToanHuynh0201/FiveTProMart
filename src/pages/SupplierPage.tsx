@@ -9,13 +9,11 @@ import {
 	EditSupplierModal,
 } from "@/components/supplier";
 import { Pagination } from "@/components/common";
-import { usePagination, useFilters } from "@/hooks";
 import type {
 	Supplier,
-	SupplierStats,
-	UpdateSupplierData,
+	CreateSupplierDTO,
+	UpdateSupplierDTO,
 } from "@/types/supplier";
-import type { SupplierFilters } from "@/types/filters";
 import { supplierService } from "@/services/supplierService";
 import {
 	Box,
@@ -24,26 +22,57 @@ import {
 	Spinner,
 	Button,
 	useDisclosure,
-	Grid,
-	GridItem,
-	Stat,
-	StatLabel,
-	StatNumber,
-	Icon,
+	useToast,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
-import { FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { useFilters } from "@/hooks/useFilters";
+import { usePagination } from "@/hooks/usePagination";
 
 const ITEMS_PER_PAGE = 10;
 
+interface SupplierFilters {
+	page: number;
+	size: number;
+	search: string;
+	supplierType: string;
+	sortBy: string;
+	order: string;
+}
+
 const SupplierPage = () => {
+	const toast = useToast();
+
 	// State for data from API
 	const [supplierList, setSupplierList] = useState<Supplier[]>([]);
-	const [totalItems, setTotalItems] = useState(0);
-	const [stats, setStats] = useState<SupplierStats | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
 	const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
 		null,
 	);
+
+	// Use custom hooks for filters and pagination
+	const { filters, debouncedFilters, handleFilterChange, resetFilters } =
+		useFilters<SupplierFilters>({
+			page: 1,
+			size: ITEMS_PER_PAGE,
+			search: "",
+			supplierType: "",
+			sortBy: "supplierName",
+			order: "asc",
+		});
+
+	const {
+		currentPage,
+		total,
+		pagination,
+		goToPage,
+		setTotal,
+		startItem,
+		endItem,
+	} = usePagination({
+		initialPage: 1,
+		pageSize: ITEMS_PER_PAGE,
+		initialTotal: 0,
+	});
 
 	const {
 		isOpen: isAddModalOpen,
@@ -61,63 +90,76 @@ const SupplierPage = () => {
 		onClose: onDetailModalClose,
 	} = useDisclosure();
 
-	// Fetch function for API call
-	const fetchSuppliers = async (filters: SupplierFilters) => {
-		const response = await supplierService.getSuppliers(filters);
-		setSupplierList(response.data);
-		setTotalItems(response.pagination.totalItems);
+	// Fetch suppliers with filters
+	const fetchSuppliers = async () => {
+		setIsLoading(true);
+		try {
+			console.log(
+				"[SupplierPage] Fetching with currentPage:",
+				currentPage,
+			);
+			console.log("[SupplierPage] debouncedFilters:", debouncedFilters);
+
+			const result = await supplierService.getSuppliers({
+				page: currentPage - 1, // Backend uses zero-based indexing
+				size: debouncedFilters.size,
+				search: debouncedFilters.search,
+				supplierType: debouncedFilters.supplierType,
+				sortBy: debouncedFilters.sortBy,
+				order: debouncedFilters.order,
+			});
+			console.log("RESULT:", result);
+
+			if (result.success) {
+				setSupplierList(result.data || []);
+				setTotal(result.pagination?.totalItems || 0);
+			} else {
+				toast({
+					title: "Lỗi tải dữ liệu",
+					description: result.error,
+					status: "error",
+					duration: 5000,
+					isClosable: true,
+					position: "top-right",
+				});
+			}
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
-	// useFilters for filtering + pagination state
-	const {
-		filters,
-		loading,
-		error,
-		handleFilterChange,
-		handlePageChange,
-		resetFilters,
-	} = useFilters<SupplierFilters>(
-		{
-			page: 1,
-			pageSize: ITEMS_PER_PAGE,
-			searchQuery: "",
-			status: "all",
-		},
-		fetchSuppliers,
-		500,
-	);
-
-	// usePagination for metadata only
-	const { currentPage, pageSize, pagination, goToPage } = usePagination({
-		initialPage: filters.page,
-		pageSize: filters.pageSize,
-		initialTotal: totalItems,
-	});
-
-	// Sync pagination with filters
+	// Fetch suppliers when filters or page change
 	useEffect(() => {
-		if (currentPage !== filters.page) {
-			goToPage(filters.page);
-		}
-	}, [filters.page, currentPage, goToPage]);
+		fetchSuppliers();
+	}, [debouncedFilters, currentPage]);
 
-	// Load stats on mount
-	useEffect(() => {
-		// TODO: Implement API call to load supplier stats
-		setStats(null);
-	}, []);
+	const handleSearch = (searchQuery: string) => {
+		handleFilterChange("search", searchQuery);
+		goToPage(1);
+	};
+
+	const handlePageChange = (page: number) => {
+		goToPage(page);
+	};
+
+	const handleSupplierTypeFilter = (type: string) => {
+		handleFilterChange("supplierType", type);
+		goToPage(1);
+	};
+
+	const handleSortByChange = (sortBy: string) => {
+		handleFilterChange("sortBy", sortBy);
+		goToPage(1);
+	};
+
+	const handleOrderChange = (order: string) => {
+		handleFilterChange("order", order);
+		goToPage(1);
+	};
 
 	const handleResetFilters = () => {
 		resetFilters();
-	};
-
-	const handleStatClick = (status: string) => {
-		// Toggle filter: if already filtering by this status, reset to "all"
-		if (filters.status === status) {
-			handleFilterChange("status", "all");
-		} else {
-			handleFilterChange("status", status);
-		}
+		goToPage(1);
 	};
 
 	const handleViewDetails = (id: string) => {
@@ -131,31 +173,85 @@ const SupplierPage = () => {
 	};
 
 	const handleDelete = async (id: string) => {
-		await supplierService.deleteSupplier(id);
-		// Refresh data after deleting
-		await fetchSuppliers(filters);
-		// TODO: Reload stats after deletion
+		if (!confirm("Bạn có chắc muốn xóa nhà cung cấp này?")) return;
+
+		const result = await supplierService.deleteSupplier(id);
+
+		if (result.success) {
+			toast({
+				title: "Thành công",
+				description: "Xóa nhà cung cấp thành công!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top-right",
+			});
+			fetchSuppliers();
+		} else {
+			toast({
+				title: "Lỗi",
+				description: result.error,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "top-right",
+			});
+		}
 	};
 
-	const handleAddSupplier = async (
-		supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
-	) => {
-		await supplierService.createSupplier(supplierData);
-		// Refresh data after adding
-		await fetchSuppliers(filters);
-		onAddModalClose();
-		// TODO: Reload stats after adding
+	const handleAddSupplier = async (supplierData: CreateSupplierDTO) => {
+		const result = await supplierService.createSupplier(supplierData);
+
+		if (result.success) {
+			toast({
+				title: "Thành công",
+				description: result.message || "Tạo nhà cung cấp thành công!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top-right",
+			});
+			onAddModalClose();
+			fetchSuppliers();
+		} else {
+			toast({
+				title: "Lỗi",
+				description: result.error,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "top-right",
+			});
+		}
 	};
 
 	const handleUpdateSupplier = async (
 		id: string,
-		updates: UpdateSupplierData,
+		updates: UpdateSupplierDTO,
 	) => {
-		await supplierService.updateSupplier(id, updates);
-		// Refresh data after updating
-		await fetchSuppliers(filters);
-		onEditModalClose();
-		// TODO: Reload stats after updating
+		const result = await supplierService.updateSupplier(id, updates);
+
+		if (result.success) {
+			toast({
+				title: "Thành công",
+				description: "Cập nhật nhà cung cấp thành công!",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top-right",
+			});
+			onEditModalClose();
+			fetchSuppliers();
+		} else {
+			toast({
+				title: "Lỗi",
+				description: result.error,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+				position: "top-right",
+			});
+		}
 	};
 
 	return (
@@ -194,185 +290,30 @@ const SupplierPage = () => {
 							Thêm nhà cung cấp
 						</Button>
 					</Flex>
-					{/* Statistics Cards */}
-					{stats && (
-						<Grid
-							templateColumns={{
-								base: "1fr",
-								sm: "repeat(2, 1fr)",
-								lg: "repeat(2, 1fr)",
-							}}
-							gap={4}
-							mb={6}>
-							<GridItem>
-								<Box
-									bg="gradient-to-br from-green-50 to-green-100"
-									p={5}
-									borderRadius="xl"
-									boxShadow="sm"
-									border="1px solid"
-									borderColor="green.200"
-									cursor="pointer"
-									onClick={() => handleStatClick("active")}
-									transition="all 0.2s"
-									_hover={{
-										transform: "translateY(-2px)",
-										boxShadow: "md",
-										borderColor: "green.300",
-									}}
-									_active={{
-										transform: "translateY(0)",
-									}}
-									position="relative"
-									overflow="hidden"
-									{...(filters.status === "active" && {
-										boxShadow: "lg",
-										borderColor: "green.400",
-										borderWidth: "2px",
-									})}>
-									{filters.status === "active" && (
-										<Box
-											position="absolute"
-											top={2}
-											right={2}
-											bg="green.500"
-											color="white"
-											fontSize="10px"
-											fontWeight="700"
-											px={2}
-											py={1}
-											borderRadius="full">
-											Đang lọc
-										</Box>
-									)}
-									<Flex
-										align="center"
-										gap={3}>
-										<Box
-											bg="green.500"
-											p={3}
-											borderRadius="lg">
-											<Icon
-												as={FiCheckCircle}
-												w="24px"
-												h="24px"
-												color="white"
-											/>
-										</Box>
-										<Stat>
-											<StatLabel
-												fontSize="13px"
-												color="gray.600"
-												fontWeight="600">
-												Đang hoạt động
-											</StatLabel>
-											<StatNumber
-												fontSize="28px"
-												fontWeight="700"
-												color="green.600">
-												{stats.activeSuppliers}
-											</StatNumber>
-										</Stat>
-									</Flex>
-								</Box>
-							</GridItem>
 
-							<GridItem>
-								<Box
-									bg="gradient-to-br from-gray-50 to-gray-100"
-									p={5}
-									borderRadius="xl"
-									boxShadow="sm"
-									border="1px solid"
-									borderColor="gray.200"
-									cursor="pointer"
-									onClick={() => handleStatClick("inactive")}
-									transition="all 0.2s"
-									_hover={{
-										transform: "translateY(-2px)",
-										boxShadow: "md",
-										borderColor: "gray.300",
-									}}
-									_active={{
-										transform: "translateY(0)",
-									}}
-									position="relative"
-									overflow="hidden"
-									{...(filters.status === "inactive" && {
-										boxShadow: "lg",
-										borderColor: "gray.400",
-										borderWidth: "2px",
-									})}>
-									{filters.status === "inactive" && (
-										<Box
-											position="absolute"
-											top={2}
-											right={2}
-											bg="gray.500"
-											color="white"
-											fontSize="10px"
-											fontWeight="700"
-											px={2}
-											py={1}
-											borderRadius="full">
-											Đang lọc
-										</Box>
-									)}
-									<Flex
-										align="center"
-										gap={3}>
-										<Box
-											bg="gray.500"
-											p={3}
-											borderRadius="lg">
-											<Icon
-												as={FiXCircle}
-												w="24px"
-												h="24px"
-												color="white"
-											/>
-										</Box>
-										<Stat>
-											<StatLabel
-												fontSize="13px"
-												color="gray.600"
-												fontWeight="600">
-												Ngưng hoạt động
-											</StatLabel>
-											<StatNumber
-												fontSize="28px"
-												fontWeight="700"
-												color="gray.600">
-												{stats.inactiveSuppliers}
-											</StatNumber>
-										</Stat>
-									</Flex>
-								</Box>
-							</GridItem>
-						</Grid>
-					)}
 					{/* Search Bar */}
 					<Box mb={4}>
 						<SupplierSearchBar
-							value={filters.searchQuery || ""}
-							onChange={(value) =>
-								handleFilterChange("searchQuery", value)
-							}
+							value={filters.search}
+							onChange={handleSearch}
 						/>
 					</Box>
+
 					{/* Filter Bar */}
-					<Box mb={6}>
+					<Box mb={4}>
 						<SupplierFilterBar
-							statusFilter={filters.status || "all"}
-							onStatusFilterChange={(value) =>
-								handleFilterChange("status", value)
-							}
+							supplierType={filters.supplierType}
+							sortBy={filters.sortBy}
+							order={filters.order}
+							onSupplierTypeChange={handleSupplierTypeFilter}
+							onSortByChange={handleSortByChange}
+							onOrderChange={handleOrderChange}
 							onReset={handleResetFilters}
 						/>
 					</Box>
 
 					{/* Loading State */}
-					{loading && (
+					{isLoading && (
 						<Flex
 							justify="center"
 							align="center"
@@ -385,22 +326,8 @@ const SupplierPage = () => {
 						</Flex>
 					)}
 
-					{/* Error State */}
-					{error && (
-						<Flex
-							justify="center"
-							align="center"
-							minH="400px">
-							<Text
-								fontSize="18px"
-								color="red.500">
-								{error}
-							</Text>
-						</Flex>
-					)}
-
 					{/* Table */}
-					{!loading && !error && (
+					{!isLoading && supplierList.length > 0 && (
 						<>
 							<SupplierTable
 								supplierList={supplierList}
@@ -410,13 +337,13 @@ const SupplierPage = () => {
 							/>
 
 							{/* Pagination */}
-							{supplierList.length > 0 && (
+							{total > 0 && (
 								<Box mt={6}>
 									<Pagination
 										currentPage={currentPage}
 										totalPages={pagination.totalPages}
-										totalItems={totalItems}
-										pageSize={pageSize}
+										totalItems={total}
+										pageSize={filters.size}
 										onPageChange={handlePageChange}
 										itemLabel="nhà cung cấp"
 									/>
@@ -426,25 +353,15 @@ const SupplierPage = () => {
 					)}
 
 					{/* Show result count */}
-					{!loading && !error && supplierList.length > 0 && (
+					{!isLoading && supplierList.length > 0 && total > 0 && (
 						<Text
 							mt={4}
 							fontSize="14px"
 							color="gray.600"
 							textAlign="center">
-							Hiển thị{" "}
-							<strong>
-								{Math.min(
-									(currentPage - 1) * pageSize + 1,
-									totalItems,
-								)}
-							</strong>{" "}
-							-{" "}
-							<strong>
-								{Math.min(currentPage * pageSize, totalItems)}
-							</strong>{" "}
-							trong tổng số <strong>{totalItems}</strong> nhà cung
-							cấp
+							Hiển thị <strong>{startItem}</strong> -{" "}
+							<strong>{endItem}</strong> trong tổng số{" "}
+							<strong>{total}</strong> nhà cung cấp
 						</Text>
 					)}
 				</Box>

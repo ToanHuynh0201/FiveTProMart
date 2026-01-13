@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
  */
 export interface Filters {
 	page: number;
-	pageSize: number;
+	size: number;
 	[key: string]: any;
 }
 
@@ -40,7 +40,7 @@ export const useFilters = <T extends Filters = Filters>(
 ): UseFiltersReturn<T> => {
 	const [filters, setFilters] = useState<T>({
 		page: 1,
-		pageSize: 10,
+		size: 10,
 		...initialFilters,
 	} as T);
 
@@ -116,7 +116,7 @@ export const useFilters = <T extends Filters = Filters>(
 	const resetFilters = useCallback(() => {
 		const resetFilters = {
 			page: 1,
-			pageSize: (initialFilters.pageSize as number) || 10,
+			size: (initialFilters.pageSize as number) || 10,
 			...initialFilters,
 		} as T;
 		setFilters(resetFilters);

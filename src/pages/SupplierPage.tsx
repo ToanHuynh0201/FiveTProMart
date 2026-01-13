@@ -4,16 +4,11 @@ import {
 	SupplierTable,
 	SupplierSearchBar,
 	SupplierFilterBar,
-	SupplierDetailModal,
 	AddSupplierModal,
-	EditSupplierModal,
+	SupplierViewEditModal,
 } from "@/components/supplier";
 import { Pagination } from "@/components/common";
-import type {
-	Supplier,
-	CreateSupplierDTO,
-	UpdateSupplierDTO,
-} from "@/types/supplier";
+import type { Supplier, CreateSupplierDTO } from "@/types/supplier";
 import { supplierService } from "@/services/supplierService";
 import {
 	Box,
@@ -48,6 +43,7 @@ const SupplierPage = () => {
 	const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(
 		null,
 	);
+	const [viewEditMode, setViewEditMode] = useState<"view" | "edit">("view");
 
 	// Use custom hooks for filters and pagination
 	const { filters, debouncedFilters, handleFilterChange, resetFilters } =
@@ -80,14 +76,9 @@ const SupplierPage = () => {
 		onClose: onAddModalClose,
 	} = useDisclosure();
 	const {
-		isOpen: isEditModalOpen,
-		onOpen: onEditModalOpen,
-		onClose: onEditModalClose,
-	} = useDisclosure();
-	const {
-		isOpen: isDetailModalOpen,
-		onOpen: onDetailModalOpen,
-		onClose: onDetailModalClose,
+		isOpen: isViewEditModalOpen,
+		onOpen: onViewEditModalOpen,
+		onClose: onViewEditModalClose,
 	} = useDisclosure();
 
 	// Fetch suppliers with filters
@@ -164,17 +155,17 @@ const SupplierPage = () => {
 
 	const handleViewDetails = (id: string) => {
 		setSelectedSupplierId(id);
-		onDetailModalOpen();
+		setViewEditMode("view");
+		onViewEditModalOpen();
 	};
 
 	const handleEdit = (id: string) => {
 		setSelectedSupplierId(id);
-		onEditModalOpen();
+		setViewEditMode("edit");
+		onViewEditModalOpen();
 	};
 
 	const handleDelete = async (id: string) => {
-		if (!confirm("Bạn có chắc muốn xóa nhà cung cấp này?")) return;
-
 		const result = await supplierService.deleteSupplier(id);
 
 		if (result.success) {
@@ -225,33 +216,8 @@ const SupplierPage = () => {
 		}
 	};
 
-	const handleUpdateSupplier = async (
-		id: string,
-		updates: UpdateSupplierDTO,
-	) => {
-		const result = await supplierService.updateSupplier(id, updates);
-
-		if (result.success) {
-			toast({
-				title: "Thành công",
-				description: "Cập nhật nhà cung cấp thành công!",
-				status: "success",
-				duration: 3000,
-				isClosable: true,
-				position: "top-right",
-			});
-			onEditModalClose();
-			fetchSuppliers();
-		} else {
-			toast({
-				title: "Lỗi",
-				description: result.error,
-				status: "error",
-				duration: 5000,
-				isClosable: true,
-				position: "top-right",
-			});
-		}
+	const handleViewEditSuccess = () => {
+		fetchSuppliers();
 	};
 
 	return (
@@ -373,17 +339,12 @@ const SupplierPage = () => {
 					onAdd={handleAddSupplier}
 				/>
 
-				<EditSupplierModal
-					isOpen={isEditModalOpen}
-					onClose={onEditModalClose}
+				<SupplierViewEditModal
+					isOpen={isViewEditModalOpen}
+					onClose={onViewEditModalClose}
 					supplierId={selectedSupplierId}
-					onUpdate={handleUpdateSupplier}
-				/>
-
-				<SupplierDetailModal
-					isOpen={isDetailModalOpen}
-					onClose={onDetailModalClose}
-					supplierId={selectedSupplierId}
+					mode={viewEditMode}
+					onSuccess={handleViewEditSuccess}
 				/>
 			</Box>
 		</MainLayout>

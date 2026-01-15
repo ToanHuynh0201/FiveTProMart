@@ -10,7 +10,6 @@ import {
 	Button,
 	FormControl,
 	FormLabel,
-	Input,
 	Select,
 	Textarea,
 	VStack,
@@ -26,114 +25,80 @@ import {
 	Th,
 	Td,
 	IconButton,
-	Flex,
 	Text,
 	Divider,
 	Spinner,
+	Flex,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import type { Purchase, PurchaseItem, Supplier } from "../../types/purchase";
+import type {
+	Supplier,
+	SupplierProduct,
+	CreateDraftRequest,
+} from "@/types/purchase";
+
+interface DraftItem {
+	productId: string;
+	productName: string;
+	quantityOrdered: number;
+}
 
 interface AddPurchaseModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (
-		purchase: Omit<Purchase, "id" | "createdAt" | "updatedAt">,
-	) => Promise<void>;
+	onSaveDraft: (data: CreateDraftRequest) => Promise<void>;
 	suppliers: Supplier[];
-	initialItems?: PurchaseItem[]; // Items từ Excel import
+	supplierProducts: SupplierProduct[];
+	isLoadingProducts: boolean;
+	onSupplierChange: (supplierId: string) => void;
 }
 
 export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 	isOpen,
 	onClose,
-	onAdd,
+	onSaveDraft,
 	suppliers,
-	initialItems = [],
+	supplierProducts,
+	isLoadingProducts,
+	onSupplierChange,
 }) => {
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
-	const [items, setItems] = useState<PurchaseItem[]>([]);
-	const [supplierProducts, setSupplierProducts] = useState<any[]>([]);
-	const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+	const [items, setItems] = useState<DraftItem[]>([]);
 	const [formData, setFormData] = useState({
-		purchaseNumber: "",
 		supplierId: "",
-		shippingFee: 0,
-		discount: 0,
 		notes: "",
 	});
 
 	// New item form
 	const [newItem, setNewItem] = useState({
 		productId: "",
-		quantity: 0,
-		unitPrice: 0,
-		vat: 0,
-		expiryDate: "",
-		manufactureDate: "",
+		quantityOrdered: 0,
 	});
 
 	useEffect(() => {
-		if (isOpen) {
-			// TODO: Call purchaseService.generatePurchaseNumber()
-			const purchaseNumber = `PN-${Date.now()}`;
-			setFormData((prev) => ({ ...prev, purchaseNumber }));
-
-			// Set initial items from Excel if provided
-			if (initialItems.length > 0) {
-				setItems(initialItems);
-			}
-		} else {
-			// Reset form
+		if (!isOpen) {
+			// Reset form when modal closes
 			setFormData({
-				purchaseNumber: "",
 				supplierId: "",
-				shippingFee: 0,
-				discount: 0,
 				notes: "",
 			});
 			setItems([]);
-			setSupplierProducts([]);
 			resetNewItem();
 		}
-	}, [isOpen, initialItems]);
+	}, [isOpen]);
 
 	const resetNewItem = () => {
 		setNewItem({
 			productId: "",
-			quantity: 0,
-			unitPrice: 0,
-			vat: 0,
-			expiryDate: "",
-			manufactureDate: "",
+			quantityOrdered: 0,
 		});
 	};
 
-	const handleSupplierChange = async (supplierId: string) => {
+	const handleSupplierChange = (supplierId: string) => {
 		setFormData({ ...formData, supplierId });
-
-		if (!supplierId) {
-			setSupplierProducts([]);
-			return;
-		}
-
-		// TODO: Call supplierService.getSupplierById(supplierId)
-		setIsLoadingProducts(true);
-		try {
-			// Mock empty products for now
-			setSupplierProducts([]);
-		} catch (error) {
-			console.error("Error loading supplier products:", error);
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải danh sách sản phẩm",
-				status: "error",
-				duration: 2000,
-			});
-		} finally {
-			setIsLoadingProducts(false);
-		}
+		setItems([]); // Clear items when supplier changes
+		onSupplierChange(supplierId);
 	};
 
 	const handleAddItem = () => {
@@ -147,7 +112,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
-		if (newItem.quantity <= 0) {
+		if (newItem.quantityOrdered <= 0) {
 			toast({
 				title: "Lỗi",
 				description: "Số lượng phải lớn hơn 0",
@@ -157,10 +122,11 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
-		if (newItem.unitPrice <= 0) {
+		// Check if product already added
+		if (items.some((item) => item.productId === newItem.productId)) {
 			toast({
 				title: "Lỗi",
-				description: "Giá nhập phải lớn hơn 0",
+				description: "Sản phẩm đã được thêm",
 				status: "error",
 				duration: 2000,
 			});
@@ -169,47 +135,35 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 
 		// Find selected product
 		const product = supplierProducts.find(
-			(p) => p.id === newItem.productId,
+			(p) => p.productId === newItem.productId,
 		);
 		if (!product) return;
 
-		const subtotal = newItem.quantity * newItem.unitPrice;
-		const vatAmount = subtotal * (newItem.vat / 100);
-		const totalPrice = subtotal + vatAmount;
-
-		const item: PurchaseItem = {
-			id: `temp_${Date.now()}`,
-			productCode: product.productCode,
+		const item: DraftItem = {
+			productId: newItem.productId,
 			productName: product.productName,
-			category: product.category,
-			unit: product.unit,
-			quantity: newItem.quantity,
-			unitPrice: newItem.unitPrice,
-			vat: newItem.vat,
-			totalPrice: totalPrice,
-			expiryDate: newItem.expiryDate
-				? new Date(newItem.expiryDate)
-				: undefined,
-			manufactureDate: newItem.manufactureDate
-				? new Date(newItem.manufactureDate)
-				: undefined,
+			quantityOrdered: newItem.quantityOrdered,
 		};
 
 		setItems([...items, item]);
 		resetNewItem();
 	};
 
-	const handleRemoveItem = (id: string) => {
-		setItems(items.filter((item) => item.id !== id));
+	const handleRemoveItem = (productId: string) => {
+		setItems(items.filter((item) => item.productId !== productId));
 	};
 
-	const calculateTotals = () => {
-		const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-		const total = subtotal + formData.shippingFee - formData.discount;
-		return { subtotal, total };
+	const handleUpdateQuantity = (productId: string, quantity: number) => {
+		setItems(
+			items.map((item) =>
+				item.productId === productId
+					? { ...item, quantityOrdered: quantity }
+					: item,
+			),
+		);
 	};
 
-	const handleSubmit = async () => {
+	const handleSaveDraft = async () => {
 		if (!formData.supplierId) {
 			toast({
 				title: "Lỗi",
@@ -230,45 +184,30 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
+		const draftData: CreateDraftRequest = {
+			supplierId: formData.supplierId,
+			notes: formData.notes || undefined,
+			items: items.map((item) => ({
+				productId: item.productId,
+				quantityOrdered: item.quantityOrdered,
+			})),
+		};
+
 		setIsLoading(true);
 
 		try {
-			const supplier = suppliers.find(
-				(s) => s.id === formData.supplierId,
-			)!;
-			const { subtotal, total } = calculateTotals();
-
-			const purchase: Omit<Purchase, "id" | "createdAt" | "updatedAt"> = {
-				purchaseNumber: formData.purchaseNumber,
-				supplier,
-				items,
-				subtotal,
-				tax: 0,
-				shippingFee: formData.shippingFee,
-				discount: formData.discount,
-				total,
-				paymentStatus: "unpaid",
-				paidAmount: 0,
-				notes: formData.notes,
-				warehouseLocation: "Kho A",
-				status: "ordered",
-				staff: {
-					id: "staff_1",
-					name: "Nguyễn Văn A",
-				},
-			};
-			await onAdd(purchase);
+			await onSaveDraft(draftData);
 			toast({
 				title: "Thành công",
-				description: "Tạo phiếu nhập hàng thành công",
+				description: "Đã tạo đơn nhập hàng nháp",
 				status: "success",
 				duration: 3000,
 			});
 			onClose();
-		} catch (error) {
+		} catch {
 			toast({
 				title: "Lỗi",
-				description: "Có lỗi xảy ra khi tạo phiếu nhập",
+				description: "Có lỗi xảy ra khi tạo đơn",
 				status: "error",
 				duration: 3000,
 			});
@@ -277,17 +216,11 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 		}
 	};
 
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("vi-VN").format(amount);
-	};
-
-	const { subtotal, total } = calculateTotals();
-
 	return (
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
-			size="6xl"
+			size="4xl"
 			scrollBehavior="inside">
 			<ModalOverlay />
 			<ModalContent>
@@ -295,7 +228,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 					fontSize="20px"
 					fontWeight="700"
 					color="gray.800">
-					Tạo phiếu nhập hàng
+					Tạo đơn nhập hàng
 				</ModalHeader>
 				<ModalCloseButton />
 
@@ -310,47 +243,48 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 								fontWeight="600"
 								color="gray.700"
 								mb={4}>
-								Thông tin phiếu nhập
+								Thông tin đơn hàng
 							</Text>
 							<VStack spacing={4}>
-								<HStack
-									spacing={4}
-									w="full">
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Mã phiếu nhập
-										</FormLabel>
-										<Input
-											value={formData.purchaseNumber}
-											isReadOnly
-											bg="gray.100"
-										/>
-									</FormControl>
-									<FormControl isRequired>
-										<FormLabel fontSize="14px">
-											Nhà cung cấp
-										</FormLabel>
-										<Select
-											value={formData.supplierId}
-											onChange={(e) =>
-												handleSupplierChange(
-													e.target.value,
-												)
-											}
-											placeholder="Chọn nhà cung cấp">
-											{suppliers.map((supplier) => (
-												<option
-													key={supplier.id}
-													value={supplier.id}>
-													{supplier.name}
-												</option>
-											))}
-										</Select>
-									</FormControl>
-								</HStack>
+								<FormControl isRequired>
+									<FormLabel fontSize="14px">
+										Nhà cung cấp
+									</FormLabel>
+									<Select
+										value={formData.supplierId}
+										onChange={(e) =>
+											handleSupplierChange(e.target.value)
+										}
+										placeholder="Chọn nhà cung cấp">
+										{suppliers.map((supplier) => (
+											<option
+												key={supplier.id}
+												value={supplier.id}>
+												{supplier.name}
+											</option>
+										))}
+									</Select>
+								</FormControl>
+
+								<FormControl>
+									<FormLabel fontSize="14px">Ghi chú</FormLabel>
+									<Textarea
+										value={formData.notes}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												notes: e.target.value,
+											})
+										}
+										placeholder="Nhập ghi chú (nếu có)"
+										rows={2}
+									/>
+								</FormControl>
 							</VStack>
 						</Box>
+
 						<Divider />
+
 						{/* Thêm sản phẩm */}
 						{formData.supplierId && (
 							<Box>
@@ -382,9 +316,9 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 										<HStack
 											spacing={3}
 											w="full"
-											align="flex-start">
+											align="flex-end">
 											<FormControl
-												flex={2}
+												flex={3}
 												isRequired>
 												<FormLabel
 													fontSize="13px"
@@ -402,24 +336,32 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 														})
 													}
 													size="sm">
-													{supplierProducts.map(
-														(product) => (
+													{supplierProducts
+														.filter(
+															(p) =>
+																!items.some(
+																	(item) =>
+																		item.productId ===
+																		p.productId,
+																),
+														)
+														.map((product) => (
 															<option
-																key={product.id}
+																key={
+																	product.productId
+																}
 																value={
-																	product.id
+																	product.productId
 																}>
 																{
 																	product.productName
-																}{" "}
-																-{" "}
-																{
-																	product.productCode
-																}{" "}
-																({product.unit})
+																}
+																{product.productCode &&
+																	` - ${product.productCode}`}
+																{product.unit &&
+																	` (${product.unit})`}
 															</option>
-														),
-													)}
+														))}
 												</Select>
 											</FormControl>
 											<FormControl
@@ -431,171 +373,35 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 													Số lượng
 												</FormLabel>
 												<NumberInput
-													value={newItem.quantity}
+													value={newItem.quantityOrdered}
 													onChange={(_, val) =>
 														setNewItem({
 															...newItem,
-															quantity: val,
+															quantityOrdered: val || 0,
 														})
 													}
-													min={0}
+													min={1}
 													size="sm">
 													<NumberInputField placeholder="0" />
 												</NumberInput>
 											</FormControl>
+											<Button
+												leftIcon={<AddIcon />}
+												colorScheme="blue"
+												onClick={handleAddItem}
+												size="sm"
+												isDisabled={
+													!newItem.productId ||
+													newItem.quantityOrdered <= 0
+												}>
+												Thêm
+											</Button>
 										</HStack>
-
-										<HStack
-											spacing={3}
-											w="full"
-											align="flex-start">
-											<FormControl
-												flex={1}
-												isRequired>
-												<FormLabel
-													fontSize="13px"
-													mb={1}>
-													Giá nhập (VNĐ)
-												</FormLabel>
-												<NumberInput
-													value={newItem.unitPrice}
-													onChange={(_, val) =>
-														setNewItem({
-															...newItem,
-															unitPrice: val,
-														})
-													}
-													min={0}
-													size="sm">
-													<NumberInputField placeholder="0" />
-												</NumberInput>
-											</FormControl>
-											<FormControl flex={1}>
-												<FormLabel
-													fontSize="13px"
-													mb={1}>
-													VAT (%)
-												</FormLabel>
-												<NumberInput
-													value={newItem.vat}
-													onChange={(_, val) =>
-														setNewItem({
-															...newItem,
-															vat: val,
-														})
-													}
-													min={0}
-													max={100}
-													size="sm">
-													<NumberInputField placeholder="0" />
-												</NumberInput>
-											</FormControl>
-										</HStack>
-
-										<HStack
-											spacing={3}
-											w="full"
-											align="flex-start">
-											<FormControl flex={1}>
-												<FormLabel
-													fontSize="13px"
-													mb={1}>
-													Ngày sản xuất
-												</FormLabel>
-												<Input
-													type="date"
-													value={
-														newItem.manufactureDate
-													}
-													onChange={(e) =>
-														setNewItem({
-															...newItem,
-															manufactureDate:
-																e.target.value,
-														})
-													}
-													size="sm"
-												/>
-											</FormControl>
-											<FormControl flex={1}>
-												<FormLabel
-													fontSize="13px"
-													mb={1}>
-													Hạn sử dụng
-												</FormLabel>
-												<Input
-													type="date"
-													value={newItem.expiryDate}
-													onChange={(e) =>
-														setNewItem({
-															...newItem,
-															expiryDate:
-																e.target.value,
-														})
-													}
-													size="sm"
-												/>
-											</FormControl>
-										</HStack>
-
-										<Button
-											leftIcon={<AddIcon />}
-											colorScheme="blue"
-											onClick={handleAddItem}
-											w="full"
-											size="sm"
-											isDisabled={
-												!newItem.productId ||
-												newItem.quantity <= 0 ||
-												newItem.unitPrice <= 0
-											}>
-											Thêm sản phẩm
-										</Button>
-
-										{newItem.productId &&
-											newItem.quantity > 0 &&
-											newItem.unitPrice > 0 && (
-												<Box
-													w="full"
-													bg="blue.50"
-													p={3}
-													borderRadius="md"
-													borderLeft="4px solid"
-													borderColor="blue.500">
-													<Text
-														fontSize="13px"
-														color="gray.600"
-														mb={1}>
-														Tạm tính:
-													</Text>
-													<Text
-														fontSize="16px"
-														fontWeight="bold"
-														color="blue.600">
-														{formatCurrency(
-															newItem.quantity *
-																newItem.unitPrice *
-																(1 +
-																	newItem.vat /
-																		100),
-														)}
-														{newItem.vat > 0 && (
-															<Text
-																as="span"
-																fontSize="12px"
-																color="gray.600"
-																ml={2}>
-																(Bao gồm VAT{" "}
-																{newItem.vat}%)
-															</Text>
-														)}
-													</Text>
-												</Box>
-											)}
 									</VStack>
 								)}
 							</Box>
 						)}
+
 						{/* Danh sách sản phẩm */}
 						{items.length > 0 && (
 							<Box>
@@ -614,85 +420,51 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 									<Table size="sm">
 										<Thead bg="gray.50">
 											<Tr>
-												<Th>Mã SP</Th>
+												<Th>STT</Th>
 												<Th>Tên sản phẩm</Th>
-												<Th>Đơn vị</Th>
-												<Th isNumeric>SL</Th>
-												<Th isNumeric>Giá nhập</Th>
-												<Th isNumeric>VAT (%)</Th>
-												<Th>NSX</Th>
-												<Th>HSD</Th>
-												<Th isNumeric>Thành tiền</Th>
+												<Th isNumeric>Số lượng</Th>
 												<Th></Th>
 											</Tr>
 										</Thead>
 										<Tbody>
-											{items.map((item) => (
-												<Tr key={item.id}>
+											{items.map((item, index) => (
+												<Tr key={item.productId}>
 													<Td fontSize="13px">
-														{item.productCode}
+														{index + 1}
 													</Td>
 													<Td fontSize="13px">
 														{item.productName}
 													</Td>
-													<Td fontSize="13px">
-														{item.unit}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px">
-														{item.quantity}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px">
-														{formatCurrency(
-															item.unitPrice,
-														)}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px">
-														{item.vat}%
-													</Td>
-													<Td fontSize="13px">
-														{item.manufactureDate
-															? new Date(
-																	item.manufactureDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
-													</Td>
-													<Td fontSize="13px">
-														{item.expiryDate
-															? new Date(
-																	item.expiryDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px"
-														fontWeight="600">
-														{formatCurrency(
-															item.totalPrice,
-														)}
+													<Td isNumeric>
+														<NumberInput
+															size="sm"
+															value={
+																item.quantityOrdered
+															}
+															onChange={(_, val) =>
+																handleUpdateQuantity(
+																	item.productId,
+																	val || 0,
+																)
+															}
+															min={1}
+															maxW="80px">
+															<NumberInputField
+																textAlign="right"
+																fontSize="13px"
+															/>
+														</NumberInput>
 													</Td>
 													<Td>
 														<IconButton
 															aria-label="Remove"
-															icon={
-																<DeleteIcon />
-															}
+															icon={<DeleteIcon />}
 															size="xs"
 															colorScheme="red"
 															variant="ghost"
 															onClick={() =>
 																handleRemoveItem(
-																	item.id,
+																	item.productId,
 																)
 															}
 														/>
@@ -704,131 +476,6 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 								</Box>
 							</Box>
 						)}
-						<Divider />
-						{/* Thông tin thanh toán */}
-						<Box>
-							<Text
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700"
-								mb={4}>
-								Thông tin thanh toán
-							</Text>
-							<VStack spacing={3}>
-								<HStack
-									spacing={4}
-									w="full">
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Phí vận chuyển (VNĐ)
-										</FormLabel>
-										<NumberInput
-											value={formData.shippingFee}
-											onChange={(_, val) =>
-												setFormData({
-													...formData,
-													shippingFee: val,
-												})
-											}
-											min={0}>
-											<NumberInputField />
-										</NumberInput>
-									</FormControl>
-									<FormControl>
-										<FormLabel fontSize="14px">
-											Giảm giá (VNĐ)
-										</FormLabel>
-										<NumberInput
-											value={formData.discount}
-											onChange={(_, val) =>
-												setFormData({
-													...formData,
-													discount: val,
-												})
-											}
-											min={0}>
-											<NumberInputField />
-										</NumberInput>
-									</FormControl>
-								</HStack>
-
-								<FormControl>
-									<FormLabel fontSize="14px">
-										Ghi chú
-									</FormLabel>
-									<Textarea
-										value={formData.notes}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												notes: e.target.value,
-											})
-										}
-										placeholder="Nhập ghi chú (nếu có)"
-										rows={3}
-									/>
-								</FormControl>
-
-								{/* Tổng tiền */}
-								<Box
-									w="full"
-									bg="gray.50"
-									p={4}
-									borderRadius="8px">
-									<Flex
-										justify="space-between"
-										mb={2}>
-										<Text fontSize="14px">
-											Tổng tiền hàng (đã bao gồm VAT):
-										</Text>
-										<Text
-											fontSize="14px"
-											fontWeight="600">
-											{formatCurrency(subtotal)}
-										</Text>
-									</Flex>
-									<Flex
-										justify="space-between"
-										mb={2}>
-										<Text fontSize="14px">
-											Phí vận chuyển:
-										</Text>
-										<Text fontSize="14px">
-											{formatCurrency(
-												formData.shippingFee,
-											)}
-										</Text>
-									</Flex>
-									<Flex
-										justify="space-between"
-										mb={3}>
-										<Text fontSize="14px">Giảm giá:</Text>
-										<Text
-											fontSize="14px"
-											color="red.500">
-											-{formatCurrency(formData.discount)}
-										</Text>
-									</Flex>
-									<Divider
-										borderColor="gray.300"
-										mb={3}
-									/>
-									<Flex justify="space-between">
-										<Text
-											fontSize="16px"
-											fontWeight="700">
-											Tổng thanh toán:
-										</Text>
-										<Text
-											fontSize="20px"
-											fontWeight="700"
-											color="brand.500">
-											{formatCurrency(total)}
-										</Text>
-									</Flex>
-								</Box>
-							</VStack>
-						</Box>
 					</VStack>
 				</ModalBody>
 
@@ -841,9 +488,10 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 					</Button>
 					<Button
 						colorScheme="brand"
-						onClick={handleSubmit}
-						isLoading={isLoading}>
-						Tạo phiếu nhập
+						onClick={handleSaveDraft}
+						isLoading={isLoading}
+						isDisabled={!formData.supplierId || items.length === 0}>
+						Tạo đơn nháp
 					</Button>
 				</ModalFooter>
 			</ModalContent>

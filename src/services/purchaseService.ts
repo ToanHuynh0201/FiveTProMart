@@ -1,38 +1,95 @@
 import apiService from "@/lib/api";
-import type { Purchase } from "@/types";
-import type { PurchaseFilters } from "@/types/filters";
-import type { ApiResponse } from "@/types/api";
-import { buildQueryParams } from "@/utils/queryParams";
+import type {
+	CreateDraftRequest,
+	ConfirmReceiptRequest,
+	CancelOrderRequest,
+} from "@/types/purchase";
+import { withErrorHandling } from "@/utils/error";
 
-export const purchaseService = {
+const BASE_URL = "/purchase_orders";
+
+class PurchaseService {
 	/**
-	 * Fetch purchases with server-side filtering and pagination
+	 * Get purchase orders list with filtering and pagination
+	 * GET /api/v1/purchase_orders
 	 */
-	async getPurchases(
-		filters: PurchaseFilters,
-	): Promise<ApiResponse<Purchase>> {
-		const params = buildQueryParams(filters);
-		return apiService.get<ApiResponse<Purchase>>(
-			`/purchases?${params.toString()}`,
-		);
-	},
+	getPurchaseOrders = withErrorHandling(
+		async (filters?: {
+			search?: string;
+			status?: string;
+			startDate?: string;
+			endDate?: string;
+			page?: number;
+			size?: number;
+			sortBy?: string;
+			order?: string;
+		}) => {
+			const params = new URLSearchParams();
 
-	async getPurchaseById(id: string): Promise<Purchase> {
-		return apiService.get<Purchase>(`/purchases/${id}`);
-	},
+			if (filters?.search) params.append("search", filters.search);
+			if (filters?.status && filters.status !== "all")
+				params.append("status", filters.status);
+			if (filters?.startDate)
+				params.append("startDate", filters.startDate);
+			if (filters?.endDate) params.append("endDate", filters.endDate);
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
+			if (filters?.size) params.append("size", filters.size.toString());
+			if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+			if (filters?.order) params.append("order", filters.order);
 
-	async createPurchase(data: Omit<Purchase, "id">): Promise<Purchase> {
-		return apiService.post<Purchase>("/purchases", data);
-	},
+			const queryString = params.toString();
+			const url = queryString ? `${BASE_URL}?${queryString}` : BASE_URL;
 
-	async updatePurchase(
-		id: string,
-		data: Partial<Purchase>,
-	): Promise<Purchase> {
-		return apiService.put<Purchase>(`/purchases/${id}`, data);
-	},
+			return await apiService.get(url);
+		},
+	);
 
-	async deletePurchase(id: string): Promise<void> {
-		return apiService.delete(`/purchases/${id}`);
-	},
-};
+	/**
+	 * Get purchase order detail
+	 * GET /api/v1/purchase_orders/{id}
+	 */
+	getPurchaseOrderById = withErrorHandling(async (id: string) => {
+		return await apiService.get(`${BASE_URL}/${id}`);
+	});
+
+	/**
+	 * Create draft purchase order
+	 * POST /api/v1/purchase_orders
+	 */
+	createDraftPurchase = withErrorHandling(
+		async (data: CreateDraftRequest) => {
+			return await apiService.post(BASE_URL, data);
+		},
+	);
+
+	/**
+	 * Confirm purchase order and generate lots
+	 * POST /api/v1/purchase_orders/{id}/confirm
+	 */
+	confirmPurchaseOrder = withErrorHandling(
+		async (id: string, data: ConfirmReceiptRequest) => {
+			return await apiService.post(`${BASE_URL}/${id}/confirm`, data);
+		},
+	);
+
+	/**
+	 * Cancel purchase order
+	 * POST /api/v1/purchase_orders/{id}/cancel
+	 */
+	cancelPurchaseOrder = withErrorHandling(
+		async (id: string, data: CancelOrderRequest) => {
+			return await apiService.post(`${BASE_URL}/${id}/cancel`, data);
+		},
+	);
+
+	/**
+	 * Get labels for reprint
+	 * GET /api/v1/purchase_orders/{id}/labels
+	 */
+	getLabels = withErrorHandling(async (id: string) => {
+		return await apiService.get(`${BASE_URL}/${id}/labels`);
+	});
+}
+
+export const purchaseService = new PurchaseService();

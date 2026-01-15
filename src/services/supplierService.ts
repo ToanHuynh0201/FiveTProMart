@@ -81,6 +81,15 @@ class SupplierService {
 	deleteSupplier = withErrorHandling(async (id: string) => {
 		return await apiService.delete(`/suppliers/${id}`);
 	});
+
+	/**
+	 * Get products from a supplier
+	 * @param supplierId - Supplier UUID
+	 * @returns Promise with success/error result containing products array
+	 */
+	getSupplierProducts = withErrorHandling(async (supplierId: string) => {
+		return await apiService.get(`/suppliers/${supplierId}/products`);
+	});
 }
 
 export const supplierService = new SupplierService();

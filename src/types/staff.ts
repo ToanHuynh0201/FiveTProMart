@@ -1,38 +1,73 @@
+/**
+ * Account type enum - matches backend enum
+ */
+export type AccountType = "SalesStaff" | "WarehouseStaff";
+
+/**
+ * Staff model - matches backend response from GET /api/staffs/
+ */
 export interface Staff {
-	id: string;
-	name: string;
-	position: string;
-	avatar?: string;
-	// Extended details
-	phone?: string;
+	profileId: string; // Primary identifier
+	userId: string; // User account ID
+	username: string; // Login username
+	fullName: string; // Display name
+	email: string;
+	phoneNumber: string;
+	dateOfBirth: string; // Format: "DD/MM/YYYY"
+	accountType: AccountType; // "SalesStaff" or "WarehouseStaff"
+	avatarUrl: string | null;
+	location: string | null;
+}
+
+/**
+ * Extended staff detail (for future expansion)
+ */
+export interface StaffDetail extends Staff {
+	bio?: string;
+}
+
+/**
+ * DTO for creating a new staff member
+ * Note: username and password are required for account creation
+ */
+export interface CreateStaffDTO {
+	username: string; // Required, Unique
+	password: string; // Required
+	fullName: string; // Required
+	email: string; // Required, Unique
+	phoneNumber: string; // Required
+	accountType: AccountType; // "SalesStaff" or "WarehouseStaff"
+	dateOfBirth?: string; // Format: "DD-MM-YYYY"
+	location?: string;
+	bio?: string;
+}
+
+/**
+ * DTO for updating staff member
+ * Note: username and password cannot be updated
+ */
+export interface UpdateStaffDTO {
+	fullName?: string;
 	email?: string;
-	address?: string;
-	dateOfBirth?: string;
-	hireDate?: string;
-	salary?: number;
-	status?: "active" | "inactive" | "on-leave";
-	employmentType?: "Fulltime" | "Partime";
+	phoneNumber?: string;
+	accountType?: AccountType;
+	dateOfBirth?: string; // Format: "DD-MM-YYYY"
+	location?: string;
+	bio?: string;
 }
 
-export interface StaffDetail extends Staff {}
+/**
+ * Helper to convert AccountType to display text (Vietnamese)
+ */
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+	SalesStaff: "Nhân viên bán hàng",
+	WarehouseStaff: "Nhân viên kho",
+};
 
-export interface WorkSchedule {
-	date: string; // ISO date string (YYYY-MM-DD)
-	shift: "morning" | "afternoon";
-	startTime: string; // HH:MM
-	endTime: string; // HH:MM
-	status: "scheduled" | "completed" | "absent" | "late";
-	notes?: string;
-}
-
-export interface UpdateStaffData {
-	phone?: string;
-	email?: string;
-	address?: string;
-	salary?: number;
-	status?: "active" | "inactive" | "on-leave";
-	position?: string;
-	employmentType?: "Fulltime" | "Partime";
-	dateOfBirth?: string;
-	hireDate?: string;
-}
+/**
+ * Helper to get AccountType options for select dropdowns
+ */
+export const ACCOUNT_TYPE_OPTIONS: { value: AccountType; label: string }[] = [
+	{ value: "SalesStaff", label: "Nhân viên bán hàng" },
+	{ value: "WarehouseStaff", label: "Nhân viên kho" },
+];

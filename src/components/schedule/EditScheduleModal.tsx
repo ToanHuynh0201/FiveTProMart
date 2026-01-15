@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from "react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { ShiftAssignment, Staff } from "@/types";
+import { ACCOUNT_TYPE_LABELS } from "@/types/staff";
 
 interface EditScheduleModalProps {
 	isOpen: boolean;
@@ -93,12 +94,12 @@ const EditScheduleModal = ({
 		console.log("TODO: Load staff shift counts from API");
 	};
 
-	// Filter staff by position
+	// Filter staff by accountType
 	const warehouseStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên kho",
+		(staff) => staff.accountType === "WarehouseStaff",
 	);
 	const salesStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên bán hàng",
+		(staff) => staff.accountType === "SalesStaff",
 	);
 
 	// Count current assignments by position
@@ -454,13 +455,13 @@ const EditScheduleModal = ({
 											{warehouseStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>
@@ -539,13 +540,13 @@ const EditScheduleModal = ({
 											{salesStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>

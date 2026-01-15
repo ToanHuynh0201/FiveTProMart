@@ -19,20 +19,24 @@ import {
 	Tooltip,
 	useDisclosure,
 	useToast,
+	Badge,
 } from "@chakra-ui/react";
-import { ViewIcon, DeleteIcon } from "@chakra-ui/icons";
-import type { Staff } from "@/types";
+import { ViewIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import type { Staff } from "@/types/staff";
+import { ACCOUNT_TYPE_LABELS } from "@/types/staff";
 import { useState } from "react";
 
 interface StaffTableProps {
 	staffList: Staff[];
 	onViewDetails?: (id: string) => void;
+	onEdit?: (id: string) => void;
 	onDelete?: (id: string) => void;
 }
 
 const StaffTable = ({
 	staffList,
 	onViewDetails,
+	onEdit,
 	onDelete,
 }: StaffTableProps) => {
 	const { isOpen, onOpen, onClose } = useDisclosure();
@@ -50,15 +54,8 @@ const StaffTable = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(selectedStaff.id);
+			await onDelete(selectedStaff.profileId);
 			onClose();
-			toast({
-				title: "Thành công",
-				description: "Xóa nhân viên thành công",
-				status: "success",
-				duration: 3000,
-				isClosable: true,
-			});
 		} catch (error) {
 			console.error("Error deleting staff:", error);
 			toast({
@@ -109,7 +106,23 @@ const StaffTable = ({
 									color="gray.700"
 									textTransform="none"
 									py={3}>
-									Vị trí
+									Chức vụ
+								</Th>
+								<Th
+									fontSize="12px"
+									fontWeight="700"
+									color="gray.700"
+									textTransform="none"
+									py={3}>
+									Email
+								</Th>
+								<Th
+									fontSize="12px"
+									fontWeight="700"
+									color="gray.700"
+									textTransform="none"
+									py={3}>
+									Số điện thoại
 								</Th>
 								<Th
 									fontSize="12px"
@@ -126,7 +139,7 @@ const StaffTable = ({
 							{staffList.length === 0 ? (
 								<Tr>
 									<Td
-										colSpan={4}
+										colSpan={6}
 										textAlign="center"
 										py={6}>
 										<Text
@@ -139,7 +152,7 @@ const StaffTable = ({
 							) : (
 								staffList.map((staff, index) => (
 									<Tr
-										key={staff.id}
+										key={staff.profileId}
 										_hover={{ bg: "gray.50" }}
 										transition="background 0.2s">
 										<Td
@@ -155,22 +168,46 @@ const StaffTable = ({
 											color="brand.500"
 											cursor="pointer"
 											onClick={() =>
-												onViewDetails?.(staff.id)
+												onViewDetails?.(staff.profileId)
 											}
 											_hover={{
 												textDecoration: "underline",
 											}}
 											py={3}>
-											{staff.name}
+											{staff.fullName}
 										</Td>
-										<Td>
-											<Text
-												fontSize="13px"
-												fontWeight="500"
-												color="gray.800"
-												py={3}>
-												{staff.position}
-											</Text>
+										<Td py={3}>
+											<Badge
+												colorScheme={
+													staff.accountType ===
+													"SalesStaff"
+														? "blue"
+														: "green"
+												}
+												fontSize="11px"
+												px={2}
+												py={1}
+												borderRadius="full">
+												{
+													ACCOUNT_TYPE_LABELS[
+														staff.accountType
+													]
+												}
+											</Badge>
+										</Td>
+										<Td
+											fontSize="13px"
+											fontWeight="500"
+											color="gray.700"
+											py={3}>
+											{staff.email}
+										</Td>
+										<Td
+											fontSize="13px"
+											fontWeight="500"
+											color="gray.700"
+											py={3}>
+											{staff.phoneNumber}
 										</Td>
 										<Td>
 											<Flex
@@ -185,11 +222,28 @@ const StaffTable = ({
 														colorScheme="blue"
 														onClick={() =>
 															onViewDetails?.(
-																staff.id,
+																staff.profileId,
 															)
 														}
 													/>
 												</Tooltip>
+
+												{onEdit && (
+													<Tooltip label="Chỉnh sửa">
+														<IconButton
+															aria-label="Edit staff"
+															icon={<EditIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="green"
+															onClick={() =>
+																onEdit(
+																	staff.profileId,
+																)
+															}
+														/>
+													</Tooltip>
+												)}
 
 												{onDelete && (
 													<Tooltip label="Xóa nhân viên">
@@ -243,8 +297,8 @@ const StaffTable = ({
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa nhân viên{" "}
-							<strong>{selectedStaff?.name}</strong>? Hành động
-							này không thể hoàn tác.
+							<strong>{selectedStaff?.fullName}</strong>? Hành
+							động này không thể hoàn tác.
 						</Text>
 					</ModalBody>
 					<ModalFooter>

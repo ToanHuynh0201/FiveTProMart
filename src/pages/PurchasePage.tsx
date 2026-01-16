@@ -41,6 +41,113 @@ import { supplierService } from "@/services/supplierService";
 
 const ITEMS_PER_PAGE = 10;
 
+// ============ MOCK DATA FOR TESTING ============
+const MOCK_PURCHASE_LIST: PurchaseListItem[] = [
+	{
+		id: "po-001",
+		poCode: "PO-2024-001",
+		supplierName: "Công ty TNHH Thực phẩm ABC",
+		staffNameCreated: "Nguyễn Văn A",
+		totalAmount: 15500000,
+		status: "Draft",
+		purchaseDate: "2024-01-15T10:30:00Z",
+	},
+];
+
+const MOCK_PURCHASE_DETAIL: PurchaseDetail = {
+	_id: "po-001",
+	poCode: "PO-2024-001",
+	status: "Draft",
+	notes: "Đơn hàng tháng 1",
+	supplier: {
+		supplierId: "sup-001",
+		supplierName: "Công ty TNHH Thực phẩm ABC",
+		phone: "0901234567",
+		representName: "Trần Văn B",
+		representPhoneNumber: "0912345678",
+	},
+	staffIdCreated: "staff-001",
+	purchaseDate: "2024-01-15T10:30:00Z",
+	items: [
+		{
+			productId: "prod-001",
+			productName: "Sữa tươi Vinamilk 1L",
+			importPrice: 25000,
+			quantityOrdered: 100,
+			quantityReceived: 0,
+			subTotal: 2500000,
+		},
+		{
+			productId: "prod-002",
+			productName: "Nước ngọt Coca Cola 330ml",
+			importPrice: 8000,
+			quantityOrdered: 200,
+			quantityReceived: 0,
+			subTotal: 1600000,
+		},
+		{
+			productId: "prod-003",
+			productName: "Mì gói Hảo Hảo tôm chua cay",
+			importPrice: 4500,
+			quantityOrdered: 500,
+			quantityReceived: 0,
+			subTotal: 2250000,
+		},
+	],
+	totalAmount: 15500000,
+};
+
+const MOCK_SUPPLIERS: Supplier[] = [
+	{
+		id: "sup-001",
+		name: "Công ty TNHH Thực phẩm ABC",
+		phone: "0901234567",
+		email: "abc@company.com",
+		address: "123 Đường ABC, Q.1, TP.HCM",
+	},
+	{
+		id: "sup-002",
+		name: "Nhà phân phối XYZ",
+		phone: "0987654321",
+		email: "xyz@distributor.com",
+	},
+];
+
+const MOCK_SUPPLIER_PRODUCTS: SupplierProduct[] = [
+	{
+		productId: "prod-001",
+		productName: "Sữa tươi Vinamilk 1L",
+		productCode: "VNM-001",
+		unit: "Hộp",
+		category: "Sữa",
+	},
+	{
+		productId: "prod-002",
+		productName: "Nước ngọt Coca Cola 330ml",
+		productCode: "CC-330",
+		unit: "Lon",
+		category: "Nước giải khát",
+	},
+	{
+		productId: "prod-003",
+		productName: "Mì gói Hảo Hảo tôm chua cay",
+		productCode: "HH-001",
+		unit: "Gói",
+		category: "Mì gói",
+	},
+	{
+		productId: "prod-004",
+		productName: "Dầu ăn Neptune 1L",
+		productCode: "NP-1L",
+		unit: "Chai",
+		category: "Dầu ăn",
+	},
+];
+
+// Set this to true to use mock data, false to use real API
+const USE_MOCK_DATA = true;
+// ============ END MOCK DATA ============
+
 const PurchasePage = () => {
 	const toast = useToast();
 	const user = useAuthStore((state) => state.user);
@@ -105,6 +212,17 @@ const PurchasePage = () => {
 	const fetchPurchases = useCallback(async () => {
 		setIsLoading(true);
 		try {
+			if (USE_MOCK_DATA) {
+				// Use mock data for testing
+				await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API delay
+				setPurchases(MOCK_PURCHASE_LIST);
+				setTotal(MOCK_PURCHASE_LIST.length);
+				setDraftCount(
+					MOCK_PURCHASE_LIST.filter((p) => p.status === "Draft").length,
+				);
+				return;
+			}
+
 			const result = await purchaseService.getPurchaseOrders({
 				page: currentPage - 1, // Convert to zero-based
 				size: debouncedFilters.size,
@@ -149,6 +267,10 @@ const PurchasePage = () => {
 	// Load suppliers on mount
 	useEffect(() => {
 		const loadSuppliers = async () => {
+			if (USE_MOCK_DATA) {
+				setSuppliers(MOCK_SUPPLIERS);
+				return;
+			}
 			const result = await supplierService.getSuppliers({ size: 100 });
 			if (result.success) {
 				setSuppliers(result.data || []);
@@ -166,6 +288,12 @@ const PurchasePage = () => {
 
 		setIsLoadingProducts(true);
 		try {
+			if (USE_MOCK_DATA) {
+				await new Promise((resolve) => setTimeout(resolve, 200));
+				setSupplierProducts(MOCK_SUPPLIER_PRODUCTS);
+				setIsLoadingProducts(false);
+				return;
+			}
 			const result = await supplierService.getSupplierProducts(supplierId);
 			if (result.success) {
 				setSupplierProducts(result.data || []);
@@ -187,6 +315,12 @@ const PurchasePage = () => {
 	const loadPurchaseDetail = async (id: string) => {
 		setIsLoadingDetail(true);
 		try {
+			if (USE_MOCK_DATA) {
+				await new Promise((resolve) => setTimeout(resolve, 200));
+				setSelectedPurchase(MOCK_PURCHASE_DETAIL);
+				setIsLoadingDetail(false);
+				return;
+			}
 			const result = await purchaseService.getPurchaseOrderById(id);
 			if (result.success) {
 				setSelectedPurchase(result.data);
@@ -240,6 +374,18 @@ const PurchasePage = () => {
 	};
 
 	const handleSaveDraft = async (data: CreateDraftRequest) => {
+		if (USE_MOCK_DATA) {
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			console.log("Mock: Create draft", data);
+			toast({
+				title: "Mock: Tạo đơn nháp thành công",
+				description: "Dữ liệu: " + JSON.stringify(data).slice(0, 100),
+				status: "success",
+				duration: 3000,
+			});
+			onAddModalClose();
+			return;
+		}
 		const result = await purchaseService.createDraftPurchase(data);
 		if (result.success) {
 			await fetchPurchases();
@@ -253,6 +399,22 @@ const PurchasePage = () => {
 		id: string,
 		data: ConfirmReceiptRequest,
 	): Promise<{ lotsToPrint: LotToPrint[] } | null> => {
+		if (USE_MOCK_DATA) {
+			await new Promise((resolve) => setTimeout(resolve, 800));
+			console.log("Mock: Confirm order", id, data);
+			// Return mock lots to print
+			return {
+				lotsToPrint: data.actualItems.map((item, idx) => ({
+					lotId: `LOT-2024-${String(idx + 1).padStart(3, "0")}`,
+					productName:
+						MOCK_PURCHASE_DETAIL.items.find(
+							(p) => p.productId === item.productId,
+						)?.productName || "Sản phẩm",
+					quantity: item.quantityReceived,
+					expirationDate: item.expirationDate,
+				})),
+			};
+		}
 		const result = await purchaseService.confirmPurchaseOrder(id, data);
 		if (result.success) {
 			await fetchPurchases();
@@ -268,6 +430,18 @@ const PurchasePage = () => {
 		id: string,
 		data: CancelOrderRequest,
 	) => {
+		if (USE_MOCK_DATA) {
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			console.log("Mock: Cancel order", id, data);
+			toast({
+				title: "Mock: Hủy đơn thành công",
+				description: "Lý do: " + data.cancelNotesReason,
+				status: "info",
+				duration: 3000,
+			});
+			onCancelModalClose();
+			return;
+		}
 		const result = await purchaseService.cancelPurchaseOrder(id, data);
 		if (result.success) {
 			await fetchPurchases();

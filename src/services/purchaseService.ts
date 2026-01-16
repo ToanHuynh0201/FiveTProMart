@@ -19,6 +19,7 @@ class PurchaseService {
 			status?: string;
 			startDate?: string;
 			endDate?: string;
+			supplierId?: string;
 			page?: number;
 			size?: number;
 			sortBy?: string;
@@ -32,6 +33,8 @@ class PurchaseService {
 			if (filters?.startDate)
 				params.append("startDate", filters.startDate);
 			if (filters?.endDate) params.append("endDate", filters.endDate);
+			if (filters?.supplierId)
+				params.append("supplierId", filters.supplierId);
 			if (filters?.page !== undefined)
 				params.append("page", filters.page.toString());
 			if (filters?.size) params.append("size", filters.size.toString());

@@ -37,7 +37,7 @@ export interface CreateStaffDTO {
 	email: string; // Required, Unique
 	phoneNumber: string; // Required
 	accountType: AccountType; // "SalesStaff" or "WarehouseStaff"
-	dateOfBirth?: string; // Format: "DD-MM-YYYY"
+	dateOfBirth?: string; // Format: "YYYY-MM-DD" (ISO 8601)
 	location?: string;
 	bio?: string;
 }
@@ -51,7 +51,7 @@ export interface UpdateStaffDTO {
 	email?: string;
 	phoneNumber?: string;
 	accountType?: AccountType;
-	dateOfBirth?: string; // Format: "DD-MM-YYYY"
+	dateOfBirth?: string; // Format: "YYYY-MM-DD" (ISO 8601)
 	location?: string;
 	bio?: string;
 }

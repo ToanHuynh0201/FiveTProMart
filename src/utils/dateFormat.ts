@@ -3,20 +3,20 @@
  *
  * API formats:
  * - Response: DD/MM/YYYY
- * - Request (Create/Update): DD-MM-YYYY
+ * - Request (Create/Update): YYYY-MM-DD (ISO 8601)
  * - HTML date input: YYYY-MM-DD
  */
 
 /**
  * Convert from HTML date input format to API request format
  * @param date - Date in YYYY-MM-DD format (from HTML input)
- * @returns Date in DD-MM-YYYY format (for API POST/PUT)
+ * @returns Date in YYYY-MM-DD format (ISO 8601 for API POST/PUT)
  */
 export const formatDateForAPI = (date: string): string => {
 	if (!date) return "";
-	const [year, month, day] = date.split("-");
-	if (!year || !month || !day) return "";
-	return `${day}-${month}-${year}`;
+	// HTML input already returns YYYY-MM-DD which is ISO 8601 format
+	// Backend expects ISO 8601, so return as-is
+	return date;
 };
 
 /**

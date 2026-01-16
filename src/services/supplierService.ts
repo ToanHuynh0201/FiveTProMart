@@ -107,7 +107,6 @@ class SupplierService {
 			return await apiService.get(url);
 		},
 	);
-
 }
 
 export const supplierService = new SupplierService();

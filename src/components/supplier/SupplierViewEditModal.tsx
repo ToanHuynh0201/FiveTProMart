@@ -69,93 +69,6 @@ import {
 } from "react-icons/fi";
 import { ProductSelector } from "./ProductSelector";
 
-// ============ MOCK DATA FOR TESTING ============
-const MOCK_SUPPLIER_DETAIL: SupplierDetail = {
-	supplierId: "sup-001",
-	supplierName: "Công ty TNHH Thực phẩm ABC",
-	address: "123 Đường Nguyễn Văn Linh, Quận 7, TP.HCM",
-	phoneNumber: "0901234567",
-	email: "contact@abc-food.com",
-	taxCode: "0123456789",
-	bankAccount: "1234567890",
-	bankName: "Vietcombank",
-	representName: "Trần Văn B",
-	representPhoneNumber: "0912345678",
-	supplierType: "Doanh nghiệp",
-	status: "HOẠT ĐỘNG",
-	currentDebt: 15000000,
-	suppliedProducts: [
-		{ productId: "prod-001", lastImportPrice: 25000, lastImportDate: "2024-01-10" },
-		{ productId: "prod-002", lastImportPrice: 8000, lastImportDate: "2024-01-08" },
-	],
-};
-
-const MOCK_SUPPLIER_PRODUCTS: SupplierProduct[] = [
-	{
-		productId: "prod-001",
-		productName: "Sữa tươi Vinamilk 1L",
-		category: "Sữa",
-		unitOfMeasure: "Hộp",
-		totalStockQuantity: 150,
-		lastImportPrice: 25000,
-		lastImportDate: "2024-01-10",
-	},
-	{
-		productId: "prod-002",
-		productName: "Nước ngọt Coca Cola 330ml",
-		category: "Nước giải khát",
-		unitOfMeasure: "Lon",
-		totalStockQuantity: 300,
-		lastImportPrice: 8000,
-		lastImportDate: "2024-01-08",
-	},
-	{
-		productId: "prod-003",
-		productName: "Mì gói Hảo Hảo tôm chua cay",
-		category: "Mì gói",
-		unitOfMeasure: "Gói",
-		totalStockQuantity: 500,
-		lastImportPrice: 4500,
-		lastImportDate: "2024-01-05",
-	},
-];
-
-const MOCK_PURCHASE_HISTORY: PurchaseListItem[] = [
-	{
-		id: "po-001",
-		poCode: "PO-2024-001",
-		supplierName: "Công ty TNHH Thực phẩm ABC",
-		staffNameCreated: "Nguyễn Văn A",
-		totalAmount: 15500000,
-		status: "Completed",
-		purchaseDate: "2024-01-15T10:30:00Z",
-		checkDate: "2024-01-16T09:00:00Z",
-	},
-	{
-		id: "po-002",
-		poCode: "PO-2024-002",
-		supplierName: "Công ty TNHH Thực phẩm ABC",
-		staffNameCreated: "Trần Thị B",
-		totalAmount: 8200000,
-		status: "Draft",
-		purchaseDate: "2024-01-18T14:00:00Z",
-	},
-	{
-		id: "po-003",
-		poCode: "PO-2024-003",
-		supplierName: "Công ty TNHH Thực phẩm ABC",
-		staffNameCreated: "Nguyễn Văn A",
-		totalAmount: 5000000,
-		status: "Cancelled",
-		purchaseDate: "2024-01-10T08:30:00Z",
-		checkDate: "2024-01-11T10:00:00Z",
-	},
-];
-
-// Set this to true to use mock data, false to use real API
-const USE_MOCK_DATA = true;
-// ============ END MOCK DATA ============
-
 interface SelectedProduct {
 	productId: string;
 	productName: string;
@@ -181,11 +94,15 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [supplierData, setSupplierData] = useState<SupplierDetail | null>(null);
+	const [supplierData, setSupplierData] = useState<SupplierDetail | null>(
+		null,
+	);
 
 	// Products and Purchase History data
 	const [products, setProducts] = useState<SupplierProduct[]>([]);
-	const [purchaseHistory, setPurchaseHistory] = useState<PurchaseListItem[]>([]);
+	const [purchaseHistory, setPurchaseHistory] = useState<PurchaseListItem[]>(
+		[],
+	);
 	const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 	const [productsTotalItems, setProductsTotalItems] = useState(0);
@@ -217,7 +134,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 	});
 
 	// Selected products for edit mode
-	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+		[],
+	);
 
 	const [errors, setErrors] = useState({
 		supplierName: "",
@@ -261,32 +180,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 
 		setIsFetching(true);
 		try {
-			if (USE_MOCK_DATA) {
-				// Use mock data for testing
-				await new Promise((resolve) => setTimeout(resolve, 300));
-				setSupplierData(MOCK_SUPPLIER_DETAIL);
-				setFormData({
-					supplierName: MOCK_SUPPLIER_DETAIL.supplierName,
-					address: MOCK_SUPPLIER_DETAIL.address,
-					phoneNumber: MOCK_SUPPLIER_DETAIL.phoneNumber,
-					email: MOCK_SUPPLIER_DETAIL.email || "",
-					taxCode: MOCK_SUPPLIER_DETAIL.taxCode || "",
-					bankAccount: MOCK_SUPPLIER_DETAIL.bankAccount || "",
-					bankName: MOCK_SUPPLIER_DETAIL.bankName || "",
-					representName: MOCK_SUPPLIER_DETAIL.representName || "",
-					representPhoneNumber: MOCK_SUPPLIER_DETAIL.representPhoneNumber || "",
-					supplierType: MOCK_SUPPLIER_DETAIL.supplierType,
-				});
-				const existingProducts: SelectedProduct[] = MOCK_SUPPLIER_PRODUCTS.map((p) => ({
-					productId: p.productId,
-					productName: p.productName,
-				}));
-				setSelectedProducts(existingProducts);
-				setIsFetching(false);
-				return;
-			}
-
 			const result = await supplierService.getSupplierById(supplierId);
+			console.log(result);
 
 			if (result.success && result.data) {
 				setSupplierData(result.data);
@@ -300,28 +195,30 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					bankAccount: result.data.bankAccount || "",
 					bankName: result.data.bankName || "",
 					representName: result.data.representName || "",
-					representPhoneNumber: result.data.representPhoneNumber || "",
+					representPhoneNumber:
+						result.data.representPhoneNumber || "",
 					supplierType: result.data.supplierType,
 				});
 
 				// Load products for edit mode - we need product names
-				const productsResult = await supplierService.getSupplierProducts(supplierId, {
-					page: 0,
-					size: 100,
-				});
+				const productsResult =
+					await supplierService.getSupplierProducts(supplierId, {
+						page: 0,
+						size: 100,
+					});
 				if (productsResult.success && productsResult.data) {
-					const existingProducts: SelectedProduct[] = productsResult.data.map(
-						(p: SupplierProduct) => ({
+					const existingProducts: SelectedProduct[] =
+						productsResult.data.map((p: SupplierProduct) => ({
 							productId: p.productId,
 							productName: p.productName,
-						}),
-					);
+						}));
 					setSelectedProducts(existingProducts);
 				}
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể tải thông tin nhà cung cấp",
+					description:
+						result.error || "Không thể tải thông tin nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -346,18 +243,13 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 
 		setIsLoadingProducts(true);
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 200));
-				setProducts(MOCK_SUPPLIER_PRODUCTS);
-				setProductsTotalItems(MOCK_SUPPLIER_PRODUCTS.length);
-				setIsLoadingProducts(false);
-				return;
-			}
-
-			const result = await supplierService.getSupplierProducts(supplierId, {
-				page: 0,
-				size: 100,
-			});
+			const result = await supplierService.getSupplierProducts(
+				supplierId,
+				{
+					page: 0,
+					size: 100,
+				},
+			);
 
 			if (result.success) {
 				setProducts(result.data || []);
@@ -375,14 +267,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 
 		setIsLoadingHistory(true);
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 200));
-				setPurchaseHistory(MOCK_PURCHASE_HISTORY);
-				setHistoryTotalItems(MOCK_PURCHASE_HISTORY.length);
-				setIsLoadingHistory(false);
-				return;
-			}
-
 			const result = await purchaseService.getPurchaseOrders({
 				supplierId: supplierId,
 				page: 0,
@@ -462,22 +346,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				console.log("Mock: Update supplier", formData);
-				toast({
-					title: "Mock: Cập nhật thành công",
-					description: `Đã cập nhật: ${formData.supplierName}`,
-					status: "success",
-					duration: 3000,
-					isClosable: true,
-				});
-				onSuccess?.();
-				onClose();
-				setIsLoading(false);
-				return;
-			}
-
 			const result = await supplierService.updateSupplier(supplierId, {
 				supplierName: formData.supplierName,
 				address: formData.address,
@@ -487,7 +355,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 				bankAccount: formData.bankAccount || undefined,
 				bankName: formData.bankName || undefined,
 				representName: formData.representName || undefined,
-				representPhoneNumber: formData.representPhoneNumber || undefined,
+				representPhoneNumber:
+					formData.representPhoneNumber || undefined,
 				supplierType: formData.supplierType,
 				suppliedProductType: selectedProducts.map((p) => p.productId),
 			});
@@ -505,7 +374,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Có lỗi xảy ra khi cập nhật nhà cung cấp",
+					description:
+						result.error ||
+						"Có lỗi xảy ra khi cập nhật nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -547,23 +418,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		setIsDeleting(true);
 
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				console.log("Mock: Delete supplier", supplierId);
-				toast({
-					title: "Mock: Xóa thành công",
-					description: `Đã xóa nhà cung cấp ID: ${supplierId}`,
-					status: "success",
-					duration: 3000,
-					isClosable: true,
-				});
-				onDeleteDialogClose();
-				onSuccess?.();
-				onClose();
-				setIsDeleting(false);
-				return;
-			}
-
 			const result = await supplierService.deleteSupplier(supplierId);
 
 			if (result.success) {
@@ -580,7 +434,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Có lỗi xảy ra khi xóa nhà cung cấp",
+					description:
+						result.error || "Có lỗi xảy ra khi xóa nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -665,27 +520,53 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 			onClick={() => canCopy && value && handleCopy(value, fieldName)}
 			_hover={canCopy && value ? { bg: "gray.100" } : {}}
 			transition="background 0.2s">
-			<Flex align="center" gap={2} mb={1}>
-				<Icon as={icon} w="14px" h="14px" color="gray.500" />
-				<Text fontSize="12px" fontWeight="500" color="gray.500">
+			<Flex
+				align="center"
+				gap={2}
+				mb={1}>
+				<Icon
+					as={icon}
+					w="14px"
+					h="14px"
+					color="gray.500"
+				/>
+				<Text
+					fontSize="12px"
+					fontWeight="500"
+					color="gray.500">
 					{label}
 				</Text>
 			</Flex>
-			<Flex align="center" gap={2}>
-				<Text fontSize="14px" fontWeight="600" color="#161f70">
+			<Flex
+				align="center"
+				gap={2}>
+				<Text
+					fontSize="14px"
+					fontWeight="600"
+					color="#161f70">
 					{value || "-"}
 				</Text>
 				{canCopy && value && (
 					<Tooltip
-						label={copiedField === fieldName ? "Đã copy!" : "Click để copy"}
+						label={
+							copiedField === fieldName
+								? "Đã copy!"
+								: "Click để copy"
+						}
 						placement="top"
 						hasArrow>
 						<Box>
 							<Icon
-								as={copiedField === fieldName ? FiCheck : FiCopy}
+								as={
+									copiedField === fieldName ? FiCheck : FiCopy
+								}
 								w="12px"
 								h="12px"
-								color={copiedField === fieldName ? "green.500" : "gray.400"}
+								color={
+									copiedField === fieldName
+										? "green.500"
+										: "gray.400"
+								}
 							/>
 						</Box>
 					</Tooltip>
@@ -729,13 +610,20 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					_hover={{ color: "gray.700", bg: "gray.100" }}
 				/>
 
-				<ModalBody px={6} py={4}>
+				<ModalBody
+					px={6}
+					py={4}>
 					{isFetching ? (
 						<Center py={10}>
-							<Spinner size="xl" color="#161f70" />
+							<Spinner
+								size="xl"
+								color="#161f70"
+							/>
 						</Center>
 					) : supplierData ? (
-						<VStack spacing={4} align="stretch">
+						<VStack
+							spacing={4}
+							align="stretch">
 							{mode === "view" ? (
 								/* VIEW MODE */
 								<>
@@ -763,7 +651,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										</Box>
 										<Badge
 											colorScheme={
-												supplierData.status === "HOẠT ĐỘNG"
+												supplierData.status ===
+												"HOẠT ĐỘNG"
 													? "green"
 													: "gray"
 											}
@@ -773,7 +662,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 											borderRadius="full"
 											border="1px solid"
 											borderColor={
-												supplierData.status === "HOẠT ĐỘNG"
+												supplierData.status ===
+												"HOẠT ĐỘNG"
 													? "green.200"
 													: "gray.300"
 											}>
@@ -816,14 +706,18 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 											<InfoCard
 												icon={FiUser}
 												label="Người liên hệ"
-												value={supplierData.representName}
+												value={
+													supplierData.representName
+												}
 											/>
 										</GridItem>
 										<GridItem>
 											<InfoCard
 												icon={FiPhone}
 												label="SĐT người liên hệ"
-												value={supplierData.representPhoneNumber}
+												value={
+													supplierData.representPhoneNumber
+												}
 												canCopy
 												fieldName="representPhone"
 											/>
@@ -859,38 +753,60 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 											index={tabIndex}
 											onChange={setTabIndex}
 											variant="unstyled">
-											<TabList borderBottom="1px solid" borderColor="gray.200">
+											<TabList
+												borderBottom="1px solid"
+												borderColor="gray.200">
 												<Tab
 													fontSize="14px"
 													fontWeight="600"
-													color={tabIndex === 0 ? "#161f70" : "gray.500"}
+													color={
+														tabIndex === 0
+															? "#161f70"
+															: "gray.500"
+													}
 													borderBottom={
-														tabIndex === 0 ? "2px solid" : "none"
+														tabIndex === 0
+															? "2px solid"
+															: "none"
 													}
 													borderColor="#161f70"
 													pb={3}
 													px={4}
-													_hover={{ color: "#161f70" }}>
-													Sản phẩm cung cấp ({productsTotalItems})
+													_hover={{
+														color: "#161f70",
+													}}>
+													Sản phẩm cung cấp (
+													{productsTotalItems})
 												</Tab>
 												<Tab
 													fontSize="14px"
 													fontWeight="600"
-													color={tabIndex === 1 ? "#161f70" : "gray.500"}
+													color={
+														tabIndex === 1
+															? "#161f70"
+															: "gray.500"
+													}
 													borderBottom={
-														tabIndex === 1 ? "2px solid" : "none"
+														tabIndex === 1
+															? "2px solid"
+															: "none"
 													}
 													borderColor="#161f70"
 													pb={3}
 													px={4}
-													_hover={{ color: "#161f70" }}>
-													Lịch sử nhập hàng ({historyTotalItems})
+													_hover={{
+														color: "#161f70",
+													}}>
+													Lịch sử nhập hàng (
+													{historyTotalItems})
 												</Tab>
 											</TabList>
 
 											<TabPanels>
 												{/* Products Tab */}
-												<TabPanel px={0} py={4}>
+												<TabPanel
+													px={0}
+													py={4}>
 													{isLoadingProducts ? (
 														<Center py={8}>
 															<Spinner color="#161f70" />
@@ -901,7 +817,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 															borderRadius="lg"
 															border="1px solid"
 															borderColor="gray.200">
-															<Table variant="simple" size="sm">
+															<Table
+																variant="simple"
+																size="sm">
 																<Thead bg="gray.50">
 																	<Tr>
 																		<Th
@@ -909,133 +827,195 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Mã SP
+																			py={
+																				3
+																			}>
+																			Mã
+																			SP
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Tên sản phẩm
+																			py={
+																				3
+																			}>
+																			Tên
+																			sản
+																			phẩm
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Nhóm hàng
+																			py={
+																				3
+																			}>
+																			Nhóm
+																			hàng
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Đơn vị
+																			py={
+																				3
+																			}>
+																			Đơn
+																			vị
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}
+																			py={
+																				3
+																			}
 																			isNumeric>
-																			Giá nhập gần nhất
+																			Giá
+																			nhập
+																			gần
+																			nhất
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Ngày nhập gần nhất
+																			py={
+																				3
+																			}>
+																			Ngày
+																			nhập
+																			gần
+																			nhất
 																		</Th>
 																	</Tr>
 																</Thead>
 																<Tbody>
-																	{products.map((product) => (
-																		<Tr
-																			key={product.productId}
-																			_hover={{ bg: "gray.50" }}>
-																			<Td
-																				fontSize="13px"
-																				fontWeight="600"
-																				color="#161f70"
-																				py={3}>
-																				{product.productId}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				color="gray.700"
-																				py={3}>
-																				{product.productName}
-																			</Td>
-																			<Td py={3}>
-																				<Badge
-																					colorScheme="purple"
-																					fontSize="11px"
-																					px={2}
-																					py={0.5}
-																					borderRadius="md">
-																					{product.category}
-																				</Badge>
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				color="gray.600"
-																				py={3}>
-																				{product.unitOfMeasure}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				fontWeight="600"
-																				color="purple.600"
-																				py={3}
-																				isNumeric>
-																				{product.lastImportPrice
-																					? formatCurrency(
-																							product.lastImportPrice,
-																					  )
-																					: "-"}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				color="gray.600"
-																				py={3}>
-																				{formatDate(
-																					product.lastImportDate,
-																				)}
-																			</Td>
-																		</Tr>
-																	))}
+																	{products.map(
+																		(
+																			product,
+																		) => (
+																			<Tr
+																				key={
+																					product.productId
+																				}
+																				_hover={{
+																					bg: "gray.50",
+																				}}>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="#161f70"
+																					py={
+																						3
+																					}>
+																					{
+																						product.productId
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.700"
+																					py={
+																						3
+																					}>
+																					{
+																						product.productName
+																					}
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}>
+																					<Badge
+																						colorScheme="purple"
+																						fontSize="11px"
+																						px={
+																							2
+																						}
+																						py={
+																							0.5
+																						}
+																						borderRadius="md">
+																						{
+																							product.category
+																						}
+																					</Badge>
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{
+																						product.unitOfMeasure
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="purple.600"
+																					py={
+																						3
+																					}
+																					isNumeric>
+																					{product.lastImportPrice
+																						? formatCurrency(
+																								product.lastImportPrice,
+																						  )
+																						: "-"}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{formatDate(
+																						product.lastImportDate,
+																					)}
+																				</Td>
+																			</Tr>
+																		),
+																	)}
 																</Tbody>
 															</Table>
 														</Box>
 													) : (
 														<Center py={8}>
 															<Text color="gray.500">
-																Chưa có sản phẩm nào
+																Chưa có sản phẩm
+																nào
 															</Text>
 														</Center>
 													)}
 												</TabPanel>
 
 												{/* Purchase History Tab */}
-												<TabPanel px={0} py={4}>
+												<TabPanel
+													px={0}
+													py={4}>
 													{isLoadingHistory ? (
 														<Center py={8}>
 															<Spinner color="#161f70" />
 														</Center>
-													) : purchaseHistory.length > 0 ? (
+													) : purchaseHistory.length >
+													  0 ? (
 														<Box
 															overflowX="auto"
 															borderRadius="lg"
 															border="1px solid"
 															borderColor="gray.200">
-															<Table variant="simple" size="sm">
+															<Table
+																variant="simple"
+																size="sm">
 																<Thead bg="gray.50">
 																	<Tr>
 																		<Th
@@ -1043,125 +1023,177 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Mã phiếu
+																			py={
+																				3
+																			}>
+																			Mã
+																			phiếu
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Ngày nhập
+																			py={
+																				3
+																			}>
+																			Ngày
+																			nhập
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Người tạo
+																			py={
+																				3
+																			}>
+																			Người
+																			tạo
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}
+																			py={
+																				3
+																			}
 																			isNumeric>
-																			Tổng tiền
+																			Tổng
+																			tiền
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}>
-																			Trạng thái
+																			py={
+																				3
+																			}>
+																			Trạng
+																			thái
 																		</Th>
 																		<Th
 																			fontSize="11px"
 																			fontWeight="700"
 																			color="gray.600"
 																			textTransform="uppercase"
-																			py={3}
+																			py={
+																				3
+																			}
 																			textAlign="center">
-																			Chi tiết
+																			Chi
+																			tiết
 																		</Th>
 																	</Tr>
 																</Thead>
 																<Tbody>
-																	{purchaseHistory.map((item) => (
-																		<Tr
-																			key={item.id}
-																			_hover={{ bg: "gray.50" }}>
-																			<Td
-																				fontSize="13px"
-																				fontWeight="600"
-																				color="#161f70"
-																				py={3}>
-																				{item.poCode}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				color="gray.700"
-																				py={3}>
-																				{formatDate(
-																					item.purchaseDate,
-																				)}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				color="gray.600"
-																				py={3}>
-																				{item.staffNameCreated}
-																			</Td>
-																			<Td
-																				fontSize="13px"
-																				fontWeight="600"
-																				color="purple.600"
-																				py={3}
-																				isNumeric>
-																				{formatCurrency(
-																					item.totalAmount,
-																				)}
-																			</Td>
-																			<Td py={3}>
-																				<Badge
-																					colorScheme={getStatusColor(
-																						item.status,
+																	{purchaseHistory.map(
+																		(
+																			item,
+																		) => (
+																			<Tr
+																				key={
+																					item.id
+																				}
+																				_hover={{
+																					bg: "gray.50",
+																				}}>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="#161f70"
+																					py={
+																						3
+																					}>
+																					{
+																						item.poCode
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.700"
+																					py={
+																						3
+																					}>
+																					{formatDate(
+																						item.purchaseDate,
 																					)}
-																					fontSize="11px"
-																					px={2}
-																					py={0.5}
-																					borderRadius="md">
-																					{getStatusLabel(
-																						item.status,
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{
+																						item.staffNameCreated
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="purple.600"
+																					py={
+																						3
+																					}
+																					isNumeric>
+																					{formatCurrency(
+																						item.totalAmount,
 																					)}
-																				</Badge>
-																			</Td>
-																			<Td py={3} textAlign="center">
-																				<IconButton
-																					aria-label="Xem chi tiết"
-																					icon={<FiEye />}
-																					size="sm"
-																					variant="ghost"
-																					color="gray.500"
-																					_hover={{
-																						color: "#161f70",
-																						bg: "gray.100",
-																					}}
-																				/>
-																			</Td>
-																		</Tr>
-																	))}
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}>
+																					<Badge
+																						colorScheme={getStatusColor(
+																							item.status,
+																						)}
+																						fontSize="11px"
+																						px={
+																							2
+																						}
+																						py={
+																							0.5
+																						}
+																						borderRadius="md">
+																						{getStatusLabel(
+																							item.status,
+																						)}
+																					</Badge>
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}
+																					textAlign="center">
+																					<IconButton
+																						aria-label="Xem chi tiết"
+																						icon={
+																							<FiEye />
+																						}
+																						size="sm"
+																						variant="ghost"
+																						color="gray.500"
+																						_hover={{
+																							color: "#161f70",
+																							bg: "gray.100",
+																						}}
+																					/>
+																				</Td>
+																			</Tr>
+																		),
+																	)}
 																</Tbody>
 															</Table>
 														</Box>
 													) : (
 														<Center py={8}>
 															<Text color="gray.500">
-																Chưa có lịch sử nhập hàng
+																Chưa có lịch sử
+																nhập hàng
 															</Text>
 														</Center>
 													)}
@@ -1182,7 +1214,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										<GridItem colSpan={{ base: 1, md: 2 }}>
 											<FormControl
 												isRequired
-												isInvalid={!!errors.supplierName}>
+												isInvalid={
+													!!errors.supplierName
+												}>
 												<FormLabel
 													fontSize="14px"
 													fontWeight="600"
@@ -1190,11 +1224,14 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													Tên nhà cung cấp
 												</FormLabel>
 												<Input
-													value={formData.supplierName}
+													value={
+														formData.supplierName
+													}
 													onChange={(e) => {
 														setFormData({
 															...formData,
-															supplierName: e.target.value,
+															supplierName:
+																e.target.value,
 														});
 														setErrors({
 															...errors,
@@ -1228,11 +1265,14 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													Loại nhà cung cấp
 												</FormLabel>
 												<Select
-													value={formData.supplierType}
+													value={
+														formData.supplierType
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															supplierType: e.target
+															supplierType: e
+																.target
 																.value as SupplierType,
 														})
 													}
@@ -1240,7 +1280,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													<option value="Doanh nghiệp">
 														Doanh nghiệp
 													</option>
-													<option value="Tư nhân">Tư nhân</option>
+													<option value="Tư nhân">
+														Tư nhân
+													</option>
 												</Select>
 											</FormControl>
 										</GridItem>
@@ -1248,7 +1290,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										<GridItem>
 											<FormControl
 												isRequired
-												isInvalid={!!errors.phoneNumber}>
+												isInvalid={
+													!!errors.phoneNumber
+												}>
 												<FormLabel
 													fontSize="14px"
 													fontWeight="600"
@@ -1260,7 +1304,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) => {
 														setFormData({
 															...formData,
-															phoneNumber: e.target.value,
+															phoneNumber:
+																e.target.value,
 														});
 														setErrors({
 															...errors,
@@ -1286,7 +1331,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										</GridItem>
 
 										<GridItem>
-											<FormControl isInvalid={!!errors.email}>
+											<FormControl
+												isInvalid={!!errors.email}>
 												<FormLabel
 													fontSize="14px"
 													fontWeight="600"
@@ -1299,7 +1345,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) => {
 														setFormData({
 															...formData,
-															email: e.target.value,
+															email: e.target
+																.value,
 														});
 														setErrors({
 															...errors,
@@ -1308,7 +1355,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													}}
 													size="md"
 													borderColor={
-														errors.email ? "red.500" : "gray.300"
+														errors.email
+															? "red.500"
+															: "gray.300"
 													}
 												/>
 												{errors.email && (
@@ -1335,7 +1384,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															taxCode: e.target.value,
+															taxCode:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1352,11 +1402,14 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													Người liên hệ
 												</FormLabel>
 												<Input
-													value={formData.representName}
+													value={
+														formData.representName
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															representName: e.target.value,
+															representName:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1366,7 +1419,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 
 										<GridItem>
 											<FormControl
-												isInvalid={!!errors.representPhoneNumber}>
+												isInvalid={
+													!!errors.representPhoneNumber
+												}>
 												<FormLabel
 													fontSize="14px"
 													fontWeight="600"
@@ -1374,7 +1429,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													SĐT người liên hệ
 												</FormLabel>
 												<Input
-													value={formData.representPhoneNumber}
+													value={
+														formData.representPhoneNumber
+													}
 													onChange={(e) => {
 														setFormData({
 															...formData,
@@ -1383,7 +1440,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 														});
 														setErrors({
 															...errors,
-															representPhoneNumber: "",
+															representPhoneNumber:
+																"",
 														});
 													}}
 													size="md"
@@ -1398,7 +1456,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 														color="red.500"
 														fontSize="sm"
 														mt={1}>
-														{errors.representPhoneNumber}
+														{
+															errors.representPhoneNumber
+														}
 													</Text>
 												)}
 											</FormControl>
@@ -1417,7 +1477,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															bankAccount: e.target.value,
+															bankAccount:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1438,7 +1499,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															bankName: e.target.value,
+															bankName:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1459,7 +1521,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															address: e.target.value,
+															address:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1485,8 +1548,12 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													borderRadius="lg"
 													bg="gray.50">
 													<ProductSelector
-														selectedProducts={selectedProducts}
-														onProductsChange={handleProductsChange}
+														selectedProducts={
+															selectedProducts
+														}
+														onProductsChange={
+															handleProductsChange
+														}
 													/>
 												</Box>
 											</FormControl>
@@ -1510,7 +1577,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					py={4}
 					borderTop="1px solid"
 					borderColor="gray.200">
-					<Flex justify="space-between" w="full">
+					<Flex
+						justify="space-between"
+						w="full">
 						{/* Left side - Delete button (only in view mode) */}
 						<Box>
 							{mode === "view" && supplierData && (
@@ -1537,19 +1606,27 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										// Reset form data
 										if (supplierData) {
 											setFormData({
-												supplierName: supplierData.supplierName,
+												supplierName:
+													supplierData.supplierName,
 												address: supplierData.address,
-												phoneNumber: supplierData.phoneNumber,
+												phoneNumber:
+													supplierData.phoneNumber,
 												email: supplierData.email || "",
-												taxCode: supplierData.taxCode || "",
-												bankAccount: supplierData.bankAccount || "",
-												bankName: supplierData.bankName || "",
+												taxCode:
+													supplierData.taxCode || "",
+												bankAccount:
+													supplierData.bankAccount ||
+													"",
+												bankName:
+													supplierData.bankName || "",
 												representName:
-													supplierData.representName || "",
+													supplierData.representName ||
+													"",
 												representPhoneNumber:
 													supplierData.representPhoneNumber ||
 													"",
-												supplierType: supplierData.supplierType,
+												supplierType:
+													supplierData.supplierType,
 											});
 											// Reload products from API to reset selected products
 											if (supplierId) {
@@ -1564,12 +1641,18 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 												) {
 													const existingProducts: SelectedProduct[] =
 														productsResult.data.map(
-															(p: SupplierProduct) => ({
-																productId: p.productId,
-																productName: p.productName,
+															(
+																p: SupplierProduct,
+															) => ({
+																productId:
+																	p.productId,
+																productName:
+																	p.productName,
 															}),
 														);
-													setSelectedProducts(existingProducts);
+													setSelectedProducts(
+														existingProducts,
+													);
 												}
 											}
 										}

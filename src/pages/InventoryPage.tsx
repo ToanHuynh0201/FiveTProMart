@@ -33,11 +33,13 @@ import type {
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
 import { inventoryService } from "@/services/inventoryService";
+import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
 	const toast = useToast();
+	const { user } = useAuthStore();
 
 	// State for data from API
 	const [products, setProducts] = useState<InventoryProduct[]>([]);
@@ -116,10 +118,27 @@ const InventoryPage = () => {
 
 	// Load categories and stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load categories
-		setCategories([]);
-		// TODO: Implement API call to load stats
-		setStats(null);
+		const loadInitialData = async () => {
+			try {
+				// Load categories from API
+				const categoriesData = await inventoryService.getCategories();
+				setCategories(categoriesData);
+			} catch (error) {
+				console.error("Error loading categories:", error);
+				setCategories([]);
+			}
+
+			try {
+				// Load stats from API (mock for now)
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error loading stats:", error);
+				setStats(null);
+			}
+		};
+
+		loadInitialData();
 	}, []);
 
 	const handleUpdateProduct = async (
@@ -130,7 +149,13 @@ const InventoryPage = () => {
 		// Refresh data after updating
 		await fetchProducts(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		try {
+			const statsData = await inventoryService.getStats();
+			setStats(statsData);
+		} catch (error) {
+			console.error("Error reloading stats:", error);
+		}
 	};
 
 	const handleDeleteProduct = async (id: string) => {
@@ -143,7 +168,13 @@ const InventoryPage = () => {
 			status: "success",
 			duration: 3000,
 		});
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		try {
+			const statsData = await inventoryService.getStats();
+			setStats(statsData);
+		} catch (error) {
+			console.error("Error reloading stats:", error);
+		}
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -171,13 +202,21 @@ const InventoryPage = () => {
 	};
 
 	const handleUpdateBatch = async (
-		_batchId: string,
-		_updates: Partial<ProductBatch>,
+		batchId: string,
+		updates: Partial<ProductBatch>,
 	) => {
 		if (!selectedProduct) return;
 
 		try {
-			// TODO: Replace with actual API call to inventoryService.updateBatch(selectedProduct.id, batchId, updates)
+			// Call API to update lot
+			if (updates.quantity !== undefined || updates.status !== undefined) {
+				await inventoryService.updateLot(
+					batchId,
+					updates.quantity ?? 0,
+					updates.status ?? "active",
+				);
+			}
+
 			await fetchProducts(filters);
 
 			// Update selected product for the modal
@@ -194,7 +233,14 @@ const InventoryPage = () => {
 				status: "success",
 				duration: 3000,
 			});
-			// TODO: Reload stats after updating
+
+			// Reload stats after updating
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (statsError) {
+				console.error("Error reloading stats:", statsError);
+			}
 		} catch (error) {
 			console.error("Error updating batch:", error);
 			toast({
@@ -222,18 +268,39 @@ const InventoryPage = () => {
 
 	const handleSubmitDisposal = async (
 		items: DisposalItem[],
-		_note: string,
+		note: string,
 	) => {
 		try {
-			// TODO: Replace with actual API call to inventoryService.createDisposal(items, note)
-			await fetchProducts(filters); // Reload data to update stats and inventory
+			// Process each disposal item
+			const staffId = user?.id ?? "guest_staff";
+
+			for (const item of items) {
+				await inventoryService.disposeLot(
+					item.batchId,
+					item.quantity,
+					item.reason as "expired" | "damaged" | "lost" | "other",
+					staffId,
+					note,
+				);
+			}
+
+			// Reload data to update stats and inventory
+			await fetchProducts(filters);
+
+			// Reload stats
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error reloading stats:", error);
+			}
+
 			toast({
 				title: "Thành công",
 				description: `Đã hủy ${items.length} lô hàng`,
 				status: "success",
 				duration: 3000,
 			});
-			// TODO: Reload stats after disposal
 		} catch (error) {
 			console.error("Error creating disposal:", error);
 			throw error;

@@ -1,8 +1,43 @@
 import apiService from "@/lib/api";
-import type { InventoryProduct } from "@/types";
+import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
+
+/**
+ * Category type from API
+ */
+interface CategoryApiResponse {
+	categoryId: string;
+	categoryName: string;
+}
+
+/**
+ * Disposal request matching FRONTEND_API_REQUIREMENTS.md §4
+ */
+interface DisposeRequest {
+	quantity: number;
+	reason: "expired" | "damaged" | "lost" | "other";
+	notes?: string;
+	staffId: string;
+}
+
+/**
+ * Disposal response matching FRONTEND_API_REQUIREMENTS.md §4
+ */
+interface DisposeResponse {
+	disposalId: string;
+	lotId: string;
+	productId: string;
+	productName: string;
+	quantityDisposed: number;
+	remainingLotQuantity: number;
+	productTotalStock: number;
+	disposedAt: string;
+	disposedBy: string;
+	reason: string;
+	notes?: string;
+}
 
 export const inventoryService = {
 	/**
@@ -36,5 +71,160 @@ export const inventoryService = {
 
 	async deleteProduct(id: string): Promise<void> {
 		return apiService.delete(`/products/${id}`);
+	},
+
+	// ===================================================================
+	// Categories - GET /api/product-categories (ProductCategoryAPI.md)
+	// ===================================================================
+	/**
+	 * Fetch all product categories
+	 */
+	async getCategories(): Promise<InventoryCategory[]> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: CategoryApiResponse[];
+		}>("/product-categories");
+
+		// Map API response to frontend type
+		return response.data.map((cat) => ({
+			id: cat.categoryId,
+			name: cat.categoryName,
+			description: undefined,
+			productCount: 0, // API doesn't return this, would need separate query
+		}));
+	},
+
+	// ===================================================================
+	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md §5)
+	// ===================================================================
+	/**
+	 * Get product statistics for dashboard
+	 *
+	 * TODO: Replace with real API call when backend delivers
+	 * API: GET /api/v1/products/stats
+	 */
+	async getStats(): Promise<InventoryStats> {
+		// MOCK - Backend does not have this endpoint yet
+		// See: FRONTEND_API_REQUIREMENTS.md §5
+		console.warn("[MOCK] getStats - awaiting backend implementation");
+
+		return {
+			totalProducts: 0,
+			totalValue: 0,
+			lowStockProducts: 0,
+			outOfStockProducts: 0,
+			activeProducts: 0,
+			expiredBatches: 0,
+			expiringSoonBatches: 0,
+		};
+
+		// When API ready, use:
+		// const response = await apiService.get<{
+		//   success: boolean;
+		//   message: string;
+		//   data: {
+		//     totalProducts: number;
+		//     activeProducts: number;
+		//     inactiveProducts: number;
+		//     totalInventoryValue: number;
+		//     lowStockCount: number;
+		//     outOfStockCount: number;
+		//     expiringSoonCount: number;
+		//     expiredCount: number;
+		//   };
+		// }>("/products/stats");
+		// return {
+		//   totalProducts: response.data.totalProducts,
+		//   totalValue: response.data.totalInventoryValue,
+		//   lowStockProducts: response.data.lowStockCount,
+		//   outOfStockProducts: response.data.outOfStockCount,
+		//   activeProducts: response.data.activeProducts,
+		//   expiredBatches: response.data.expiredCount,
+		//   expiringSoonBatches: response.data.expiringSoonCount,
+		// };
+	},
+
+	// ===================================================================
+	// Dispose - POST /api/stock_inventories/{lotId}/dispose
+	// (FRONTEND_API_REQUIREMENTS.md §4)
+	// ===================================================================
+	/**
+	 * Dispose a lot of stock (expired/damaged)
+	 *
+	 * @param lotId - The lot to dispose
+	 * @param quantity - Quantity to dispose
+	 * @param reason - Disposal reason
+	 * @param staffId - Staff performing disposal
+	 * @param notes - Optional notes
+	 *
+	 * TODO: Replace with real API call when backend delivers
+	 * API: POST /api/v1/stock_inventories/{lotId}/dispose
+	 */
+	async disposeLot(
+		lotId: string,
+		quantity: number,
+		reason: DisposeRequest["reason"],
+		staffId: string,
+		notes?: string,
+	): Promise<DisposeResponse> {
+		// MOCK - Backend does not have this endpoint yet
+		// See: FRONTEND_API_REQUIREMENTS.md §4
+		console.warn("[MOCK] disposeLot - awaiting backend implementation");
+
+		return {
+			disposalId: `disposal_${Date.now()}`,
+			lotId,
+			productId: "mock_product",
+			productName: "Mock Product",
+			quantityDisposed: quantity,
+			remainingLotQuantity: 0,
+			productTotalStock: 0,
+			disposedAt: new Date().toISOString(),
+			disposedBy: staffId,
+			reason,
+			notes,
+		};
+
+		// When API ready, use:
+		// const response = await apiService.post<{
+		//   success: boolean;
+		//   message: string;
+		//   data: DisposeResponse;
+		// }>(`/stock_inventories/${lotId}/dispose`, {
+		//   quantity,
+		//   reason,
+		//   notes,
+		//   staffId,
+		// } as DisposeRequest);
+		// return response.data;
+	},
+
+	// ===================================================================
+	// Update Lot - PUT /api/stock-inventories/{lot_id}
+	// (StockInventoryAPI.md §5.4)
+	// ===================================================================
+	/**
+	 * Update a stock inventory lot (quantity and status)
+	 *
+	 * @param lotId - The lot to update
+	 * @param stockQuantity - New stock quantity
+	 * @param status - New status
+	 */
+	async updateLot(
+		lotId: string,
+		stockQuantity: number,
+		status: string,
+	): Promise<{ lotId: string; stockQuantity: number; status: string }> {
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: { lotId: string; stockQuantity: number; status: string };
+		}>(`/stock-inventories/${lotId}`, {
+			stockQuantity,
+			status,
+		});
+
+		return response.data;
 	},
 };

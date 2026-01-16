@@ -74,3 +74,168 @@ export interface PendingOrder {
 	createdAt: Date; // Thời gian tạo
 	pausedAt: Date; // Thời gian tạm dừng
 }
+
+// =====================================================================
+// API Types - Match backend exactly (OrderAPI.md)
+// These are for API calls. UI types above are for display/state.
+// =====================================================================
+
+/**
+ * Request: POST /api/v1/orders/check-product
+ */
+export interface CheckProductRequest {
+	lotId: string; // Scanned barcode (which IS the lotId)
+	quantity: number; // Default: 1
+}
+
+/**
+ * Response: POST /api/v1/orders/check-product
+ * Note: UI should merge items with same productId+unitPrice for display,
+ * but keep individual lotIds for checkout.
+ */
+export interface CheckProductResponse {
+	lotId: string;
+	productId: string;
+	productName: string;
+	unitOfMeasure: string;
+	unitPrice: number;
+	quantity: number;
+	subTotal: number;
+	currentStock: number;
+	status: string; // StockInventory.status
+	// Future: promotion field per FRONTEND_API_REQUIREMENTS.md
+	promotion?: {
+		promotionId: string;
+		promotionName: string;
+		promotionType: "Discount" | "BuyXGetY";
+		discountPercent?: number;
+		promotionPrice?: number;
+		buyQuantity?: number;
+		getQuantity?: number;
+	} | null;
+}
+
+/**
+ * Request: POST /api/v1/orders
+ */
+export interface CreateOrderRequest {
+	staffId: string;
+	customerId?: string | null; // Nullable = Khách lẻ
+	paymentMethod: "CASH" | "TRANSFER"; // Backend uses uppercase
+	amountGiven: number;
+	pointsRedeemed?: number; // Future: per FRONTEND_API_REQUIREMENTS.md
+	items: Array<{
+		lotId: string;
+		quantity: number;
+	}>;
+}
+
+/**
+ * Response item from POST /api/v1/orders
+ */
+export interface CreateOrderResponseItem {
+	productId: string;
+	productName: string;
+	lotId: string;
+	quantity: number;
+	subTotal: number;
+}
+
+/**
+ * Response: POST /api/v1/orders
+ */
+export interface CreateOrderResponse {
+	orderId: string;
+	orderDate: string; // "dd-MM-yyyy hh-mm-ss"
+	totalAmount: number;
+	changeReturned: number;
+	pointsEarned: number;
+	items: CreateOrderResponseItem[];
+}
+
+/**
+ * Filters for GET /api/v1/orders
+ */
+export interface OrderFilters {
+	search?: string; // orderId, customerName, customerId
+	staffId?: string;
+	startDate?: string; // "dd-MM-yyyy"
+	endDate?: string;
+	paymentMethod?: "Tiền mặt" | "Chuyển khoản";
+	status?: "Đã thanh toán" | "Chưa thanh toán" | "Đã huỷ";
+	page?: number;
+	size?: number;
+	sort?: string; // e.g., "orderDate,desc"
+}
+
+/**
+ * List item from GET /api/v1/orders
+ */
+export interface OrderListItem {
+	orderId: string;
+	orderDate: string;
+	customerName: string; // "Khách lẻ" if no customerId
+	staffName: string;
+	totalAmount: number;
+	paymentMethod: string;
+	status: string;
+	createdAt: string;
+}
+
+/**
+ * Detail item from GET /api/v1/orders/{id}
+ */
+export interface OrderDetailItem {
+	productId: string;
+	productName: string;
+	quantity: number;
+	unitPrice: number;
+	subTotal: number;
+}
+
+/**
+ * Response: GET /api/v1/orders/{id}
+ */
+export interface OrderDetail {
+	orderId: string;
+	orderDate: string;
+	status: string;
+	paymentMethod: string;
+	customer: {
+		customerId: string;
+		fullName: string;
+		phoneNumber: string;
+	} | null;
+	staff: {
+		profileId: string;
+		fullName: string;
+	};
+	items: OrderDetailItem[];
+	subTotal: number;
+	discountAmount: number;
+	totalAmount: number;
+	amountGiven: number;
+	changeReturned: number;
+	pointsEarned: number;
+}
+
+/**
+ * Request: POST /api/v1/orders/{id}/cancel
+ * Note: This endpoint is in FRONTEND_API_REQUIREMENTS.md, awaiting backend
+ */
+export interface CancelOrderRequest {
+	reason: string;
+	staffId: string;
+}
+
+/**
+ * Response: POST /api/v1/orders/{id}/cancel
+ */
+export interface CancelOrderResponse {
+	orderId: string;
+	status: string;
+	cancelledAt: string;
+	cancelledBy: string;
+	reason: string;
+	stockRestored: boolean;
+}

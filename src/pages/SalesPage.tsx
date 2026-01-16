@@ -30,9 +30,13 @@ import type {
 	Product,
 	SalesOrder,
 	PendingOrder,
+	OrderFilters as ApiOrderFilters,
+	OrderListItem,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
+import { salesService } from "../services/salesService";
+import { useAuthStore } from "../store/authStore";
 
 interface Customer {
 	id: string;
@@ -43,6 +47,7 @@ interface Customer {
 
 const SalesPage = () => {
 	const toast = useToast();
+	const { user } = useAuthStore();
 	const [customer, setCustomer] = useState<Customer | null>({
 		id: `guest_${Date.now()}`,
 		name: "KHÁCH VÃNG LAI",
@@ -100,8 +105,6 @@ const SalesPage = () => {
 	} = useDisclosure();
 
 	useEffect(() => {
-		// TODO: Implement API call to load products
-
 		// Load orders for history
 		loadOrders();
 
@@ -164,14 +167,70 @@ const SalesPage = () => {
 	}, [orderItems, paymentMethod, customer, orderNumber, createdAt]);
 
 	const loadOrders = async () => {
-		// TODO: Implement API call to load orders
-		setOrders([]);
-		setFilteredOrders([]);
+		try {
+			// Convert UI filters to API format
+			const apiFilters: ApiOrderFilters = {
+				search: filters.searchQuery || undefined,
+				status: filters.status as ApiOrderFilters["status"],
+				paymentMethod:
+					filters.paymentMethod as ApiOrderFilters["paymentMethod"],
+				startDate: filters.dateFrom || undefined,
+				endDate: filters.dateTo || undefined,
+				page: 0,
+				size: 50,
+				sort: "orderDate,desc",
+			};
+
+			const response = await salesService.getOrders(apiFilters);
+
+			// Map API response to UI SalesOrder format for display
+			const uiOrders: SalesOrder[] = response.data.map(
+				(order: OrderListItem) => ({
+					id: order.orderId,
+					orderNumber: `#${order.orderId}`,
+					items: [], // Not available in list view
+					subtotal: order.totalAmount,
+					discount: 0,
+					total: order.totalAmount,
+					paymentMethod:
+						order.paymentMethod === "Tiền mặt" ? "cash" : "transfer",
+					customer: {
+						id: "",
+						name: order.customerName,
+						phone: "",
+					},
+					staff: {
+						id: "",
+						name: order.staffName,
+					},
+					createdAt: new Date(order.createdAt),
+					status:
+						order.status === "Đã huỷ"
+							? "cancelled"
+							: order.status === "Đã thanh toán"
+								? "completed"
+								: "draft",
+				}),
+			);
+
+			setOrders(uiOrders);
+			setFilteredOrders(uiOrders);
+		} catch (error) {
+			console.error("Error loading orders:", error);
+			toast({
+				title: "Lỗi tải đơn hàng",
+				description: "Không thể tải danh sách đơn hàng",
+				status: "error",
+				duration: 3000,
+			});
+			setOrders([]);
+			setFilteredOrders([]);
+		}
 	};
 
 	const applyFilters = async () => {
-		// TODO: Implement API call to filter orders
-		setFilteredOrders([]);
+		// Filters are applied via loadOrders which reads the filters state
+		await loadOrders();
 	};
 
 	const handleFiltersChange = (newFilters: OrderFilters) => {
@@ -331,38 +390,103 @@ const SalesPage = () => {
 
 	const handlePrint = async () => {
 		if (orderItems.length === 0) {
-			alert("Vui lòng thêm sản phẩm vào đơn hàng");
+			toast({
+				title: "Đơn hàng trống",
+				description: "Vui lòng thêm sản phẩm vào đơn hàng",
+				status: "warning",
+				duration: 3000,
+				isClosable: true,
+			});
 			return;
 		}
 
 		if (!paymentMethod) {
-			alert("Vui lòng chọn phương thức thanh toán");
+			toast({
+				title: "Chưa chọn thanh toán",
+				description: "Vui lòng chọn phương thức thanh toán",
+				status: "warning",
+				duration: 3000,
+				isClosable: true,
+			});
 			return;
 		}
 
-		// TODO: Implement API call to create and complete order
-		console.log("Create order:", {
-			orderNumber,
-			items: orderItems,
-			subtotal: calculateTotal(),
-			discount: 0,
-			total: calculateTotal(),
-			paymentMethod,
-			customer,
-		});
+		try {
+			// Convert orderItems to API format
+			// NOTE: batchId IS the lotId (stored from BarcodeScanner)
+			const apiItems = orderItems
+				.filter((item) => item.batchId) // Only items with lotId
+				.map((item) => ({
+					lotId: item.batchId!,
+					quantity: item.quantity,
+				}));
 
-		// Clear localStorage
-		localStorage.removeItem("salesPage_currentOrder");
+			if (apiItems.length === 0) {
+				toast({
+					title: "Lỗi đơn hàng",
+					description:
+						"Không có sản phẩm hợp lệ. Vui lòng quét mã lô hàng.",
+					status: "error",
+					duration: 4000,
+					isClosable: true,
+				});
+				return;
+			}
 
-		// Reset form
-		setOrderItems([]);
-		setPaymentMethod(undefined);
-		setCustomer({
-			id: `guest_${Date.now()}`,
-			name: "KHÁCH VÃNG LAI",
-			phone: "",
-			points: 0,
-		});
+			// Map FE paymentMethod to BE format
+			const bePaymentMethod =
+				paymentMethod === "cash" ? "CASH" : "TRANSFER";
+
+			// Get staffId from auth store
+			const staffId = user?.id ?? "guest_staff";
+
+			// Call API to create order
+			const response = await salesService.createOrder({
+				staffId,
+				customerId: customer?.phone ? customer.id : null,
+				paymentMethod: bePaymentMethod,
+				amountGiven: calculateTotal(), // For now, assume exact payment
+				items: apiItems,
+			});
+
+			// Success!
+			toast({
+				title: "🎉 Thanh toán thành công!",
+				description: `Mã đơn: ${response.orderId}. Tiền thừa: ${response.changeReturned.toLocaleString()}đ`,
+				status: "success",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
+
+			// Clear localStorage
+			localStorage.removeItem("salesPage_currentOrder");
+
+			// Reset form
+			setOrderItems([]);
+			setPaymentMethod(undefined);
+			setCustomer({
+				id: `guest_${Date.now()}`,
+				name: "KHÁCH VÃNG LAI",
+				phone: "",
+				points: 0,
+			});
+
+			// Reload orders list
+			loadOrders();
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Không thể tạo đơn hàng";
+			toast({
+				title: "Lỗi thanh toán",
+				description: errorMessage,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+			});
+		}
 	};
 
 	const handleCustomerChange = (updatedCustomer: Customer | null) => {

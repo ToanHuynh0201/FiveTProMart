@@ -17,14 +17,19 @@ import {
 	useToast,
 	Alert,
 	AlertIcon,
+	Input,
+	InputGroup,
+	InputLeftElement,
+	Spinner,
 } from "@chakra-ui/react";
-import { FiCamera, FiCheck, FiX, FiVideo, FiVideoOff } from "react-icons/fi";
-import type { Product } from "../../types/sales";
+import { FiCamera, FiCheck, FiX, FiVideo, FiVideoOff, FiSearch } from "react-icons/fi";
+import type { Product, CheckProductResponse } from "../../types/sales";
+import { salesService } from "../../services/salesService";
 
 interface BarcodeScannerProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onProductFound: (product: Product, batchId?: string, batchNumber?: string) => void;
+	onProductFound: (product: Product, lotId?: string, lotNumber?: string) => void;
 }
 
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
@@ -37,18 +42,19 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 	const [lastScanned, setLastScanned] = useState<string>("");
 	const [isCameraActive, setIsCameraActive] = useState(false);
 	const [cameraError, setCameraError] = useState<string>("");
+	const [manualInput, setManualInput] = useState("");
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 	const scanIntervalRef = useRef<number>(0);
 
-	// Demo barcodes for testing - chỉ mã lô hàng
+	// Demo barcodes for fallback testing when API is unavailable
 	const demoBarcodes = [
-		{ barcode: "LOT001", name: "Bánh snack bắp cải trộn - Lô 001", expiryDate: "31/12/2025" },
-		{ barcode: "LOT002", name: "Bánh snack bắp cải trộn - Lô 002", expiryDate: "29/11/2025" },
-		{ barcode: "LOT003", name: "Bánh snack củ cải trộn - Lô 003", expiryDate: "15/01/2026" },
-		{ barcode: "LOT004", name: "Bánh snack củ cải trộn - Lô 004", expiryDate: "01/12/2025" },
-		{ barcode: "LOT005", name: "Củ cải vàng - Lô 005", expiryDate: "20/12/2025" },
-		{ barcode: "LOT006", name: "Củ cải vàng - Lô 006", expiryDate: "28/11/2025" },
+		{ lotId: "LOT001", name: "Bánh snack bắp cải trộn - Lô 001", expiryDate: "31/12/2025" },
+		{ lotId: "LOT002", name: "Bánh snack bắp cải trộn - Lô 002", expiryDate: "29/11/2025" },
+		{ lotId: "LOT003", name: "Bánh snack củ cải trộn - Lô 003", expiryDate: "15/01/2026" },
+		{ lotId: "LOT004", name: "Bánh snack củ cải trộn - Lô 004", expiryDate: "01/12/2025" },
+		{ lotId: "LOT005", name: "Củ cải vàng - Lô 005", expiryDate: "20/12/2025" },
+		{ lotId: "LOT006", name: "Củ cải vàng - Lô 006", expiryDate: "28/11/2025" },
 	];
 
 	useEffect(() => {
@@ -108,61 +114,98 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
 	// Simulated barcode detection (in production, use a real library)
 	const startBarcodeDetection = () => {
-		// This is a simulation. In production, you'd use BarcodeDetector API or a library
-		// For now, we'll just show the demo barcodes for user to click
+		// This is a simulation. In production, you'd use BarcodeDetector API or Quagga2
+		// See: FiveTProMart_fe/document/BARCODE_IMPLEMENTATION_PLAN.md
 		toast({
 			title: "Camera đang hoạt động",
-			description: "Để demo, vui lòng click vào mã vạch bên dưới",
+			description: "Nhập mã lô hàng thủ công hoặc click mã demo bên dưới",
 			status: "info",
 			duration: 4000,
 		});
 	};
 
-	const handleBarcodeScanned = async (barcode: string) => {
-		if (!barcode.trim()) return;
+	/**
+	 * Maps API CheckProductResponse to UI Product type
+	 * This is a bridge layer to preserve existing UI while using real API
+	 */
+	const mapToUIProduct = (response: CheckProductResponse): Product => ({
+		id: response.productId,
+		code: response.productId,
+		name: response.productName,
+		price: response.unitPrice,
+		stock: response.currentStock,
+		category: undefined,
+		barcode: response.lotId,
+		promotion: response.promotion?.promotionName,
+		batches: [
+			{
+				id: response.lotId,
+				batchNumber: response.lotId,
+				quantity: response.currentStock,
+				expiryDate: new Date(), // API doesn't return expiry, will fix later
+				importDate: new Date(),
+			},
+		],
+	});
+
+	const handleBarcodeScanned = async (lotId: string) => {
+		if (!lotId.trim()) return;
 
 		setIsScanning(true);
-		setLastScanned(barcode);
+		setLastScanned(lotId);
 
 		try {
-			// TODO: Implement searchProductByBatchCode API call from salesService
-			// const batchResult = await salesService.searchProductByBatchCode(barcode);
-			const batchResult = null;
+			// Call real API
+			const response = await salesService.checkProduct(lotId, 1);
 
-			if (batchResult) {
-				// Tìm thấy lô hàng
-				toast({
-					title: "Quét mã lô hàng thành công!",
-					description: `Đã thêm: ${batchResult.product.name} - Lô ${batchResult.batch.batchNumber}`,
-					status: "success",
-					duration: 2000,
-					icon: <Icon as={FiCheck} />,
-				});
-				onProductFound(batchResult.product, batchResult.batch.id, batchResult.batch.batchNumber);
-				onClose();
-			} else {
-				toast({
-					title: "Không tìm thấy lô hàng",
-					description: `Mã lô "${barcode}" không có trong hệ thống. Vui lòng quét mã lô hàng hợp lệ (VD: LOT001)`,
-					status: "warning",
-					duration: 3000,
-					icon: <Icon as={FiX} />,
-				});
-			}
-		} catch (error) {
+			// Map to UI Product type
+			const uiProduct = mapToUIProduct(response);
+
 			toast({
-				title: "Lỗi",
-				description: "Không thể quét mã vạch",
-				status: "error",
-				duration: 3000,
+				title: "Quét mã lô hàng thành công!",
+				description: `Đã thêm: ${response.productName} - Lô ${response.lotId}`,
+				status: "success",
+				duration: 2000,
+				icon: <Icon as={FiCheck} />,
+			});
+
+			// Pass lotId as both batchId and batchNumber for now
+			onProductFound(uiProduct, response.lotId, response.lotId);
+			onClose();
+		} catch (error: unknown) {
+			// Handle API error
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Không thể kiểm tra sản phẩm";
+
+			toast({
+				title: "Không tìm thấy lô hàng",
+				description: `Mã lô "${lotId}" không có trong hệ thống hoặc đã hết hạn. ${errorMessage}`,
+				status: "warning",
+				duration: 4000,
+				icon: <Icon as={FiX} />,
 			});
 		} finally {
 			setIsScanning(false);
 		}
 	};
 
-	const handleDemoBarcode = (barcode: string) => {
-		handleBarcodeScanned(barcode);
+	const handleManualSubmit = () => {
+		if (manualInput.trim()) {
+			handleBarcodeScanned(manualInput.trim());
+			setManualInput("");
+		}
+	};
+
+	const handleKeyPress = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter") {
+			handleManualSubmit();
+		}
+	};
+
+	const handleDemoBarcode = (lotId: string) => {
+		handleBarcodeScanned(lotId);
 	};
 
 	return (
@@ -315,6 +358,42 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 							</Button>
 						</Flex>
 
+						{/* Manual Input */}
+						<Box
+							pt={4}
+							borderTop="1px solid"
+							borderColor="gray.200">
+							<Text
+								fontSize="14px"
+								fontWeight="700"
+								color="gray.700"
+								mb={2}>
+								Nhập mã lô hàng thủ công:
+							</Text>
+							<Flex gap={2}>
+								<InputGroup flex={1}>
+									<InputLeftElement>
+										<Icon as={FiSearch} color="gray.400" />
+									</InputLeftElement>
+									<Input
+										placeholder="VD: LOT001, LOT002..."
+										value={manualInput}
+										onChange={(e) => setManualInput(e.target.value)}
+										onKeyPress={handleKeyPress}
+										isDisabled={isScanning}
+									/>
+								</InputGroup>
+								<Button
+									colorScheme="brand"
+									onClick={handleManualSubmit}
+									isLoading={isScanning}
+									loadingText="Đang kiểm tra..."
+									leftIcon={isScanning ? undefined : <Icon as={FiCheck} />}>
+									Kiểm tra
+								</Button>
+							</Flex>
+						</Box>
+
 						{/* Demo barcodes */}
 						<Box
 							pt={4}
@@ -360,23 +439,21 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 								}}>
 								{demoBarcodes.map((item) => (
 									<Box
-										key={item.barcode}
+										key={item.lotId}
 										p={3}
 										bg="gray.50"
 										borderRadius="8px"
-										cursor="pointer"
+										cursor={isScanning ? "wait" : "pointer"}
 										border="2px solid transparent"
 										transition="all 0.2s"
+										opacity={isScanning ? 0.6 : 1}
 										_hover={{
-											bg: "brand.50",
-											borderColor: "brand.200",
-											transform:
-												"translateY(-2px)",
+											bg: isScanning ? "gray.50" : "brand.50",
+											borderColor: isScanning ? "transparent" : "brand.200",
+											transform: isScanning ? "none" : "translateY(-2px)",
 										}}
 										onClick={() =>
-											handleDemoBarcode(
-												item.barcode,
-											)
+											!isScanning && handleDemoBarcode(item.lotId)
 										}>
 										<Flex
 											justify="space-between"
@@ -397,7 +474,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 														px={2}
 														py={0.5}
 														borderRadius="4px">
-														{item.barcode}
+														{item.lotId}
 													</Code>
 													<Text fontSize="11px" color="gray.600">
 														HSD: {item.expiryDate}

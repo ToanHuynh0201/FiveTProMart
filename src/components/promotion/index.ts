@@ -3,5 +3,4 @@ export { PromotionFilterBar } from "./PromotionFilterBar";
 export { PromotionSearchBar } from "./PromotionSearchBar";
 export { StatsCard } from "./StatsCard";
 export { AddPromotionModal } from "./AddPromotionModal";
-export { EditPromotionModal } from "./EditPromotionModal";
-export { PromotionDetailModal } from "./PromotionDetailModal";
+export { PromotionViewEditModal } from "./PromotionViewEditModal";

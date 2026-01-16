@@ -18,28 +18,25 @@ import {
 	Tag,
 	VStack,
 } from "@chakra-ui/react";
-import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
+import { ViewIcon, CloseIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import type { Promotion } from "../../types/promotion";
-import { formatDate } from "../../utils/date";
+import type { Promotion, PromotionStatus, PromotionType } from "../../types/promotion";
 
 interface PromotionTableProps {
 	promotions: Promotion[];
 	onViewDetail: (id: string) => void;
-	onEdit: (id: string) => void;
-	onDelete: (id: string) => void;
+	onCancel: (id: string) => void;
 	searchQuery?: string;
 }
 
 export const PromotionTable: React.FC<PromotionTableProps> = ({
 	promotions,
 	onViewDetail,
-	onEdit,
-	onDelete,
+	onCancel,
 	searchQuery = "",
 }) => {
 	// Create a key based on promotions to trigger animation on filter changes
-	const tableKey = promotions.map((p) => p.id).join("-");
+	const tableKey = promotions.map((p) => p.promotionId).join("-");
 
 	// Highlight matching text
 	const highlightText = (text: string, query: string) => {
@@ -67,14 +64,15 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 		);
 	};
 
-	const getStatusBadge = (status: string) => {
-		const statusConfig = {
-			active: { color: "green", label: "Đang áp dụng" },
-			inactive: { color: "gray", label: "Chưa áp dụng" },
-			expired: { color: "red", label: "Đã hết hạn" },
+	const getStatusBadge = (status: PromotionStatus) => {
+		const statusConfig: Record<PromotionStatus, { color: string; label: string }> = {
+			Active: { color: "green", label: "Đang áp dụng" },
+			Upcoming: { color: "orange", label: "Sắp diễn ra" },
+			Expired: { color: "gray", label: "Đã hết hạn" },
+			Cancelled: { color: "red", label: "Đã hủy" },
 		};
 
-		const config = statusConfig[status as keyof typeof statusConfig] || {
+		const config = statusConfig[status] || {
 			color: "gray",
 			label: status,
 		};
@@ -92,13 +90,13 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 		);
 	};
 
-	const getTypeBadge = (type: string) => {
-		const typeConfig = {
-			discount: { color: "blue", label: "Giảm giá" },
-			buyThisGetThat: { color: "orange", label: "Mua này tặng kia" },
+	const getTypeBadge = (type: PromotionType) => {
+		const typeConfig: Record<PromotionType, { color: string; label: string }> = {
+			Discount: { color: "blue", label: "Giảm giá" },
+			"Buy X Get Y": { color: "purple", label: "Mua X tặng Y" },
 		};
 
-		const config = typeConfig[type as keyof typeof typeConfig] || {
+		const config = typeConfig[type] || {
 			color: "gray",
 			label: type,
 		};
@@ -111,6 +109,33 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 				fontSize="12px">
 				{config.label}
 			</Tag>
+		);
+	};
+
+	// Check if promotion can be cancelled (only Active or Upcoming)
+	const canCancel = (status: PromotionStatus) => {
+		return status === "Active" || status === "Upcoming";
+	};
+
+	// Get promotion value display
+	const getPromotionValue = (promotion: Promotion) => {
+		if (promotion.promotionType === "Discount") {
+			return (
+				<Text
+					fontSize="14px"
+					fontWeight="700"
+					color="blue.600">
+					-{promotion.discountPercent}%
+				</Text>
+			);
+		}
+		return (
+			<Text
+				fontSize="14px"
+				fontWeight="700"
+				color="purple.600">
+				Mua {promotion.buyQuantity} tặng {promotion.getQuantity}
+			</Text>
 		);
 	};
 
@@ -162,6 +187,22 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}>
+								Giá trị
+							</Th>
+							<Th
+								fontSize="13px"
+								fontWeight="700"
+								color="gray.700"
+								textTransform="none"
+								py={4}>
+								Sản phẩm
+							</Th>
+							<Th
+								fontSize="13px"
+								fontWeight="700"
+								color="gray.700"
+								textTransform="none"
+								py={4}>
 								Thời gian
 							</Th>
 							<Th
@@ -186,12 +227,12 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 					<Tbody>
 						{promotions.map((promotion) => (
 							<Tr
-								key={promotion.id}
+								key={promotion.promotionId}
 								_hover={{ bg: "gray.50" }}
 								transition="all 0.2s"
 								bg={
 									searchQuery &&
-									(promotion.code
+									(promotion.promotionId
 										.toLowerCase()
 										.includes(searchQuery.toLowerCase()) ||
 										promotion.name
@@ -206,7 +247,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 									fontSize="14px"
 									color="gray.700"
 									fontWeight="600">
-									{highlightText(promotion.code, searchQuery)}
+									{highlightText(promotion.promotionId, searchQuery)}
 								</Td>
 								<Td
 									fontSize="14px"
@@ -215,17 +256,41 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 									maxW="200px">
 									{highlightText(promotion.name, searchQuery)}
 								</Td>
-								<Td>{getTypeBadge(promotion.type)}</Td>
+								<Td>{getTypeBadge(promotion.promotionType)}</Td>
+								<Td>{getPromotionValue(promotion)}</Td>
+								<Td>
+									<VStack
+										align="flex-start"
+										spacing={1}>
+										{promotion.products.slice(0, 2).map((product) => (
+											<Text
+												key={product.productId}
+												fontSize="13px"
+												color="gray.600"
+												noOfLines={1}>
+												{highlightText(product.productName, searchQuery)}
+											</Text>
+										))}
+										{promotion.products.length > 2 && (
+											<Text
+												fontSize="12px"
+												color="brand.500"
+												fontWeight="600">
+												+{promotion.products.length - 2} sản phẩm khác
+											</Text>
+										)}
+									</VStack>
+								</Td>
 								<Td fontSize="13px">
 									<VStack
 										align="flex-start"
 										spacing={0}>
 										<Text color="gray.700">
-											{formatDate(promotion.startDate)}
+											{promotion.startDate}
 										</Text>
 										<Text color="gray.500">đến</Text>
 										<Text color="gray.700">
-											{formatDate(promotion.endDate)}
+											{promotion.endDate}
 										</Text>
 									</VStack>
 								</Td>
@@ -244,7 +309,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 												variant="ghost"
 												colorScheme="blue"
 												onClick={() =>
-													onViewDetail(promotion.id)
+													onViewDetail(promotion.promotionId)
 												}
 											/>
 										</Tooltip>
@@ -259,22 +324,13 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 											/>
 											<MenuList>
 												<MenuItem
-													icon={<EditIcon />}
-													onClick={() =>
-														onEdit(promotion.id)
-													}
-													isDisabled={
-														promotion.status !== "inactive"
-													}>
-													Chỉnh sửa
-												</MenuItem>
-												<MenuItem
-													icon={<DeleteIcon />}
+													icon={<CloseIcon />}
 													color="red.500"
 													onClick={() =>
-														onDelete(promotion.id)
-													}>
-													Xóa
+														onCancel(promotion.promotionId)
+													}
+													isDisabled={!canCancel(promotion.status)}>
+													Hủy khuyến mãi
 												</MenuItem>
 											</MenuList>
 										</Menu>

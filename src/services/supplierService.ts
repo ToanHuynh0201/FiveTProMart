@@ -23,7 +23,8 @@ class SupplierService {
 		}) => {
 			// Build query string using URLSearchParams
 			const params = new URLSearchParams();
-			if (filters?.page) params.append("page", filters.page.toString());
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
 			if (filters?.size) params.append("size", filters.size.toString());
 			if (filters?.search) params.append("search", filters.search);
 			if (filters?.supplierType)
@@ -36,9 +37,6 @@ class SupplierService {
 				? `/suppliers?${queryString}`
 				: "/suppliers";
 
-			console.log("[SupplierService] Calling API with URL:", url);
-			console.log("[SupplierService] Filters received:", filters);
-
 			return await apiService.get(url);
 		},
 	);
@@ -46,7 +44,7 @@ class SupplierService {
 	/**
 	 * Get supplier by ID
 	 * @param id - Supplier UUID
-	 * @returns Promise with success/error result containing supplier data
+	 * @returns Promise with success/error result containing supplier detail data
 	 */
 	getSupplierById = withErrorHandling(async (id: string) => {
 		return await apiService.get(`/suppliers/${id}`);
@@ -81,6 +79,34 @@ class SupplierService {
 	deleteSupplier = withErrorHandling(async (id: string) => {
 		return await apiService.delete(`/suppliers/${id}`);
 	});
+
+	/**
+	 * Get products from a supplier
+	 * @param supplierId - Supplier UUID
+	 * @param filters - Pagination filters
+	 * @returns Promise with success/error result containing products array
+	 */
+	getSupplierProducts = withErrorHandling(
+		async (
+			supplierId: string,
+			filters?: {
+				page?: number;
+				size?: number;
+			},
+		) => {
+			const params = new URLSearchParams();
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
+			if (filters?.size) params.append("size", filters.size.toString());
+
+			const queryString = params.toString();
+			const url = queryString
+				? `/suppliers/${supplierId}/products?${queryString}`
+				: `/suppliers/${supplierId}/products`;
+
+			return await apiService.get(url);
+		},
+	);
 }
 
 export const supplierService = new SupplierService();

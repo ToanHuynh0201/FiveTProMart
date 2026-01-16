@@ -4,7 +4,12 @@
 export type SupplierType = "Doanh nghiệp" | "Tư nhân";
 
 /**
- * Supplier model - matches backend response
+ * Supplier status enum
+ */
+export type SupplierStatus = "HOẠT ĐỘNG" | "NGỪNG HOẠT ĐỘNG";
+
+/**
+ * Supplier model - matches backend response from GET /suppliers
  */
 export interface Supplier {
 	supplierId: string;
@@ -14,41 +19,56 @@ export interface Supplier {
 	representName: string | null;
 	representPhoneNumber: string | null;
 	supplierType: SupplierType;
-	suppliedProductType: string;
 	currentDebt: number;
 }
 
-export interface SupplierDetail extends Supplier {
-	products?: SupplierProduct[]; // Danh sách sản phẩm cung cấp
-	purchaseHistory?: PurchaseHistory[]; // Lịch sử nhập hàng
+/**
+ * Supplier detail model - matches backend response from GET /suppliers/{id}
+ */
+export interface SupplierDetail {
+	supplierId: string;
+	supplierName: string;
+	address: string;
+	phoneNumber: string;
+	email: string | null;
+	taxCode: string | null;
+	bankAccount: string | null;
+	bankName: string | null;
+	representName: string | null;
+	representPhoneNumber: string | null;
+	supplierType: SupplierType;
+	status: SupplierStatus;
+	currentDebt: number;
+	suppliedProducts: SuppliedProductInfo[];
 }
 
-export interface SupplierProduct {
-	id: string;
+/**
+ * Supplied product info in supplier detail
+ */
+export interface SuppliedProductInfo {
 	productId: string;
-	productCode: string;
+	lastImportPrice: number;
+	lastImportDate: string | null;
+}
+
+/**
+ * Product details for supplier products tab
+ */
+export interface SupplierProduct {
+	productId: string;
 	productName: string;
 	category: string;
-	unit: string;
-	lastPurchasePrice?: number; // Giá nhập gần nhất
-	lastPurchaseDate?: Date;
-	totalQuantityPurchased?: number; // Tổng số lượng đã nhập
-}
-
-export interface PurchaseHistory {
-	id: string;
-	purchaseNumber: string;
-	date: Date;
-	totalAmount: number;
-	itemCount: number;
-	status: "draft" | "ordered" | "received" | "cancelled";
+	unitOfMeasure: string;
+	totalStockQuantity: number;
+	lastImportPrice: number;
+	lastImportDate: string | null;
 }
 
 export interface SupplierStats {
 	totalSuppliers: number;
 	activeSuppliers: number;
 	inactiveSuppliers: number;
-	totalPurchaseValue: number; // Tổng giá trị nhập hàng
+	totalPurchaseValue: number;
 	topSupplier?: {
 		name: string;
 		value: number;
@@ -56,8 +76,8 @@ export interface SupplierStats {
 }
 
 export interface SupplierFilter {
-	searchQuery: string; // Tìm theo mã, tên, SĐT
-	status: string; // all, active, inactive
+	searchQuery: string;
+	status: string;
 }
 
 /**
@@ -68,10 +88,13 @@ export interface CreateSupplierDTO {
 	supplierType: SupplierType;
 	phoneNumber: string;
 	address: string;
-	suppliedProductType: string;
-	currentDebt?: number;
+	email?: string;
+	taxCode?: string;
+	bankAccount?: string;
+	bankName?: string;
 	representName?: string;
 	representPhoneNumber?: string;
+	suppliedProductType?: string[]; // Array of productIds
 }
 
 /**
@@ -82,8 +105,11 @@ export interface UpdateSupplierDTO {
 	supplierType?: SupplierType;
 	phoneNumber?: string;
 	address?: string;
-	suppliedProductType?: string;
-	currentDebt?: number;
+	email?: string;
+	taxCode?: string;
+	bankAccount?: string;
+	bankName?: string;
 	representName?: string;
 	representPhoneNumber?: string;
+	suppliedProductType?: string[]; // Array of productIds
 }

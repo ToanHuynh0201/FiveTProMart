@@ -23,7 +23,6 @@ import {
 	Center,
 	Flex,
 	Badge,
-	Divider,
 	Icon,
 	Tooltip,
 	Box,
@@ -34,18 +33,46 @@ import {
 	AlertDialogContent,
 	AlertDialogOverlay,
 	useDisclosure,
+	Tabs,
+	TabList,
+	TabPanels,
+	Tab,
+	TabPanel,
+	Table,
+	Thead,
+	Tbody,
+	Tr,
+	Th,
+	Td,
+	IconButton,
 } from "@chakra-ui/react";
-import type { Supplier, SupplierType } from "@/types/supplier";
+import type {
+	SupplierDetail,
+	SupplierType,
+	SupplierProduct,
+} from "@/types/supplier";
+import type { PurchaseListItem } from "@/types/purchase";
 import { supplierService } from "@/services/supplierService";
+import { purchaseService } from "@/services/purchaseService";
 import {
 	FiPhone,
-	FiMapPin,
+	FiMail,
+	FiFileText,
 	FiUser,
 	FiCopy,
 	FiCheck,
 	FiEdit2,
 	FiTrash2,
+	FiCreditCard,
+	FiMapPin,
+	FiEye,
 } from "react-icons/fi";
+import { ProductSelector } from "./ProductSelector";
+
+interface SelectedProduct {
+	productId: string;
+	productName: string;
+}
 
 interface SupplierViewEditModalProps {
 	isOpen: boolean;
@@ -67,7 +94,22 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [supplierData, setSupplierData] = useState<Supplier | null>(null);
+	const [supplierData, setSupplierData] = useState<SupplierDetail | null>(
+		null,
+	);
+
+	// Products and Purchase History data
+	const [products, setProducts] = useState<SupplierProduct[]>([]);
+	const [purchaseHistory, setPurchaseHistory] = useState<PurchaseListItem[]>(
+		[],
+	);
+	const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+	const [productsTotalItems, setProductsTotalItems] = useState(0);
+	const [historyTotalItems, setHistoryTotalItems] = useState(0);
+
+	// Tab state
+	const [tabIndex, setTabIndex] = useState(0);
 
 	// Delete confirmation dialog
 	const {
@@ -82,32 +124,56 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		supplierName: "",
 		address: "",
 		phoneNumber: "",
+		email: "",
+		taxCode: "",
+		bankAccount: "",
+		bankName: "",
 		representName: "",
 		representPhoneNumber: "",
 		supplierType: "Doanh nghiệp" as SupplierType,
-		suppliedProductType: "",
-		currentDebt: 0,
 	});
+
+	// Selected products for edit mode
+	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+		[],
+	);
 
 	const [errors, setErrors] = useState({
 		supplierName: "",
 		phoneNumber: "",
+		email: "",
 		representPhoneNumber: "",
 	});
 
 	// Copy states
-	const [isPhoneCopied, setIsPhoneCopied] = useState(false);
-	const [isRepresentPhoneCopied, setIsRepresentPhoneCopied] = useState(false);
+	const [copiedField, setCopiedField] = useState<string | null>(null);
+
+	const handleProductsChange = (newProducts: SelectedProduct[]) => {
+		setSelectedProducts(newProducts);
+	};
 
 	// Load supplier data when modal opens
 	useEffect(() => {
 		if (isOpen && supplierId) {
 			loadSupplierData();
+			setTabIndex(0);
 		}
 		// Reset mode to initial mode when modal opens
 		setMode(initialMode);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isOpen, supplierId, initialMode]);
+
+	// Load products and purchase history when tab changes
+	useEffect(() => {
+		if (isOpen && supplierId && mode === "view") {
+			if (tabIndex === 0) {
+				loadProducts();
+			} else if (tabIndex === 1) {
+				loadPurchaseHistory();
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [tabIndex, isOpen, supplierId, mode]);
 
 	const loadSupplierData = async () => {
 		if (!supplierId) return;
@@ -115,6 +181,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		setIsFetching(true);
 		try {
 			const result = await supplierService.getSupplierById(supplierId);
+			console.log(result);
 
 			if (result.success && result.data) {
 				setSupplierData(result.data);
@@ -123,16 +190,35 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					supplierName: result.data.supplierName,
 					address: result.data.address,
 					phoneNumber: result.data.phoneNumber,
+					email: result.data.email || "",
+					taxCode: result.data.taxCode || "",
+					bankAccount: result.data.bankAccount || "",
+					bankName: result.data.bankName || "",
 					representName: result.data.representName || "",
-					representPhoneNumber: result.data.representPhoneNumber || "",
+					representPhoneNumber:
+						result.data.representPhoneNumber || "",
 					supplierType: result.data.supplierType,
-					suppliedProductType: result.data.suppliedProductType,
-					currentDebt: result.data.currentDebt,
 				});
+
+				// Load products for edit mode - we need product names
+				const productsResult =
+					await supplierService.getSupplierProducts(supplierId, {
+						page: 0,
+						size: 100,
+					});
+				if (productsResult.success && productsResult.data) {
+					const existingProducts: SelectedProduct[] =
+						productsResult.data.map((p: SupplierProduct) => ({
+							productId: p.productId,
+							productName: p.productName,
+						}));
+					setSelectedProducts(existingProducts);
+				}
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể tải thông tin nhà cung cấp",
+					description:
+						result.error || "Không thể tải thông tin nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -152,10 +238,62 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		}
 	};
 
+	const loadProducts = async () => {
+		if (!supplierId) return;
+
+		setIsLoadingProducts(true);
+		try {
+			const result = await supplierService.getSupplierProducts(
+				supplierId,
+				{
+					page: 0,
+					size: 100,
+				},
+			);
+
+			if (result.success) {
+				setProducts(result.data || []);
+				setProductsTotalItems(result.pagination?.totalItems || 0);
+			}
+		} catch (error) {
+			console.error("Error loading products:", error);
+		} finally {
+			setIsLoadingProducts(false);
+		}
+	};
+
+	const loadPurchaseHistory = async () => {
+		if (!supplierId) return;
+
+		setIsLoadingHistory(true);
+		try {
+			const result = await purchaseService.getPurchaseOrders({
+				supplierId: supplierId,
+				page: 0,
+				size: 100,
+			});
+
+			if (result.success) {
+				setPurchaseHistory(result.data || []);
+				setHistoryTotalItems(result.pagination?.totalItems || 0);
+			}
+		} catch (error) {
+			console.error("Error loading purchase history:", error);
+		} finally {
+			setIsLoadingHistory(false);
+		}
+	};
+
 	const validatePhone = (phone: string): boolean => {
 		if (!phone) return true;
 		const phoneRegex = /^0[0-9]{9}$/;
 		return phoneRegex.test(phone);
+	};
+
+	const validateEmail = (email: string): boolean => {
+		if (!email) return true;
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
 	};
 
 	const handleSubmit = async () => {
@@ -163,6 +301,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		const newErrors = {
 			supplierName: "",
 			phoneNumber: "",
+			email: "",
 			representPhoneNumber: "",
 		};
 
@@ -179,6 +318,10 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
+		if (formData.email && !validateEmail(formData.email)) {
+			newErrors.email = "Email không hợp lệ";
+		}
+
 		if (
 			formData.representPhoneNumber &&
 			!validatePhone(formData.representPhoneNumber)
@@ -192,6 +335,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		if (
 			newErrors.supplierName ||
 			newErrors.phoneNumber ||
+			newErrors.email ||
 			newErrors.representPhoneNumber
 		) {
 			return;
@@ -206,11 +350,15 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 				supplierName: formData.supplierName,
 				address: formData.address,
 				phoneNumber: formData.phoneNumber,
+				email: formData.email || undefined,
+				taxCode: formData.taxCode || undefined,
+				bankAccount: formData.bankAccount || undefined,
+				bankName: formData.bankName || undefined,
 				representName: formData.representName || undefined,
-				representPhoneNumber: formData.representPhoneNumber || undefined,
+				representPhoneNumber:
+					formData.representPhoneNumber || undefined,
 				supplierType: formData.supplierType,
-				suppliedProductType: formData.suppliedProductType,
-				currentDebt: formData.currentDebt,
+				suppliedProductType: selectedProducts.map((p) => p.productId),
 			});
 
 			if (result.success) {
@@ -226,7 +374,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Có lỗi xảy ra khi cập nhật nhà cung cấp",
+					description:
+						result.error ||
+						"Có lỗi xảy ra khi cập nhật nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -246,27 +396,13 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		}
 	};
 
-	const handleCopyPhone = async () => {
-		if (!supplierData?.phoneNumber) return;
+	const handleCopy = async (value: string, field: string) => {
+		if (!value) return;
 
 		try {
-			await navigator.clipboard.writeText(supplierData.phoneNumber);
-			setIsPhoneCopied(true);
-			setTimeout(() => setIsPhoneCopied(false), 2000);
-		} catch (error) {
-			console.error("Failed to copy:", error);
-		}
-	};
-
-	const handleCopyRepresentPhone = async () => {
-		if (!supplierData?.representPhoneNumber) return;
-
-		try {
-			await navigator.clipboard.writeText(
-				supplierData.representPhoneNumber,
-			);
-			setIsRepresentPhoneCopied(true);
-			setTimeout(() => setIsRepresentPhoneCopied(false), 2000);
+			await navigator.clipboard.writeText(value);
+			setCopiedField(field);
+			setTimeout(() => setCopiedField(null), 2000);
 		} catch (error) {
 			console.error("Failed to copy:", error);
 		}
@@ -298,7 +434,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Có lỗi xảy ra khi xóa nhà cung cấp",
+					description:
+						result.error || "Có lỗi xảy ra khi xóa nhà cung cấp",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -322,70 +459,119 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		return value.toLocaleString("vi-VN") + "đ";
 	};
 
-	const InfoRow = ({
+	const formatDate = (dateString: string | null) => {
+		if (!dateString) return "-";
+		try {
+			const date = new Date(dateString);
+			return date.toLocaleDateString("vi-VN");
+		} catch {
+			return dateString;
+		}
+	};
+
+	const getStatusColor = (status: string) => {
+		switch (status) {
+			case "Completed":
+				return "green";
+			case "Draft":
+				return "yellow";
+			case "Cancelled":
+				return "red";
+			default:
+				return "gray";
+		}
+	};
+
+	const getStatusLabel = (status: string) => {
+		switch (status) {
+			case "Completed":
+				return "ĐÃ NHẬN";
+			case "Draft":
+				return "NHÁP";
+			case "Cancelled":
+				return "ĐÃ HỦY";
+			default:
+				return status;
+		}
+	};
+
+	const InfoCard = ({
 		icon,
 		label,
 		value,
-		onCopy,
-		isCopied,
+		canCopy = false,
+		fieldName = "",
 	}: {
 		icon: React.ElementType;
 		label: string;
-		value?: string | number;
-		onCopy?: () => void;
-		isCopied?: boolean;
+		value?: string | null;
+		canCopy?: boolean;
+		fieldName?: string;
 	}) => (
 		<Flex
-			align="center"
-			gap={2}
-			py={2}
-			px={3}
+			direction="column"
+			p={3}
 			bg="gray.50"
-			borderRadius="10px"
-			cursor={onCopy ? "pointer" : "default"}
-			onClick={onCopy}
-			_hover={onCopy ? { bg: "gray.100" } : {}}
+			borderRadius="12px"
+			border="1px solid"
+			borderColor="gray.200"
+			minH="70px"
+			cursor={canCopy && value ? "pointer" : "default"}
+			onClick={() => canCopy && value && handleCopy(value, fieldName)}
+			_hover={canCopy && value ? { bg: "gray.100" } : {}}
 			transition="background 0.2s">
-			<Icon
-				as={icon}
-				w="16px"
-				h="16px"
-				color="#161f70"
-			/>
-			<Box flex={1}>
+			<Flex
+				align="center"
+				gap={2}
+				mb={1}>
+				<Icon
+					as={icon}
+					w="14px"
+					h="14px"
+					color="gray.500"
+				/>
 				<Text
-					fontSize="11px"
-					fontWeight="600"
-					color="gray.600"
-					mb={0.5}>
+					fontSize="12px"
+					fontWeight="500"
+					color="gray.500">
 					{label}
 				</Text>
-				<Flex
-					align="center"
-					gap={2}>
-					<Text
-						fontSize="13px"
-						fontWeight="500"
-						color="#161f70">
-						{value || "N/A"}
-					</Text>
-					{onCopy && value && (
-						<Tooltip
-							label={isCopied ? "Đã copy!" : "Click để copy"}
-							placement="top"
-							hasArrow>
-							<Box>
-								<Icon
-									as={isCopied ? FiCheck : FiCopy}
-									w="14px"
-									h="14px"
-									color={isCopied ? "green.500" : "gray.500"}
-								/>
-							</Box>
-						</Tooltip>
-					)}
-				</Flex>
-			</Box>
+			</Flex>
+			<Flex
+				align="center"
+				gap={2}>
+				<Text
+					fontSize="14px"
+					fontWeight="600"
+					color="#161f70">
+					{value || "-"}
+				</Text>
+				{canCopy && value && (
+					<Tooltip
+						label={
+							copiedField === fieldName
+								? "Đã copy!"
+								: "Click để copy"
+						}
+						placement="top"
+						hasArrow>
+						<Box>
+							<Icon
+								as={
+									copiedField === fieldName ? FiCheck : FiCopy
+								}
+								w="12px"
+								h="12px"
+								color={
+									copiedField === fieldName
+										? "green.500"
+										: "gray.400"
+								}
+							/>
+						</Box>
+					</Tooltip>
+				)}
+			</Flex>
 		</Flex>
 	);
 
@@ -393,7 +579,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
-			size={{ base: "full", md: "4xl" }}
+			size={{ base: "full", md: "5xl" }}
 			isCentered
 			motionPreset="slideInBottom"
 			scrollBehavior="inside">
@@ -404,10 +590,11 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 				my={{ base: 0, md: 4 }}
 				maxH={{ base: "100vh", md: "90vh" }}>
 				<ModalHeader
-					fontSize={{ base: "24px", md: "28px" }}
+					fontSize={{ base: "20px", md: "24px" }}
 					fontWeight="700"
 					color="#161f70"
-					pt={6}
+					pt={5}
+					pb={3}
 					px={6}
 					borderBottom="1px solid"
 					borderColor="gray.100">
@@ -416,7 +603,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 						: "Chỉnh sửa nhà cung cấp"}
 				</ModalHeader>
 				<ModalCloseButton
-					top={6}
+					top={5}
 					right={6}
 					size="lg"
 					color="gray.500"
@@ -435,9 +622,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 						</Center>
 					) : supplierData ? (
 						<VStack
-							spacing={5}
-							align="stretch"
-							mt={4}>
+							spacing={4}
+							align="stretch">
 							{mode === "view" ? (
 								/* VIEW MODE */
 								<>
@@ -446,165 +632,574 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										justify="space-between"
 										align="flex-start"
 										flexWrap="wrap"
-										gap={4}>
+										gap={3}
+										pb={2}>
 										<Box>
 											<Text
-												fontSize="28px"
+												fontSize="24px"
 												fontWeight="700"
 												color="#161f70"
-												mb={1}>
+												mb={0.5}>
 												{supplierData.supplierName}
 											</Text>
 											<Text
-												fontSize="16px"
-												color="gray.600"
-												fontWeight="600">
-												Mã: {supplierData.supplierId}
+												fontSize="14px"
+												color="gray.500"
+												fontWeight="500">
+												{supplierData.supplierId}
 											</Text>
 										</Box>
 										<Badge
-											colorScheme="blue"
-											fontSize="14px"
+											colorScheme={
+												supplierData.status ===
+												"HOẠT ĐỘNG"
+													? "green"
+													: "gray"
+											}
+											fontSize="13px"
 											px={4}
-											py={2}
-											borderRadius="full">
-											{supplierData.supplierType}
+											py={1.5}
+											borderRadius="full"
+											border="1px solid"
+											borderColor={
+												supplierData.status ===
+												"HOẠT ĐỘNG"
+													? "green.200"
+													: "gray.300"
+											}>
+											{supplierData.status}
 										</Badge>
 									</Flex>
 
-									<Divider />
-
-									{/* Basic Info Grid */}
+									{/* Info Grid - 4 columns */}
 									<Grid
 										templateColumns={{
 											base: "1fr",
-											md: "repeat(2, 1fr)",
+											sm: "repeat(2, 1fr)",
+											md: "repeat(4, 1fr)",
 										}}
-										gap={4}>
+										gap={3}>
 										<GridItem>
-											<InfoRow
+											<InfoCard
 												icon={FiPhone}
 												label="Số điện thoại"
 												value={supplierData.phoneNumber}
-												onCopy={handleCopyPhone}
-												isCopied={isPhoneCopied}
+												canCopy
+												fieldName="phone"
 											/>
 										</GridItem>
 										<GridItem>
-											<InfoRow
+											<InfoCard
+												icon={FiMail}
+												label="Email"
+												value={supplierData.email}
+											/>
+										</GridItem>
+										<GridItem>
+											<InfoCard
+												icon={FiFileText}
+												label="Mã số thuế"
+												value={supplierData.taxCode}
+											/>
+										</GridItem>
+										<GridItem>
+											<InfoCard
 												icon={FiUser}
-												label="Người đại diện"
-												value={supplierData.representName || "N/A"}
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoRow
-												icon={FiPhone}
-												label="SĐT người đại diện"
-												value={supplierData.representPhoneNumber || "N/A"}
-												onCopy={
-													supplierData.representPhoneNumber
-														? handleCopyRepresentPhone
-														: undefined
+												label="Người liên hệ"
+												value={
+													supplierData.representName
 												}
-												isCopied={isRepresentPhoneCopied}
 											/>
 										</GridItem>
 										<GridItem>
-											<Flex
-												align="center"
-												gap={2}
-												py={2}
-												px={3}
-												bg="gray.50"
-												borderRadius="10px">
-												<Icon
-													as={FiMapPin}
-													w="16px"
-													h="16px"
-													color="#161f70"
-													flexShrink={0}
-												/>
-												<Box flex={1}>
-													<Text
-														fontSize="11px"
-														fontWeight="600"
-														color="gray.600"
-														mb={0.5}>
-														Loại sản phẩm cung cấp
-													</Text>
-													<Text
-														fontSize="13px"
-														fontWeight="500"
-														color="#161f70">
-														{supplierData.suppliedProductType}
-													</Text>
-												</Box>
-											</Flex>
+											<InfoCard
+												icon={FiPhone}
+												label="SĐT người liên hệ"
+												value={
+													supplierData.representPhoneNumber
+												}
+												canCopy
+												fieldName="representPhone"
+											/>
 										</GridItem>
-										<GridItem colSpan={{ base: 1, md: 2 }}>
-											<Flex
-												align="center"
-												gap={2}
-												py={2}
-												px={3}
-												bg="gray.50"
-												borderRadius="10px">
-												<Icon
-													as={FiMapPin}
-													w="16px"
-													h="16px"
-													color="#161f70"
-													flexShrink={0}
-												/>
-												<Box flex={1}>
-													<Text
-														fontSize="11px"
-														fontWeight="600"
-														color="gray.600"
-														mb={0.5}>
-														Địa chỉ
-													</Text>
-													<Tooltip
-														label={supplierData.address}
-														placement="top"
-														hasArrow>
-														<Text
-															fontSize="13px"
-															fontWeight="500"
-															color="#161f70"
-															noOfLines={1}
-															cursor="default">
-															{supplierData.address}
-														</Text>
-													</Tooltip>
-												</Box>
-											</Flex>
+										<GridItem>
+											<InfoCard
+												icon={FiCreditCard}
+												label="Số tài khoản"
+												value={supplierData.bankAccount}
+												canCopy
+												fieldName="bankAccount"
+											/>
+										</GridItem>
+										<GridItem>
+											<InfoCard
+												icon={FiCreditCard}
+												label="Ngân hàng"
+												value={supplierData.bankName}
+											/>
+										</GridItem>
+										<GridItem>
+											<InfoCard
+												icon={FiMapPin}
+												label="Địa chỉ"
+												value={supplierData.address}
+											/>
 										</GridItem>
 									</Grid>
 
-									<Divider />
+									{/* Tabs Section */}
+									<Box mt={2}>
+										<Tabs
+											index={tabIndex}
+											onChange={setTabIndex}
+											variant="unstyled">
+											<TabList
+												borderBottom="1px solid"
+												borderColor="gray.200">
+												<Tab
+													fontSize="14px"
+													fontWeight="600"
+													color={
+														tabIndex === 0
+															? "#161f70"
+															: "gray.500"
+													}
+													borderBottom={
+														tabIndex === 0
+															? "2px solid"
+															: "none"
+													}
+													borderColor="#161f70"
+													pb={3}
+													px={4}
+													_hover={{
+														color: "#161f70",
+													}}>
+													Sản phẩm cung cấp (
+													{productsTotalItems})
+												</Tab>
+												<Tab
+													fontSize="14px"
+													fontWeight="600"
+													color={
+														tabIndex === 1
+															? "#161f70"
+															: "gray.500"
+													}
+													borderBottom={
+														tabIndex === 1
+															? "2px solid"
+															: "none"
+													}
+													borderColor="#161f70"
+													pb={3}
+													px={4}
+													_hover={{
+														color: "#161f70",
+													}}>
+													Lịch sử nhập hàng (
+													{historyTotalItems})
+												</Tab>
+											</TabList>
 
-									{/* Debt Info */}
-									<Box
-										p={4}
-										bg="orange.50"
-										borderRadius="12px"
-										borderLeft="4px solid"
-										borderColor="orange.500">
-										<Text
-											fontSize="14px"
-											fontWeight="600"
-											color="gray.700"
-											mb={1}>
-											Công nợ hiện tại
-										</Text>
-										<Text
-											fontSize="24px"
-											fontWeight="700"
-											color="orange.600">
-											{formatCurrency(supplierData.currentDebt)}
-										</Text>
+											<TabPanels>
+												{/* Products Tab */}
+												<TabPanel
+													px={0}
+													py={4}>
+													{isLoadingProducts ? (
+														<Center py={8}>
+															<Spinner color="#161f70" />
+														</Center>
+													) : products.length > 0 ? (
+														<Box
+															overflowX="auto"
+															borderRadius="lg"
+															border="1px solid"
+															borderColor="gray.200">
+															<Table
+																variant="simple"
+																size="sm">
+																<Thead bg="gray.50">
+																	<Tr>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Mã
+																			SP
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Tên
+																			sản
+																			phẩm
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Nhóm
+																			hàng
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Đơn
+																			vị
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}
+																			isNumeric>
+																			Giá
+																			nhập
+																			gần
+																			nhất
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Ngày
+																			nhập
+																			gần
+																			nhất
+																		</Th>
+																	</Tr>
+																</Thead>
+																<Tbody>
+																	{products.map(
+																		(
+																			product,
+																		) => (
+																			<Tr
+																				key={
+																					product.productId
+																				}
+																				_hover={{
+																					bg: "gray.50",
+																				}}>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="#161f70"
+																					py={
+																						3
+																					}>
+																					{
+																						product.productId
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.700"
+																					py={
+																						3
+																					}>
+																					{
+																						product.productName
+																					}
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}>
+																					<Badge
+																						colorScheme="purple"
+																						fontSize="11px"
+																						px={
+																							2
+																						}
+																						py={
+																							0.5
+																						}
+																						borderRadius="md">
+																						{
+																							product.category
+																						}
+																					</Badge>
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{
+																						product.unitOfMeasure
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="purple.600"
+																					py={
+																						3
+																					}
+																					isNumeric>
+																					{product.lastImportPrice
+																						? formatCurrency(
+																								product.lastImportPrice,
+																						  )
+																						: "-"}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{formatDate(
+																						product.lastImportDate,
+																					)}
+																				</Td>
+																			</Tr>
+																		),
+																	)}
+																</Tbody>
+															</Table>
+														</Box>
+													) : (
+														<Center py={8}>
+															<Text color="gray.500">
+																Chưa có sản phẩm
+																nào
+															</Text>
+														</Center>
+													)}
+												</TabPanel>
+
+												{/* Purchase History Tab */}
+												<TabPanel
+													px={0}
+													py={4}>
+													{isLoadingHistory ? (
+														<Center py={8}>
+															<Spinner color="#161f70" />
+														</Center>
+													) : purchaseHistory.length >
+													  0 ? (
+														<Box
+															overflowX="auto"
+															borderRadius="lg"
+															border="1px solid"
+															borderColor="gray.200">
+															<Table
+																variant="simple"
+																size="sm">
+																<Thead bg="gray.50">
+																	<Tr>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Mã
+																			phiếu
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Ngày
+																			nhập
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Người
+																			tạo
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}
+																			isNumeric>
+																			Tổng
+																			tiền
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
+																			Trạng
+																			thái
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}
+																			textAlign="center">
+																			Chi
+																			tiết
+																		</Th>
+																	</Tr>
+																</Thead>
+																<Tbody>
+																	{purchaseHistory.map(
+																		(
+																			item,
+																		) => (
+																			<Tr
+																				key={
+																					item.id
+																				}
+																				_hover={{
+																					bg: "gray.50",
+																				}}>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="#161f70"
+																					py={
+																						3
+																					}>
+																					{
+																						item.poCode
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.700"
+																					py={
+																						3
+																					}>
+																					{formatDate(
+																						item.purchaseDate,
+																					)}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.600"
+																					py={
+																						3
+																					}>
+																					{
+																						item.staffNameCreated
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					fontWeight="600"
+																					color="purple.600"
+																					py={
+																						3
+																					}
+																					isNumeric>
+																					{formatCurrency(
+																						item.totalAmount,
+																					)}
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}>
+																					<Badge
+																						colorScheme={getStatusColor(
+																							item.status,
+																						)}
+																						fontSize="11px"
+																						px={
+																							2
+																						}
+																						py={
+																							0.5
+																						}
+																						borderRadius="md">
+																						{getStatusLabel(
+																							item.status,
+																						)}
+																					</Badge>
+																				</Td>
+																				<Td
+																					py={
+																						3
+																					}
+																					textAlign="center">
+																					<IconButton
+																						aria-label="Xem chi tiết"
+																						icon={
+																							<FiEye />
+																						}
+																						size="sm"
+																						variant="ghost"
+																						color="gray.500"
+																						_hover={{
+																							color: "#161f70",
+																							bg: "gray.100",
+																						}}
+																					/>
+																				</Td>
+																			</Tr>
+																		),
+																	)}
+																</Tbody>
+															</Table>
+														</Box>
+													) : (
+														<Center py={8}>
+															<Text color="gray.500">
+																Chưa có lịch sử
+																nhập hàng
+															</Text>
+														</Center>
+													)}
+												</TabPanel>
+											</TabPanels>
+										</Tabs>
 									</Box>
 								</>
 							) : (
@@ -615,30 +1210,35 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 											base: "1fr",
 											md: "repeat(2, 1fr)",
 										}}
-										gap={5}>
+										gap={4}>
 										<GridItem colSpan={{ base: 1, md: 2 }}>
 											<FormControl
 												isRequired
-												isInvalid={!!errors.supplierName}>
+												isInvalid={
+													!!errors.supplierName
+												}>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
 													Tên nhà cung cấp
 												</FormLabel>
 												<Input
-													value={formData.supplierName}
+													value={
+														formData.supplierName
+													}
 													onChange={(e) => {
 														setFormData({
 															...formData,
-															supplierName: e.target.value,
+															supplierName:
+																e.target.value,
 														});
 														setErrors({
 															...errors,
 															supplierName: "",
 														});
 													}}
-													size="lg"
+													size="md"
 													borderColor={
 														errors.supplierName
 															? "red.500"
@@ -659,25 +1259,30 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										<GridItem>
 											<FormControl isRequired>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
 													Loại nhà cung cấp
 												</FormLabel>
 												<Select
-													value={formData.supplierType}
+													value={
+														formData.supplierType
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															supplierType: e.target
+															supplierType: e
+																.target
 																.value as SupplierType,
 														})
 													}
-													size="lg">
+													size="md">
 													<option value="Doanh nghiệp">
 														Doanh nghiệp
 													</option>
-													<option value="Tư nhân">Tư nhân</option>
+													<option value="Tư nhân">
+														Tư nhân
+													</option>
 												</Select>
 											</FormControl>
 										</GridItem>
@@ -685,9 +1290,11 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										<GridItem>
 											<FormControl
 												isRequired
-												isInvalid={!!errors.phoneNumber}>
+												isInvalid={
+													!!errors.phoneNumber
+												}>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
 													Số điện thoại
@@ -697,14 +1304,15 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) => {
 														setFormData({
 															...formData,
-															phoneNumber: e.target.value,
+															phoneNumber:
+																e.target.value,
 														});
 														setErrors({
 															...errors,
 															phoneNumber: "",
 														});
 													}}
-													size="lg"
+													size="md"
 													borderColor={
 														errors.phoneNumber
 															? "red.500"
@@ -723,37 +1331,107 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										</GridItem>
 
 										<GridItem>
-											<FormControl>
+											<FormControl
+												isInvalid={!!errors.email}>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
-													Người đại diện
+													Email
 												</FormLabel>
 												<Input
-													value={formData.representName}
+													type="email"
+													value={formData.email}
+													onChange={(e) => {
+														setFormData({
+															...formData,
+															email: e.target
+																.value,
+														});
+														setErrors({
+															...errors,
+															email: "",
+														});
+													}}
+													size="md"
+													borderColor={
+														errors.email
+															? "red.500"
+															: "gray.300"
+													}
+												/>
+												{errors.email && (
+													<Text
+														color="red.500"
+														fontSize="sm"
+														mt={1}>
+														{errors.email}
+													</Text>
+												)}
+											</FormControl>
+										</GridItem>
+
+										<GridItem>
+											<FormControl>
+												<FormLabel
+													fontSize="14px"
+													fontWeight="600"
+													color="gray.700">
+													Mã số thuế
+												</FormLabel>
+												<Input
+													value={formData.taxCode}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															representName: e.target.value,
+															taxCode:
+																e.target.value,
 														})
 													}
-													size="lg"
+													size="md"
+												/>
+											</FormControl>
+										</GridItem>
+
+										<GridItem>
+											<FormControl>
+												<FormLabel
+													fontSize="14px"
+													fontWeight="600"
+													color="gray.700">
+													Người liên hệ
+												</FormLabel>
+												<Input
+													value={
+														formData.representName
+													}
+													onChange={(e) =>
+														setFormData({
+															...formData,
+															representName:
+																e.target.value,
+														})
+													}
+													size="md"
 												/>
 											</FormControl>
 										</GridItem>
 
 										<GridItem>
 											<FormControl
-												isInvalid={!!errors.representPhoneNumber}>
+												isInvalid={
+													!!errors.representPhoneNumber
+												}>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
-													SĐT người đại diện
+													SĐT người liên hệ
 												</FormLabel>
 												<Input
-													value={formData.representPhoneNumber}
+													value={
+														formData.representPhoneNumber
+													}
 													onChange={(e) => {
 														setFormData({
 															...formData,
@@ -762,10 +1440,11 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 														});
 														setErrors({
 															...errors,
-															representPhoneNumber: "",
+															representPhoneNumber:
+																"",
 														});
 													}}
-													size="lg"
+													size="md"
 													borderColor={
 														errors.representPhoneNumber
 															? "red.500"
@@ -777,30 +1456,54 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 														color="red.500"
 														fontSize="sm"
 														mt={1}>
-														{errors.representPhoneNumber}
+														{
+															errors.representPhoneNumber
+														}
 													</Text>
 												)}
 											</FormControl>
 										</GridItem>
 
-										<GridItem colSpan={{ base: 1, md: 2 }}>
-											<FormControl isRequired>
+										<GridItem>
+											<FormControl>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
-													Loại sản phẩm cung cấp
+													Số tài khoản
 												</FormLabel>
 												<Input
-													value={formData.suppliedProductType}
+													value={formData.bankAccount}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															suppliedProductType: e.target.value,
+															bankAccount:
+																e.target.value,
 														})
 													}
-													size="lg"
-													placeholder="VD: Thịt cá tươi, Rau củ quả"
+													size="md"
+												/>
+											</FormControl>
+										</GridItem>
+
+										<GridItem>
+											<FormControl>
+												<FormLabel
+													fontSize="14px"
+													fontWeight="600"
+													color="gray.700">
+													Ngân hàng
+												</FormLabel>
+												<Input
+													value={formData.bankName}
+													onChange={(e) =>
+														setFormData({
+															...formData,
+															bankName:
+																e.target.value,
+														})
+													}
+													size="md"
 												/>
 											</FormControl>
 										</GridItem>
@@ -808,7 +1511,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										<GridItem colSpan={{ base: 1, md: 2 }}>
 											<FormControl isRequired>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
 													Địa chỉ
@@ -818,37 +1521,41 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															address: e.target.value,
+															address:
+																e.target.value,
 														})
 													}
-													size="lg"
+													size="md"
 													rows={2}
 													resize="vertical"
 												/>
 											</FormControl>
 										</GridItem>
 
+										{/* Sản phẩm cung cấp */}
 										<GridItem colSpan={{ base: 1, md: 2 }}>
 											<FormControl>
 												<FormLabel
-													fontSize="16px"
+													fontSize="14px"
 													fontWeight="600"
 													color="gray.700">
-													Công nợ hiện tại (VND)
+													Sản phẩm cung cấp
 												</FormLabel>
-												<Input
-													type="number"
-													value={formData.currentDebt}
-													onChange={(e) =>
-														setFormData({
-															...formData,
-															currentDebt: Number(
-																e.target.value,
-															),
-														})
-													}
-													size="lg"
-												/>
+												<Box
+													p={4}
+													border="1px solid"
+													borderColor="gray.200"
+													borderRadius="lg"
+													bg="gray.50">
+													<ProductSelector
+														selectedProducts={
+															selectedProducts
+														}
+														onProductsChange={
+															handleProductsChange
+														}
+													/>
+												</Box>
 											</FormControl>
 										</GridItem>
 									</Grid>
@@ -880,7 +1587,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 									leftIcon={<Icon as={FiTrash2} />}
 									colorScheme="red"
 									variant="ghost"
-									size="lg"
+									size="md"
 									onClick={onDeleteDialogOpen}
 									_hover={{ bg: "red.50" }}>
 									Xóa
@@ -892,30 +1599,67 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 						<HStack spacing={3}>
 							<Button
 								variant="ghost"
-								size="lg"
-								onClick={() => {
+								size="md"
+								onClick={async () => {
 									if (mode === "edit") {
 										setMode("view");
 										// Reset form data
 										if (supplierData) {
 											setFormData({
-												supplierName: supplierData.supplierName,
+												supplierName:
+													supplierData.supplierName,
 												address: supplierData.address,
-												phoneNumber: supplierData.phoneNumber,
+												phoneNumber:
+													supplierData.phoneNumber,
+												email: supplierData.email || "",
+												taxCode:
+													supplierData.taxCode || "",
+												bankAccount:
+													supplierData.bankAccount ||
+													"",
+												bankName:
+													supplierData.bankName || "",
 												representName:
-													supplierData.representName || "",
+													supplierData.representName ||
+													"",
 												representPhoneNumber:
 													supplierData.representPhoneNumber ||
 													"",
-												supplierType: supplierData.supplierType,
-												suppliedProductType:
-													supplierData.suppliedProductType,
-												currentDebt: supplierData.currentDebt,
+												supplierType:
+													supplierData.supplierType,
 											});
+											// Reload products from API to reset selected products
+											if (supplierId) {
+												const productsResult =
+													await supplierService.getSupplierProducts(
+														supplierId,
+														{ page: 0, size: 100 },
+													);
+												if (
+													productsResult.success &&
+													productsResult.data
+												) {
+													const existingProducts: SelectedProduct[] =
+														productsResult.data.map(
+															(
+																p: SupplierProduct,
+															) => ({
+																productId:
+																	p.productId,
+																productName:
+																	p.productName,
+															}),
+														);
+													setSelectedProducts(
+														existingProducts,
+													);
+												}
+											}
 										}
 										setErrors({
 											supplierName: "",
 											phoneNumber: "",
+											email: "",
 											representPhoneNumber: "",
 										});
 									} else {
@@ -924,20 +1668,23 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 								}}
 								isDisabled={isLoading}
 								_hover={{ bg: "gray.100" }}
-								px={8}>
+								px={6}
+								bg="#161f70"
+								color="white"
+								_disabled={{ bg: "gray.300" }}>
 								{mode === "edit" ? "Quay lại" : "Đóng"}
 							</Button>
 							{mode === "edit" ? (
 								<Button
 									colorScheme="blue"
-									size="lg"
+									size="md"
 									onClick={handleSubmit}
 									isLoading={isLoading}
 									loadingText="Đang cập nhật..."
 									bg="#161f70"
 									_hover={{ bg: "#0f1654" }}
 									isDisabled={isFetching}
-									px={8}>
+									px={6}>
 									Cập nhật
 								</Button>
 							) : (
@@ -947,9 +1694,9 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										colorScheme="blue"
 										bg="#161f70"
 										_hover={{ bg: "#0f1654" }}
-										size="lg"
+										size="md"
 										onClick={switchToEditMode}
-										px={8}>
+										px={6}>
 										Chỉnh sửa
 									</Button>
 								)

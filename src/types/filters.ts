@@ -27,12 +27,12 @@ export interface PromotionFilters extends BaseFilters {
 }
 
 export interface PurchaseFilters extends BaseFilters {
-	searchQuery?: string;
-	status?: string;
-	paymentStatus?: string;
-	supplierId?: string;
-	dateFrom?: string;
-	dateTo?: string;
+	search?: string; // Filter by poId or supplierName
+	status?: string; // "Draft" | "Completed" | "Cancelled" | "all"
+	startDate?: string; // dd-MM-yyyy
+	endDate?: string; // dd-MM-yyyy
+	sortBy?: string;
+	order?: string;
 }
 
 export interface SupplierFilters extends BaseFilters {

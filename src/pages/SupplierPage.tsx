@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	SupplierTable,
@@ -82,15 +82,9 @@ const SupplierPage = () => {
 	} = useDisclosure();
 
 	// Fetch suppliers with filters
-	const fetchSuppliers = async () => {
+	const fetchSuppliers = useCallback(async () => {
 		setIsLoading(true);
 		try {
-			console.log(
-				"[SupplierPage] Fetching with currentPage:",
-				currentPage,
-			);
-			console.log("[SupplierPage] debouncedFilters:", debouncedFilters);
-
 			const result = await supplierService.getSuppliers({
 				page: currentPage - 1, // Backend uses zero-based indexing
 				size: debouncedFilters.size,
@@ -99,7 +93,6 @@ const SupplierPage = () => {
 				sortBy: debouncedFilters.sortBy,
 				order: debouncedFilters.order,
 			});
-			console.log("RESULT:", result);
 
 			if (result.success) {
 				setSupplierList(result.data || []);
@@ -117,7 +110,7 @@ const SupplierPage = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [currentPage, debouncedFilters, setTotal, toast]);
 
 	// Fetch suppliers when filters or page change
 	useEffect(() => {

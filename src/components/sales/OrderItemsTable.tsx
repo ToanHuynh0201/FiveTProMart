@@ -16,6 +16,7 @@ import {
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { OrderItem } from "../../types/sales";
 import { getExpiryStatus, isExpired } from "../../utils/date";
+import { EmptyState } from "../common";
 
 interface OrderItemsTableProps {
 	items: OrderItem[];
@@ -119,12 +120,12 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 						<Tr>
 							<Td
 								colSpan={7}
-								py={12}
-								textAlign="center"
-								color="gray.500"
-								fontSize="14px"
-								fontWeight="500">
-								Chưa có sản phẩm nào trong đơn hàng
+								p={0}
+								border="none">
+								<EmptyState
+									variant="empty-cart"
+									size="md"
+								/>
 							</Td>
 						</Tr>
 					) : (

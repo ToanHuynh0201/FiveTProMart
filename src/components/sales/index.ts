@@ -12,3 +12,4 @@ export { default as OrderFilterBar } from "./OrderFilterBar";
 export { BatchSelectionModal } from "./BatchSelectionModal";
 export { default as PendingOrdersList } from "./PendingOrdersList";
 export { BarcodeScanner } from "./BarcodeScanner";
+export { QuickActionsBar } from "./QuickActionsBar";

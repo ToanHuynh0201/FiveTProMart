@@ -8,3 +8,4 @@ export { ProductDetailModal } from "./ProductDetailModal";
 export { default as BatchListModal } from "./BatchListModal";
 export { default as EditBatchModal } from "./EditBatchModal";
 export { default as DisposalModal } from "./DisposalModal";
+export { CriticalAlertsBanner } from "./CriticalAlertsBanner";

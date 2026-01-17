@@ -21,6 +21,7 @@ import {
 	ProductDetailModal,
 	BatchListModal,
 	DisposalModal,
+	CriticalAlertsBanner,
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
@@ -333,6 +334,18 @@ const InventoryPage = () => {
 						Hủy hàng
 					</Button>
 				</Flex>
+
+				{/* Critical Alerts Banner - Shows when there are urgent issues */}
+				{stats && (stats.expiredBatches > 0 || stats.outOfStockProducts > 0 || stats.expiringSoonBatches > 0 || stats.lowStockProducts > 0) && (
+					<CriticalAlertsBanner
+						expiredBatches={stats.expiredBatches}
+						expiringSoonBatches={stats.expiringSoonBatches}
+						outOfStockProducts={stats.outOfStockProducts}
+						lowStockProducts={stats.lowStockProducts}
+						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
+					/>
+				)}
+
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
@@ -346,6 +359,7 @@ const InventoryPage = () => {
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
 							onClick={() => handleStatClick("low")}
+							severity="warning"
 						/>
 						<StatsCard
 							title="Hết hàng"
@@ -354,6 +368,7 @@ const InventoryPage = () => {
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
 							onClick={() => handleStatClick("out")}
+							severity="critical"
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
@@ -362,6 +377,7 @@ const InventoryPage = () => {
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
 							onClick={() => handleStatClick("expiring-soon")}
+							severity="warning"
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
@@ -370,6 +386,7 @@ const InventoryPage = () => {
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"
 							onClick={() => handleStatClick("expired")}
+							severity="critical"
 						/>
 					</SimpleGrid>
 				)}

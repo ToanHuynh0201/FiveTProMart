@@ -126,6 +126,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					<SearchIcon color="gray.500" />
 				</InputLeftElement>
 				<Input
+					id="sales-product-search"
 					ref={inputRef}
 					h="48px"
 					bg="gray.50"

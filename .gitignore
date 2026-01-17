@@ -29,3 +29,6 @@ dist-ssr
 *.sw?
 
 CLAUDE.md
+.github
+.claude
+docs

@@ -21,14 +21,22 @@ export const formatDateForAPI = (date: string): string => {
 
 /**
  * Convert from API response format to HTML date input format
- * @param date - Date in DD/MM/YYYY format (from API response)
+ * @param date - Date in DD/MM/YYYY or YYYY-MM-DD format (from API response)
  * @returns Date in YYYY-MM-DD format (for HTML input)
  */
 export const formatDateForInput = (date: string): string => {
 	if (!date) return "";
+
+	// Check if date is already in YYYY-MM-DD format (ISO 8601)
+	// Pattern: 4 digits - 2 digits - 2 digits
+	if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+		return date; // Already in correct format
+	}
+
+	// Assume DD/MM/YYYY format
 	const [day, month, year] = date.split("/");
 	if (!year || !month || !day) return "";
-	return `${year}-${month}-${day}`;
+	return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 };
 
 /**

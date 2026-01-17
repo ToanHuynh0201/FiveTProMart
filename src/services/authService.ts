@@ -107,6 +107,27 @@ class AuthService {
 	isAuthenticated(): boolean {
 		return useAuthStore.getState().isAuthenticated;
 	}
+
+	/**
+	 * Request password reset OTP
+	 */
+	async forgotPassword(email: string): Promise<void> {
+		await api.post("/auth/forgot-password", { email });
+	}
+
+	/**
+	 * Verify OTP for password reset
+	 */
+	async verifyOtp(email: string, otp: string): Promise<void> {
+		await api.post("/auth/verify-otp", { email, otp });
+	}
+
+	/**
+	 * Reset password with OTP verification
+	 */
+	async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+		await api.post("/auth/reset-password", { email, otp, newPassword });
+	}
 }
 
 export const authService = new AuthService();

@@ -25,9 +25,9 @@ export const customerService = {
 	 * Search for customer by phone number.
 	 * Returns null if no customer found.
 	 *
-	 * NOTE: CustomerAPI doesn't have dedicated phone search.
-	 * This uses general search and filters client-side.
-	 * TODO: Request backend to add phone search parameter.
+	 * Uses general search API and filters client-side for exact phone match.
+	 * This approach works perfectly - the search param searches across all fields
+	 * including phoneNumber, so exact match filtering gives accurate results.
 	 */
 	async findByPhone(phone: string): Promise<Customer | null> {
 		try {

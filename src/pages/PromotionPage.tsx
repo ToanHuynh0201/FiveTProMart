@@ -119,7 +119,8 @@ const PromotionPage = () => {
 		// Refresh data after adding
 		await fetchPromotions(filters);
 		onAddModalClose();
-		// TODO: Reload stats after adding
+		// Reload stats after adding
+		loadStats();
 	};
 
 	const handleUpdatePromotion = async (
@@ -130,7 +131,8 @@ const PromotionPage = () => {
 		// Refresh data after updating
 		await fetchPromotions(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		loadStats();
 	};
 
 	const handleDeletePromotion = async (id: string) => {
@@ -143,7 +145,8 @@ const PromotionPage = () => {
 			status: "success",
 			duration: 3000,
 		});
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		loadStats();
 	};
 
 	const handleViewDetail = (id: string) => {

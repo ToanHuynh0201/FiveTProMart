@@ -34,6 +34,7 @@ import {
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Purchase, PurchaseItem, Supplier } from "../../types/purchase";
 import { supplierService } from "../../services/supplierService";
+import { purchaseService } from "../../services/purchaseService";
 
 interface AddPurchaseModalProps {
 	isOpen: boolean;
@@ -77,9 +78,16 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 
 	useEffect(() => {
 		if (isOpen) {
-			// TODO: Call purchaseService.generatePurchaseNumber()
-			const purchaseNumber = `PN-${Date.now()}`;
-			setFormData((prev) => ({ ...prev, purchaseNumber }));
+			const loadPurchaseNumber = async () => {
+				try {
+					const response = await purchaseService.generatePurchaseNumber();
+					setFormData((prev) => ({ ...prev, purchaseNumber: response.data ?? `PN-${Date.now()}` }));
+				} catch {
+					// Fallback to client-side generation
+					setFormData((prev) => ({ ...prev, purchaseNumber: `PN-${Date.now()}` }));
+				}
+			};
+			loadPurchaseNumber();
 
 			// Set initial items from Excel if provided
 			if (initialItems.length > 0) {

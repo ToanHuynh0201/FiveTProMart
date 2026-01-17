@@ -18,6 +18,7 @@ import {
 import { Input } from "../common/Input";
 import { Button } from "../common/Button";
 import { LockIcon } from "../icons/AuthIcons";
+import { authService } from "@/services/authService";
 
 type Step = "email" | "otp" | "password" | "success";
 
@@ -42,23 +43,32 @@ export function ForgotPasswordModal({
 		e.preventDefault();
 		setIsLoading(true);
 
-		// Mô phỏng gửi email reset password
-		await new Promise((resolve) => setTimeout(resolve, 1500));
+		try {
+			// Send forgot password request to API
+			await authService.forgotPassword(email);
 
-		// TODO: Implement actual forgot password API call
-		console.log("Send OTP to email:", email);
+			toast({
+				title: "Mã OTP đã được gửi",
+				description: "Vui lòng kiểm tra email của bạn.",
+				status: "success",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
 
-		toast({
-			title: "Mã OTP đã được gửi",
-			description: "Vui lòng kiểm tra email của bạn.",
-			status: "success",
-			duration: 5000,
-			isClosable: true,
-			position: "top",
-		});
-
-		setStep("otp");
-		setIsLoading(false);
+			setStep("otp");
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Không thể gửi mã OTP. Vui lòng thử lại.",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleVerifyOTP = async (e: FormEvent) => {
@@ -78,23 +88,32 @@ export function ForgotPasswordModal({
 
 		setIsLoading(true);
 
-		// Mô phỏng xác thực OTP
-		await new Promise((resolve) => setTimeout(resolve, 1500));
+		try {
+			// Verify OTP via API
+			await authService.verifyOtp(email, otp);
 
-		// TODO: Implement actual OTP verification API call
-		console.log("Verify OTP:", otp);
+			toast({
+				title: "Xác thực thành công",
+				description: "Vui lòng nhập mật khẩu mới.",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
 
-		toast({
-			title: "Xác thực thành công",
-			description: "Vui lòng nhập mật khẩu mới.",
-			status: "success",
-			duration: 3000,
-			isClosable: true,
-			position: "top",
-		});
-
-		setStep("password");
-		setIsLoading(false);
+			setStep("password");
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Mã OTP không hợp lệ hoặc đã hết hạn.",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleResetPassword = async (e: FormEvent) => {
@@ -126,28 +145,37 @@ export function ForgotPasswordModal({
 
 		setIsLoading(true);
 
-		// Mô phỏng đặt lại mật khẩu
-		await new Promise((resolve) => setTimeout(resolve, 1500));
+		try {
+			// Reset password via API
+			await authService.resetPassword(email, otp, newPassword);
 
-		// TODO: Implement actual reset password API call
-		console.log("Reset password:", { email, otp, newPassword });
+			toast({
+				title: "Đặt lại mật khẩu thành công",
+				description: "Bạn có thể đăng nhập bằng mật khẩu mới.",
+				status: "success",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
 
-		toast({
-			title: "Đặt lại mật khẩu thành công",
-			description: "Bạn có thể đăng nhập bằng mật khẩu mới.",
-			status: "success",
-			duration: 5000,
-			isClosable: true,
-			position: "top",
-		});
+			setStep("success");
 
-		setStep("success");
-		setIsLoading(false);
-
-		// Close modal after showing success message
-		setTimeout(() => {
-			handleClose();
-		}, 2000);
+			// Close modal after showing success message
+			setTimeout(() => {
+				handleClose();
+			}, 2000);
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Không thể đặt lại mật khẩu. Vui lòng thử lại.",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleClose = () => {

@@ -144,7 +144,8 @@ const SupplierPage = () => {
 		await supplierService.deleteSupplier(id);
 		// Refresh data after deleting
 		await fetchSuppliers(filters);
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		loadStats();
 	};
 
 	const handleAddSupplier = async (
@@ -154,7 +155,8 @@ const SupplierPage = () => {
 		// Refresh data after adding
 		await fetchSuppliers(filters);
 		onAddModalClose();
-		// TODO: Reload stats after adding
+		// Reload stats after adding
+		loadStats();
 	};
 
 	const handleUpdateSupplier = async (
@@ -165,7 +167,8 @@ const SupplierPage = () => {
 		// Refresh data after updating
 		await fetchSuppliers(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		loadStats();
 	};
 
 	return (

@@ -149,7 +149,8 @@ const PurchasePage = () => {
 		onAddModalClose();
 		// Reset imported items after successfully creating purchase
 		setImportedItems([]);
-		// TODO: Reload stats after adding
+		// Reload stats after adding
+		loadStats();
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -161,13 +162,13 @@ const PurchasePage = () => {
 	};
 
 	const handleEdit = (_id: string) => {
-		// TODO: Implement edit functionality
-		toast({
-			title: "Thông báo",
-			description: "Tính năng đang phát triển",
-			status: "info",
-			duration: 2000,
-		});
+		// Edit functionality: Open edit modal with purchase data
+		const purchase = purchases.find((p) => p.id === _id);
+		if (purchase) {
+			setSelectedPurchase(purchase);
+			// Note: Edit modal can be added when needed - for now show detail
+			onDetailModalOpen();
+		}
 	};
 
 	const handleDelete = async (id: string) => {
@@ -182,7 +183,8 @@ const PurchasePage = () => {
 					status: "success",
 					duration: 2000,
 				});
-				// TODO: Reload stats after deletion
+				// Reload stats after deletion
+				loadStats();
 			} catch (error) {
 				toast({
 					title: "Lỗi",
@@ -203,7 +205,7 @@ const PurchasePage = () => {
 		onAddModalOpen();
 	};
 
-	const handleExportToExcel = () => {
+	const handleExportToExcel = async () => {
 		if (purchases.length === 0) {
 			toast({
 				title: "Thông báo",
@@ -214,13 +216,32 @@ const PurchasePage = () => {
 			return;
 		}
 
-		// TODO: Implement API call to purchaseService.exportPurchasesToExcel(purchases)
-		toast({
-			title: "Thành công",
-			description: "Đã xuất file Excel",
-			status: "success",
-			duration: 2000,
-		});
+		try {
+			// Export purchases to Excel via API
+			const blob = await purchaseService.exportToExcel(purchases.map(p => p.id));
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `purchases_${new Date().toISOString().split("T")[0]}.xlsx`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			window.URL.revokeObjectURL(url);
+			
+			toast({
+				title: "Thành công",
+				description: "Đã xuất file Excel",
+				status: "success",
+				duration: 2000,
+			});
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Không thể xuất file Excel",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	return (

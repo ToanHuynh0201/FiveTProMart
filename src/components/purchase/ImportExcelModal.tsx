@@ -22,6 +22,7 @@ import {
 } from "@chakra-ui/react";
 import { DownloadIcon, AttachmentIcon } from "@chakra-ui/icons";
 import type { PurchaseItem } from "../../types/purchase";
+import { purchaseService } from "@/services/purchaseService";
 
 interface ImportExcelModalProps {
 	isOpen: boolean;
@@ -39,14 +40,32 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [previewItems, setPreviewItems] = useState<PurchaseItem[]>([]);
 
-	const handleDownloadTemplate = () => {
-		// TODO: Call purchaseService.exportExcelTemplate()
-		toast({
-			title: "Tải xuống thành công",
-			description: "File mẫu đã được tải xuống",
-			status: "success",
-			duration: 2000,
-		});
+	const handleDownloadTemplate = async () => {
+		try {
+			const blob = await purchaseService.getExcelTemplate();
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = "purchase_template.xlsx";
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			window.URL.revokeObjectURL(url);
+			
+			toast({
+				title: "Tải xuống thành công",
+				description: "File mẫu đã được tải xuống",
+				status: "success",
+				duration: 2000,
+			});
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Không thể tải file mẫu",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	const handleFileSelect = () => {
@@ -76,8 +95,8 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			// TODO: Call purchaseService.importFromExcel(file)
-			const items: PurchaseItem[] = [];
+			const response = await purchaseService.importFromExcel(file);
+			const items: PurchaseItem[] = response.data ?? [];
 
 			if (items.length === 0) {
 				toast({
@@ -96,7 +115,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 				status: "success",
 				duration: 2000,
 			});
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Lỗi",
 				description: error.message || "Không thể đọc file Excel",

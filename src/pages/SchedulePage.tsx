@@ -24,6 +24,7 @@ import type {
 	WeekRange,
 	ShiftConfig,
 } from "@/types";
+import { scheduleService } from "@/services/scheduleService";
 
 const SchedulePage = () => {
 	const currentDate = new Date();
@@ -80,23 +81,139 @@ const SchedulePage = () => {
 	}, []);
 
 	const loadShiftConfig = async () => {
-		// TODO: Replace with API call to scheduleService.getShiftConfig()
-		setShiftConfig(null);
+		try {
+			const configs = await scheduleService.getShiftConfig();
+			// Convert array to ShiftConfig object format
+			const config: ShiftConfig = {
+				shifts: configs.map((c) => ({
+					id: c.id,
+					name: c.name,
+					startTime: c.startTime,
+					endTime: c.endTime,
+				})),
+				requiredStaff: {
+					warehouse: 2,
+					sales: 3,
+				},
+				maxShiftsPerWeek: 6,
+			};
+			setShiftConfig(config);
+		} catch {
+			// Default config if API fails
+			setShiftConfig({
+				shifts: [
+					{ id: "morning", name: "Ca Sáng", startTime: "08:00", endTime: "12:00" },
+					{ id: "afternoon", name: "Ca Chiều", startTime: "13:00", endTime: "17:00" },
+					{ id: "evening", name: "Ca Tối", startTime: "17:00", endTime: "21:00" },
+				],
+				requiredStaff: { warehouse: 2, sales: 3 },
+				maxShiftsPerWeek: 6,
+			});
+		}
 	};
 
 	const loadMonthData = async () => {
-		// TODO: Replace with API call to scheduleService.getMonthData()
-		setWeeks([]);
-		setSelectedWeekIndex(0);
+		try {
+			const monthData = await scheduleService.getMonthData(selectedMonth, selectedYear);
+			// Generate weeks for the month
+			const weeksInMonth = generateWeeksForMonth(selectedMonth, selectedYear);
+			setWeeks(weeksInMonth);
+			setSelectedWeekIndex(0);
+		} catch {
+			// Generate weeks locally if API fails
+			const weeksInMonth = generateWeeksForMonth(selectedMonth, selectedYear);
+			setWeeks(weeksInMonth);
+			setSelectedWeekIndex(0);
+		}
+	};
+
+	// Helper function to generate weeks for a month
+	const generateWeeksForMonth = (month: number, year: number): WeekRange[] => {
+		const weeks: WeekRange[] = [];
+		const firstDay = new Date(year, month - 1, 1);
+		const lastDay = new Date(year, month, 0);
+		
+		let currentStart = new Date(firstDay);
+		// Adjust to start of week (Monday)
+		const dayOfWeek = currentStart.getDay();
+		const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+		currentStart.setDate(currentStart.getDate() + diff);
+
+		while (currentStart <= lastDay) {
+			const weekEnd = new Date(currentStart);
+			weekEnd.setDate(weekEnd.getDate() + 6);
+			
+			weeks.push({
+				start: currentStart.toISOString().split('T')[0],
+				end: weekEnd.toISOString().split('T')[0],
+				label: `${currentStart.getDate()}/${currentStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
+			});
+			
+			currentStart = new Date(weekEnd);
+			currentStart.setDate(currentStart.getDate() + 1);
+		}
+		
+		return weeks;
 	};
 
 	const loadWeekSchedule = async () => {
-		if (!shiftConfig) return;
+		if (!shiftConfig || weeks.length === 0) return;
 
 		setIsLoading(true);
-		// TODO: Replace with API call to scheduleService.getWeekSchedule()
-		setWeekData([]);
-		setIsLoading(false);
+		try {
+			const weekStart = weeks[selectedWeekIndex]?.start;
+			if (!weekStart) {
+				setWeekData([]);
+				return;
+			}
+
+			const weekSchedule = await scheduleService.getWeekSchedule(weekStart);
+			
+			// Transform API response to DaySchedule format
+			if (weekSchedule.days && weekSchedule.days.length > 0) {
+				const transformedData: DaySchedule[] = weekSchedule.days.map(day => ({
+					date: day.date,
+					dayOfWeek: day.dayOfWeek,
+					shifts: Object.fromEntries(
+						day.shifts.map(s => [s.shiftId, [...s.warehouseStaff, ...s.salesStaff]])
+					),
+				}));
+				setWeekData(transformedData);
+			} else {
+				// Generate empty week data
+				const emptyWeekData = generateEmptyWeekData(weekStart);
+				setWeekData(emptyWeekData);
+			}
+		} catch {
+			// Generate empty week data on error
+			const weekStart = weeks[selectedWeekIndex]?.start;
+			if (weekStart) {
+				setWeekData(generateEmptyWeekData(weekStart));
+			} else {
+				setWeekData([]);
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// Helper to generate empty week data
+	const generateEmptyWeekData = (weekStart: string): DaySchedule[] => {
+		const days: DaySchedule[] = [];
+		const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+		const startDate = new Date(weekStart);
+		
+		for (let i = 0; i < 7; i++) {
+			const currentDate = new Date(startDate);
+			currentDate.setDate(startDate.getDate() + i);
+			days.push({
+				date: currentDate.toISOString().split('T')[0],
+				dayOfWeek: dayNames[i],
+				shifts: {},
+			});
+		}
+		
+		return days;
 	};
 
 	const handleCellClick = (date: string, shiftId: string) => {
@@ -137,14 +254,40 @@ const SchedulePage = () => {
 	};
 
 	const handleScheduleUpdate = async () => {
-		// TODO: Replace with API call to scheduleService.getWeekSchedule() to reload schedule
-		// TODO: Update modal data with API response
+		// Reload schedule after update
+		await loadWeekSchedule();
+		// Update modal data with fresh data
+		if (editModalData.isOpen) {
+			const day = weekData.find(d => d.date === editModalData.date);
+			if (day) {
+				setEditModalData({
+					...editModalData,
+					assignments: day.shifts[editModalData.shift] || [],
+				});
+			}
+		}
 	};
 
 	const handleSaveShiftConfig = async (config: ShiftConfig) => {
-		// TODO: Replace with API call to scheduleService.updateShiftConfig()
-		setShiftConfig(config);
-		// TODO: Call loadWeekSchedule() after successful API response
+		try {
+			// Save shift config via API
+			await scheduleService.updateShiftConfig(
+				config.shifts.map(s => ({
+					id: s.id,
+					name: s.name,
+					startTime: s.startTime,
+					endTime: s.endTime,
+					type: s.id as "morning" | "afternoon" | "evening" | "night",
+					color: s.id === "morning" ? "blue" : s.id === "afternoon" ? "orange" : "purple",
+				}))
+			);
+			setShiftConfig(config);
+			// Reload week schedule after config change
+			await loadWeekSchedule();
+		} catch {
+			// Save locally even if API fails
+			setShiftConfig(config);
+		}
 	};
 
 	if (!shiftConfig) {

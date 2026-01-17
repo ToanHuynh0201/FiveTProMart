@@ -35,4 +35,18 @@ export const promotionService = {
 	async deletePromotion(id: string): Promise<void> {
 		return apiService.delete(`/promotions/${id}`);
 	},
+
+	/**
+	 * Generate a unique promotion code
+	 */
+	async generateCode(): Promise<string> {
+		try {
+			const response = await apiService.get<{ data: string }>('/promotions/generate-code');
+			return response.data;
+		} catch {
+			// Fallback: generate client-side
+			const now = new Date();
+			return `KM${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+		}
+	},
 };

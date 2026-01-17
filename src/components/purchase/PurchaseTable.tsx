@@ -15,17 +15,20 @@ import {
 	MenuButton,
 	MenuList,
 	MenuItem,
+	useToast,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import type { Purchase } from "../../types/purchase";
 import { formatDate } from "../../utils/date";
+import { purchaseService } from "@/services/purchaseService";
 
 interface PurchaseTableProps {
 	purchases: Purchase[];
 	onViewDetail: (id: string) => void;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
+	onRefresh?: () => void;
 }
 
 export const PurchaseTable: React.FC<PurchaseTableProps> = ({
@@ -33,9 +36,30 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 	onViewDetail,
 	onEdit,
 	onDelete,
+	onRefresh,
 }) => {
+	const toast = useToast();
 	// Create a key based on purchases to trigger animation on filter changes
 	const tableKey = purchases.map((p) => p.id).join("-");
+
+	const handleCancelPurchase = async (id: string) => {
+		try {
+			await purchaseService.cancelPurchase(id);
+			toast({
+				title: "Đã hủy đơn hàng",
+				status: "success",
+				duration: 2000,
+			});
+			onRefresh?.();
+		} catch {
+			toast({
+				title: "Không thể hủy đơn hàng",
+				status: "error",
+				duration: 3000,
+			});
+		}
+	};
+
 	const getStatusBadge = (status: Purchase["status"]) => {
 		const statusConfig = {
 			draft: { color: "gray", label: "Nháp" },
@@ -310,12 +334,11 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 													{purchase.status ===
 														"ordered" && (
 														<MenuItem
-															onClick={() => {
-																// TODO: Implement cancel
-																console.log(
-																	"Cancel purchase",
-																);
-															}}>
+															onClick={() =>
+																handleCancelPurchase(
+																	purchase.id,
+																)
+															}>
 															Hủy đơn hàng
 														</MenuItem>
 													)}

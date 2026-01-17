@@ -14,7 +14,7 @@ import {
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { useState, useEffect } from "react";
 import type { PromotionFilter } from "../../types/promotion";
-// TODO: Import promotionService
+import { inventoryService } from "@/services/inventoryService";
 import type { PromotionProduct } from "../../types/promotion";
 
 interface PromotionFilterBarProps {
@@ -38,10 +38,17 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 
 	const loadProducts = async () => {
 		try {
-			// TODO: Fetch available products from API
-			setProducts([]);
+			// Fetch available products from inventoryService
+			const response = await inventoryService.getProducts({ page: 1, limit: 100 });
+			const productsData = response.data || [];
+			setProducts(productsData.map(p => ({
+				id: p.id,
+				code: p.barcode || p.id,
+				name: p.productName || p.name || '',
+			})));
 		} catch (error) {
 			console.error("Error loading products:", error);
+			setProducts([]);
 		}
 	};
 

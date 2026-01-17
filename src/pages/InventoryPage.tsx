@@ -210,11 +210,11 @@ const InventoryPage = () => {
 
 		try {
 			// Call API to update lot
-			if (updates.quantity !== undefined || updates.status !== undefined) {
+			if (updates.quantity !== undefined) {
 				await inventoryService.updateLot(
 					batchId,
 					updates.quantity ?? 0,
-					updates.status ?? "active",
+					"active",
 				);
 			}
 

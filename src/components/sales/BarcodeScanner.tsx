@@ -20,7 +20,6 @@ import {
 	Input,
 	InputGroup,
 	InputLeftElement,
-	Spinner,
 } from "@chakra-ui/react";
 import { FiCamera, FiCheck, FiX, FiVideo, FiVideoOff, FiSearch } from "react-icons/fi";
 import type { Product, CheckProductResponse } from "../../types/sales";

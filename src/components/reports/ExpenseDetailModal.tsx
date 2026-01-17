@@ -24,17 +24,11 @@ import {
 	Select,
 } from "@chakra-ui/react";
 import {
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	CartesianGrid,
 	Tooltip,
 	ResponsiveContainer,
 	PieChart,
 	Pie,
 	Cell,
-	Legend,
 } from "recharts";
 import Pagination from "@/components/common/Pagination";
 import { usePagination } from "@/hooks";
@@ -325,7 +319,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 									cy="50%"
 									labelLine={false}
 									label={({ name, percent }) =>
-										`${name}: ${(percent * 100).toFixed(1)}%`
+									`${name}: ${((percent ?? 0) * 100).toFixed(1)}%`
 									}
 									outerRadius={100}
 									fill="#8884d8"

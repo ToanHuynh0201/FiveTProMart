@@ -177,7 +177,7 @@ export const refreshAccessToken = async (
 			// Call refresh endpoint (uses HttpOnly cookie automatically)
 			const response = await apiService.post('/auth/refresh-token', {})
 
-			const newAccessToken = response.data.data?.accessToken
+			const newAccessToken = (response as any)?.data?.data?.accessToken
 			if (!newAccessToken) {
 				throw new Error('No access token in refresh response')
 			}

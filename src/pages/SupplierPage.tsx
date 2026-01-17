@@ -63,6 +63,10 @@ const SupplierPage = () => {
 	} = useDisclosure();
 
 	// Fetch function for API call
+	const loadStats = async () => { 
+		// TODO: Wire to stats endpoint when available
+	};
+
 	const fetchSuppliers = async (filters: SupplierFilters) => {
 		const response = await supplierService.getSuppliers(filters);
 		setSupplierList(response.data);

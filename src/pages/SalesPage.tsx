@@ -909,7 +909,7 @@ const SalesPage = () => {
 					<QuickActionsBar
 						itemCount={orderItems.length}
 						totalAmount={calculateTotal()}
-						paymentMethod={paymentMethod}
+					paymentMethod={paymentMethod === "card" ? undefined : paymentMethod}
 						onOpenBarcodeScanner={onBarcodeScannerOpen}
 						onFocusSearch={handleFocusSearch}
 						onSelectCash={handleSelectCash}

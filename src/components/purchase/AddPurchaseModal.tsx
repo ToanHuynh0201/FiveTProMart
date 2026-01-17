@@ -81,7 +81,7 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			const loadPurchaseNumber = async () => {
 				try {
 					const response = await purchaseService.generatePurchaseNumber();
-					setFormData((prev) => ({ ...prev, purchaseNumber: response.data ?? `PN-${Date.now()}` }));
+				setFormData((prev) => ({ ...prev, purchaseNumber: response ?? `PN-${Date.now()}` }));
 				} catch {
 					// Fallback to client-side generation
 					setFormData((prev) => ({ ...prev, purchaseNumber: `PN-${Date.now()}` }));

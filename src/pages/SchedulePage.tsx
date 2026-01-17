@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ScheduleGrid,
@@ -90,31 +90,31 @@ const SchedulePage = () => {
 					name: c.name,
 					startTime: c.startTime,
 					endTime: c.endTime,
+					requiredWarehouseStaff: 2,
+					requiredSalesStaff: 3,
+					order: 1,
 				})),
-				requiredStaff: {
-					warehouse: 2,
-					sales: 3,
-				},
 				maxShiftsPerWeek: 6,
+				updatedAt: new Date().toISOString(),
 			};
 			setShiftConfig(config);
 		} catch {
 			// Default config if API fails
 			setShiftConfig({
 				shifts: [
-					{ id: "morning", name: "Ca Sáng", startTime: "08:00", endTime: "12:00" },
-					{ id: "afternoon", name: "Ca Chiều", startTime: "13:00", endTime: "17:00" },
-					{ id: "evening", name: "Ca Tối", startTime: "17:00", endTime: "21:00" },
+					{ id: "morning", name: "Ca Sáng", startTime: "08:00", endTime: "12:00", requiredWarehouseStaff: 2, requiredSalesStaff: 3, order: 1 },
+					{ id: "afternoon", name: "Ca Chiều", startTime: "13:00", endTime: "17:00", requiredWarehouseStaff: 2, requiredSalesStaff: 3, order: 2 },
+					{ id: "evening", name: "Ca Tối", startTime: "17:00", endTime: "21:00", requiredWarehouseStaff: 1, requiredSalesStaff: 2, order: 3 },
 				],
-				requiredStaff: { warehouse: 2, sales: 3 },
 				maxShiftsPerWeek: 6,
+				updatedAt: new Date().toISOString(),
 			});
 		}
 	};
 
 	const loadMonthData = async () => {
 		try {
-			const monthData = await scheduleService.getMonthData(selectedMonth, selectedYear);
+			await scheduleService.getMonthData(selectedMonth, selectedYear);
 			// Generate weeks for the month
 			const weeksInMonth = generateWeeksForMonth(selectedMonth, selectedYear);
 			setWeeks(weeksInMonth);
@@ -171,14 +171,14 @@ const SchedulePage = () => {
 			
 			// Transform API response to DaySchedule format
 			if (weekSchedule.days && weekSchedule.days.length > 0) {
-				const transformedData: DaySchedule[] = weekSchedule.days.map(day => ({
+				const transformedData = weekSchedule.days.map(day => ({
 					date: day.date,
 					dayOfWeek: day.dayOfWeek,
 					shifts: Object.fromEntries(
 						day.shifts.map(s => [s.shiftId, [...s.warehouseStaff, ...s.salesStaff]])
 					),
 				}));
-				setWeekData(transformedData);
+				setWeekData(transformedData as any);
 			} else {
 				// Generate empty week data
 				const emptyWeekData = generateEmptyWeekData(weekStart);

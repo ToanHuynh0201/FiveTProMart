@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import {
 	Box,
 	Input,
@@ -65,15 +65,17 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 			searchTimeoutRef.current = setTimeout(async () => {
 				try {
 					// Search products via inventoryService
-					const response = await inventoryService.getProducts({ search: query });
+					const response = await inventoryService.getProducts({ page: 1, pageSize: 50, search: query });
 					const products = response.data || [];
 					// Transform to Product format expected by sales
-					const results: Product[] = products.map(p => ({
+					const results = products.map(p => ({
 						id: p.id,
 						barcode: p.barcode || '',
-						name: p.productName || p.name || '',
+						name: p.name || '',
 						category: p.category || '',
-						price: p.sellingPrice || p.price || 0,
+						price: p.price || 0,
+						code: p.barcode || p.id,
+					stock: (p.batches || []).reduce((sum, b) => sum + (b.quantity || 0), 0),
 						unit: p.unit || 'cái',
 						batches: (p.batches || []).map(b => ({
 							id: b.id,
@@ -82,7 +84,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							quantity: b.quantity,
 						})),
 					}));
-					setSearchResults(results);
+					setSearchResults(results as any);
 					setShowResults(true);
 				} catch {
 					setSearchResults([]);

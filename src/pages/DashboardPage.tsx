@@ -18,7 +18,7 @@ const DashboardPage = () => {
 			setIsLoading(true);
 			try {
 				const data = await inventoryService.getStats();
-				setStats(data);
+				setStats(data as any);
 			} catch (error) {
 				console.error("Error fetching dashboard stats:", error);
 				setStats(null);

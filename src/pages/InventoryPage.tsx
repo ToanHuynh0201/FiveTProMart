@@ -129,7 +129,7 @@ const InventoryPage = () => {
 			}
 
 			try {
-				// Load stats from API (mock for now)
+				// Load stats from API
 				const statsData = await inventoryService.getStats();
 				setStats(statsData);
 			} catch (error) {

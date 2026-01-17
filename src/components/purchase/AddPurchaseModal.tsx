@@ -33,6 +33,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import type { Purchase, PurchaseItem, Supplier } from "../../types/purchase";
+import { supplierService } from "../../services/supplierService";
 
 interface AddPurchaseModalProps {
 	isOpen: boolean;
@@ -118,16 +119,18 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 			return;
 		}
 
-		// TODO: Call supplierService.getSupplierById(supplierId)
+		// Note: Backend currently doesn't return products for supplier
+		// When API is extended to include suppliedProducts, wire here
 		setIsLoadingProducts(true);
 		try {
-			// Mock empty products for now
+			await supplierService.getSupplierById(supplierId);
+			// API doesn't yet return products for supplier - feature blocked on backend
 			setSupplierProducts([]);
 		} catch (error) {
-			console.error("Error loading supplier products:", error);
+			console.error("Error loading supplier:", error);
 			toast({
 				title: "Lỗi",
-				description: "Không thể tải danh sách sản phẩm",
+				description: "Không thể tải thông tin nhà cung cấp",
 				status: "error",
 				duration: 2000,
 			});

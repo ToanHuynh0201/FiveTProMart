@@ -17,6 +17,7 @@ import type {
 } from "@/types/supplier";
 import type { SupplierFilters } from "@/types/filters";
 import { supplierService } from "@/services/supplierService";
+import apiService from "@/lib/api";
 import {
 	Box,
 	Text,
@@ -103,8 +104,17 @@ const SupplierPage = () => {
 
 	// Load stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load supplier stats
-		setStats(null);
+		const loadStats = async () => {
+			try {
+				// Stats endpoint - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: SupplierStats }>("/suppliers/stats");
+				setStats(response.data || null);
+			} catch {
+				// API not available - show empty stats
+				setStats(null);
+			}
+		};
+		loadStats();
 	}, []);
 
 	const handleResetFilters = () => {

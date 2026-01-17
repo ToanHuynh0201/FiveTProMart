@@ -47,6 +47,7 @@ import type {
 	DisposalRecord,
 } from "@/types/inventory";
 import { formatDate, isExpired } from "@/utils/date";
+import apiService from "@/lib/api";
 
 interface DisposalModalProps {
 	isOpen: boolean;
@@ -91,18 +92,13 @@ const DisposalModal = ({
 	const loadDisposalHistory = async () => {
 		setIsLoadingHistory(true);
 		try {
-			// TODO: Implement API call to fetch disposal history
-			// const history = await inventoryService.getDisposalHistory();
-			// For now, set empty history
+			// Disposal history API not yet implemented - will show empty state
+			// When backend adds GET /stock-inventories/disposals, wire here
+			const response = await apiService.get<{ data: DisposalRecord[] }>("/stock-inventories/disposals");
+			setDisposalHistory(response.data || []);
+		} catch {
+			// API not available - show empty state without error
 			setDisposalHistory([]);
-		} catch (error) {
-			console.error("Error loading disposal history:", error);
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải lịch sử hủy hàng",
-				status: "error",
-				duration: 3000,
-			});
 		} finally {
 			setIsLoadingHistory(false);
 		}

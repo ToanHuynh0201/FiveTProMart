@@ -40,6 +40,8 @@ import type {
 } from "@/types";
 import type { PurchaseFilters } from "@/types/filters";
 import { purchaseService } from "@/services/purchaseService";
+import { supplierService } from "@/services/supplierService";
+import apiService from "@/lib/api";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -117,10 +119,25 @@ const PurchasePage = () => {
 
 	// Load suppliers and stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load suppliers
-		setSuppliers([]);
-		// TODO: Implement API call to load stats
-		setStats(null);
+		const loadData = async () => {
+			// Load suppliers
+			try {
+				const suppliersResponse = await supplierService.getSuppliers({ page: 1, itemsPerPage: 100 });
+				const supplierData = Array.isArray(suppliersResponse.data) ? suppliersResponse.data : [];
+				setSuppliers(supplierData as unknown as Supplier[]);
+			} catch {
+				setSuppliers([]);
+			}
+
+			// Load stats - will fail gracefully if not implemented
+			try {
+				const statsResponse = await apiService.get<{ data: PurchaseStats }>("/purchases/stats");
+				setStats(statsResponse.data || null);
+			} catch {
+				setStats(null);
+			}
+		};
+		loadData();
 	}, []);
 
 	const handleAddPurchase = async (

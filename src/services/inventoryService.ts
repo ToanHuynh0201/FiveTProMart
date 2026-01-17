@@ -99,50 +99,34 @@ export const inventoryService = {
 	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md §5)
 	// ===================================================================
 	/**
-	 * Get product statistics for dashboard
-	 *
-	 * TODO: Replace with real API call when backend delivers
-	 * API: GET /api/v1/products/stats
+	 * Get product statistics for dashboard.
+	 * Fails gracefully if backend endpoint doesn't exist yet.
 	 */
 	async getStats(): Promise<InventoryStats> {
-		// MOCK - Backend does not have this endpoint yet
-		// See: FRONTEND_API_REQUIREMENTS.md §5
-		console.warn("[MOCK] getStats - awaiting backend implementation");
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: {
+				totalProducts: number;
+				activeProducts: number;
+				inactiveProducts: number;
+				totalInventoryValue: number;
+				lowStockCount: number;
+				outOfStockCount: number;
+				expiringSoonCount: number;
+				expiredCount: number;
+			};
+		}>("/products/stats");
 
 		return {
-			totalProducts: 0,
-			totalValue: 0,
-			lowStockProducts: 0,
-			outOfStockProducts: 0,
-			activeProducts: 0,
-			expiredBatches: 0,
-			expiringSoonBatches: 0,
+			totalProducts: response.data.totalProducts,
+			totalValue: response.data.totalInventoryValue,
+			lowStockProducts: response.data.lowStockCount,
+			outOfStockProducts: response.data.outOfStockCount,
+			activeProducts: response.data.activeProducts,
+			expiredBatches: response.data.expiredCount,
+			expiringSoonBatches: response.data.expiringSoonCount,
 		};
-
-		// When API ready, use:
-		// const response = await apiService.get<{
-		//   success: boolean;
-		//   message: string;
-		//   data: {
-		//     totalProducts: number;
-		//     activeProducts: number;
-		//     inactiveProducts: number;
-		//     totalInventoryValue: number;
-		//     lowStockCount: number;
-		//     outOfStockCount: number;
-		//     expiringSoonCount: number;
-		//     expiredCount: number;
-		//   };
-		// }>("/products/stats");
-		// return {
-		//   totalProducts: response.data.totalProducts,
-		//   totalValue: response.data.totalInventoryValue,
-		//   lowStockProducts: response.data.lowStockCount,
-		//   outOfStockProducts: response.data.outOfStockCount,
-		//   activeProducts: response.data.activeProducts,
-		//   expiredBatches: response.data.expiredCount,
-		//   expiringSoonBatches: response.data.expiringSoonCount,
-		// };
 	},
 
 	// ===================================================================
@@ -150,16 +134,14 @@ export const inventoryService = {
 	// (FRONTEND_API_REQUIREMENTS.md §4)
 	// ===================================================================
 	/**
-	 * Dispose a lot of stock (expired/damaged)
+	 * Dispose a lot of stock (expired/damaged).
+	 * Fails gracefully if backend endpoint doesn't exist yet.
 	 *
 	 * @param lotId - The lot to dispose
 	 * @param quantity - Quantity to dispose
 	 * @param reason - Disposal reason
 	 * @param staffId - Staff performing disposal
 	 * @param notes - Optional notes
-	 *
-	 * TODO: Replace with real API call when backend delivers
-	 * API: POST /api/v1/stock_inventories/{lotId}/dispose
 	 */
 	async disposeLot(
 		lotId: string,
@@ -168,36 +150,18 @@ export const inventoryService = {
 		staffId: string,
 		notes?: string,
 	): Promise<DisposeResponse> {
-		// MOCK - Backend does not have this endpoint yet
-		// See: FRONTEND_API_REQUIREMENTS.md §4
-		console.warn("[MOCK] disposeLot - awaiting backend implementation");
-
-		return {
-			disposalId: `disposal_${Date.now()}`,
-			lotId,
-			productId: "mock_product",
-			productName: "Mock Product",
-			quantityDisposed: quantity,
-			remainingLotQuantity: 0,
-			productTotalStock: 0,
-			disposedAt: new Date().toISOString(),
-			disposedBy: staffId,
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: DisposeResponse;
+		}>(`/stock_inventories/${lotId}/dispose`, {
+			quantity,
 			reason,
 			notes,
-		};
+			staffId,
+		} as DisposeRequest);
 
-		// When API ready, use:
-		// const response = await apiService.post<{
-		//   success: boolean;
-		//   message: string;
-		//   data: DisposeResponse;
-		// }>(`/stock_inventories/${lotId}/dispose`, {
-		//   quantity,
-		//   reason,
-		//   notes,
-		//   staffId,
-		// } as DisposeRequest);
-		// return response.data;
+		return response.data;
 	},
 
 	// ===================================================================

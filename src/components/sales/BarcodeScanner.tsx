@@ -47,16 +47,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 	const streamRef = useRef<MediaStream | null>(null);
 	const scanIntervalRef = useRef<number>(0);
 
-	// Demo barcodes for fallback testing when API is unavailable
-	const demoBarcodes = [
-		{ lotId: "LOT001", name: "Bánh snack bắp cải trộn - Lô 001", expiryDate: "31/12/2025" },
-		{ lotId: "LOT002", name: "Bánh snack bắp cải trộn - Lô 002", expiryDate: "29/11/2025" },
-		{ lotId: "LOT003", name: "Bánh snack củ cải trộn - Lô 003", expiryDate: "15/01/2026" },
-		{ lotId: "LOT004", name: "Bánh snack củ cải trộn - Lô 004", expiryDate: "01/12/2025" },
-		{ lotId: "LOT005", name: "Củ cải vàng - Lô 005", expiryDate: "20/12/2025" },
-		{ lotId: "LOT006", name: "Củ cải vàng - Lô 006", expiryDate: "28/11/2025" },
-	];
-
 	useEffect(() => {
 		if (isOpen) {
 			// Auto start camera when modal opens
@@ -118,7 +108,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 		// See: FiveTProMart_fe/document/BARCODE_IMPLEMENTATION_PLAN.md
 		toast({
 			title: "Camera đang hoạt động",
-			description: "Nhập mã lô hàng thủ công hoặc click mã demo bên dưới",
+			description: "Nhập mã lô hàng vào ô bên dưới hoặc quét mã barcode",
 			status: "info",
 			duration: 4000,
 		});
@@ -128,25 +118,40 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 	 * Maps API CheckProductResponse to UI Product type
 	 * This is a bridge layer to preserve existing UI while using real API
 	 */
-	const mapToUIProduct = (response: CheckProductResponse): Product => ({
-		id: response.productId,
-		code: response.productId,
-		name: response.productName,
-		price: response.unitPrice,
-		stock: response.currentStock,
-		category: undefined,
-		barcode: response.lotId,
-		promotion: response.promotion?.promotionName,
-		batches: [
-			{
-				id: response.lotId,
-				batchNumber: response.lotId,
-				quantity: response.currentStock,
-				expiryDate: new Date(), // API doesn't return expiry, will fix later
-				importDate: new Date(),
-			},
-		],
-	});
+	const mapToUIProduct = (response: CheckProductResponse): Product => {
+		// Parse expirationDate from API (dd-MM-yyyy) or use far future if not provided
+		let expiryDate = new Date(2099, 11, 31); // Default: far future (no expiry check)
+		if (response.expirationDate) {
+			const parts = response.expirationDate.split("-");
+			if (parts.length === 3) {
+				expiryDate = new Date(
+					parseInt(parts[2]),
+					parseInt(parts[1]) - 1,
+					parseInt(parts[0]),
+				);
+			}
+		}
+
+		return {
+			id: response.productId,
+			code: response.productId,
+			name: response.productName,
+			price: response.unitPrice,
+			stock: response.currentStock,
+			category: undefined,
+			barcode: response.lotId,
+			promotion: response.promotion?.promotionName,
+			batches: [
+				{
+					id: response.lotId,
+					batchNumber: response.lotId,
+					quantity: response.currentStock,
+					expiryDate,
+					importDate: new Date(),
+				},
+			],
+		};
+	};
 
 	const handleBarcodeScanned = async (lotId: string) => {
 		if (!lotId.trim()) return;
@@ -202,10 +207,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 		if (e.key === "Enter") {
 			handleManualSubmit();
 		}
-	};
-
-	const handleDemoBarcode = (lotId: string) => {
-		handleBarcodeScanned(lotId);
 	};
 
 	return (
@@ -392,105 +393,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 									Kiểm tra
 								</Button>
 							</Flex>
-						</Box>
-
-						{/* Demo barcodes */}
-						<Box
-							pt={4}
-							borderTop="1px solid"
-							borderColor="gray.200">
-							<Flex
-								justify="space-between"
-								align="center"
-								mb={3}>
-								<Text
-									fontSize="14px"
-									fontWeight="700"
-									color="gray.700">
-									Mã lô hàng demo (Click để test):
-								</Text>
-								<Badge
-									colorScheme="purple"
-									fontSize="11px">
-									Demo mode
-								</Badge>
-							</Flex>
-							<VStack
-								spacing={2}
-								align="stretch"
-								maxH="200px"
-								overflowY="auto"
-								pr={2}
-								sx={{
-									"&::-webkit-scrollbar": {
-										width: "6px",
-									},
-									"&::-webkit-scrollbar-track": {
-										bg: "gray.50",
-										borderRadius: "10px",
-									},
-									"&::-webkit-scrollbar-thumb": {
-										bg: "gray.300",
-										borderRadius: "10px",
-										"&:hover": {
-											bg: "gray.400",
-										},
-									},
-								}}>
-								{demoBarcodes.map((item) => (
-									<Box
-										key={item.lotId}
-										p={3}
-										bg="gray.50"
-										borderRadius="8px"
-										cursor={isScanning ? "wait" : "pointer"}
-										border="2px solid transparent"
-										transition="all 0.2s"
-										opacity={isScanning ? 0.6 : 1}
-										_hover={{
-											bg: isScanning ? "gray.50" : "brand.50",
-											borderColor: isScanning ? "transparent" : "brand.200",
-											transform: isScanning ? "none" : "translateY(-2px)",
-										}}
-										onClick={() =>
-											!isScanning && handleDemoBarcode(item.lotId)
-										}>
-										<Flex
-											justify="space-between"
-											align="center"
-											gap={3}>
-											<Box flex={1}>
-												<Text
-													fontSize="13px"
-													fontWeight="600"
-													color="gray.800"
-													mb={1}>
-													{item.name}
-												</Text>
-												<Flex gap={2} align="center">
-													<Code
-														fontSize="12px"
-														colorScheme="orange"
-														px={2}
-														py={0.5}
-														borderRadius="4px">
-														{item.lotId}
-													</Code>
-													<Text fontSize="11px" color="gray.600">
-														HSD: {item.expiryDate}
-													</Text>
-												</Flex>
-											</Box>
-											<Icon
-												as={FiCheck}
-												color="brand.500"
-												w="18px"
-												h="18px"
-											/>
-										</Flex>
-									</Box>
-								))}
-							</VStack>
 						</Box>
 
 						{lastScanned && (

@@ -103,6 +103,8 @@ export interface CheckProductResponse {
 	subTotal: number;
 	currentStock: number;
 	status: string; // StockInventory.status
+	/** Lot expiration date in dd-MM-yyyy format. Awaiting backend implementation. */
+	expirationDate?: string;
 	// Future: promotion field per FRONTEND_API_REQUIREMENTS.md
 	promotion?: {
 		promotionId: string;

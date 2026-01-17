@@ -28,7 +28,8 @@ import Pagination from "@/components/common/Pagination";
 import { usePagination } from "@/hooks";
 import { LoadingSpinner } from "@/components/common";
 import { ExpenseChart } from "@/components/reports";
-import type { ExpenseReport, DateRangeFilter } from "@/types/reports";
+import type { ExpenseReport, DateRangeFilter, Expense } from "@/types/reports";
+import { expenseService } from "@/services/expenseService";
 
 interface ExpenseDetailModalProps {
 	isOpen: boolean;
@@ -69,28 +70,44 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 	const fetchExpenseData = async () => {
 		setLoading(true);
 		try {
-			// TODO: Replace with API call to getExpenseReport(period)
-			// const period: DateRangeFilter = {
-			// 	type: "year", // Get full year data to allow filtering
-			// };
-			// const data = await getExpenseReport(period);
+			// Fetch all expenses and aggregate client-side
+			const response = await expenseService.getExpenses({
+				page: 1,
+				itemsPerPage: 1000, // Get all for aggregation
+			});
 
-			// Mock data for development
-			const data: ExpenseReport = {
-				totalExpense: 0,
-				byCategory: {
-					electricity: 0,
-					water: 0,
-					supplies: 0,
-					repairs: 0,
-					other: 0,
-				},
-				expenses: [],
-				data: [],
-				growth: 0,
+			const expenses: Expense[] = Array.isArray(response.data) ? response.data : [];
+
+			// Aggregate by category
+			const byCategory = {
+				electricity: 0,
+				water: 0,
+				supplies: 0,
+				repairs: 0,
+				other: 0,
 			};
-			setExpenseData(data);
+
+			let totalExpense = 0;
+			for (const expense of expenses) {
+				const category = expense.category as keyof typeof byCategory;
+				if (category in byCategory) {
+					byCategory[category] += expense.amount;
+				}
+				totalExpense += expense.amount;
+			}
+
+			const report: ExpenseReport = {
+				period: { type: "year" } as DateRangeFilter,
+				totalExpense,
+				byCategory,
+				expenses,
+				data: [], // No time-series data without dedicated endpoint
+				growth: 0, // Would need historical comparison
+			};
+
+			setExpenseData(report);
 		} catch (error) {
+			console.error("Error fetching expense data:", error);
 			toast({
 				title: "Lỗi",
 				description: "Không thể tải dữ liệu chi phí",

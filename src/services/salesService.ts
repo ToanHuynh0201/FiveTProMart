@@ -16,6 +16,7 @@ import type {
 	OrderListItem,
 	OrderDetail,
 	OrderFilters,
+	CancelOrderRequest,
 	CancelOrderResponse,
 } from "@/types/sales";
 import { buildQueryParams } from "@/utils/queryParams";
@@ -104,39 +105,25 @@ export const salesService = {
 	// POST /api/v1/orders/{id}/cancel
 	// ===================================================================
 	/**
-	 * Cancel an unpaid order
+	 * Cancel an unpaid order.
+	 * Fails gracefully if backend endpoint doesn't exist yet.
+	 *
 	 * @param orderId - Order to cancel
 	 * @param reason - Cancellation reason
 	 * @param staffId - Staff performing cancellation
 	 * @returns Cancellation result
-	 *
-	 * TODO: Replace with real API call when backend delivers
-	 * API: POST /api/v1/orders/{id}/cancel
 	 */
 	async cancelOrder(
 		orderId: string,
 		reason: string,
 		staffId: string,
 	): Promise<CancelOrderResponse> {
-		// MOCK - Backend does not have this endpoint yet
-		// See: FRONTEND_API_REQUIREMENTS.md §2
-		console.warn("[MOCK] cancelOrder - awaiting backend implementation");
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: CancelOrderResponse;
+		}>(`/orders/${orderId}/cancel`, { reason, staffId } as CancelOrderRequest);
 
-		return {
-			orderId,
-			status: "Đã huỷ",
-			cancelledAt: new Date().toISOString(),
-			cancelledBy: staffId,
-			reason,
-			stockRestored: true,
-		};
-
-		// When API ready, use:
-		// const response = await apiService.post<{
-		//   success: boolean;
-		//   message: string;
-		//   data: CancelOrderResponse;
-		// }>(`/orders/${orderId}/cancel`, { reason, staffId } as CancelOrderRequest);
-		// return response.data;
+		return response.data;
 	},
 };

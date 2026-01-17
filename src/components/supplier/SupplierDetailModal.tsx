@@ -33,6 +33,8 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { SupplierDetail } from "@/types/supplier";
+import { supplierService } from "@/services/supplierService";
+import { purchaseService } from "@/services/purchaseService";
 import { PurchaseDetailModal } from "@/components/purchase/PurchaseDetailModal";
 import type { Purchase } from "@/types/purchase";
 import {
@@ -81,10 +83,8 @@ const SupplierDetailModal = ({
 
 	const loadPurchaseDetail = async (purchaseId: string) => {
 		try {
-			// TODO: Replace with actual API call to load purchase detail
-			// const purchase = await purchaseService.getPurchaseById(purchaseId);
-			console.log("Loading purchase with ID:", purchaseId);
-			setSelectedPurchase(null);
+			const purchase = await purchaseService.getPurchaseById(purchaseId);
+			setSelectedPurchase(purchase || null);
 		} catch (error) {
 			console.error("Error loading purchase detail:", error);
 			setSelectedPurchase(null);
@@ -108,11 +108,11 @@ const SupplierDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Replace with actual API call to load supplier detail
-			// const data = await supplierService.getSupplierById(supplierId);
-			setSupplierDetail(null);
+			const data = await supplierService.getSupplierById(supplierId);
+			setSupplierDetail(data || null);
 		} catch (error) {
 			console.error("Error loading supplier detail:", error);
+			setSupplierDetail(null);
 		} finally {
 			setIsLoading(false);
 		}

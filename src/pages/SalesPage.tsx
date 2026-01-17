@@ -58,6 +58,7 @@ const SalesPage = () => {
 	const [paymentMethod, setPaymentMethod] = useState<
 		PaymentMethod | undefined
 	>();
+	const [cashReceived, setCashReceived] = useState<number>(0);
 	const [orderNumber] = useState(
 		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
 	);
@@ -440,12 +441,16 @@ const SalesPage = () => {
 			// Get staffId from auth store
 			const staffId = user?.id ?? "guest_staff";
 
+			// Use cashReceived if provided, otherwise use total (for transfer payments)
+			const amountGiven =
+				cashReceived > 0 ? cashReceived : calculateTotal();
+
 			// Call API to create order
 			const response = await salesService.createOrder({
 				staffId,
 				customerId: customer?.phone ? customer.id : null,
 				paymentMethod: bePaymentMethod,
-				amountGiven: calculateTotal(), // For now, assume exact payment
+				amountGiven,
 				items: apiItems,
 			});
 
@@ -465,6 +470,7 @@ const SalesPage = () => {
 			// Reset form
 			setOrderItems([]);
 			setPaymentMethod(undefined);
+			setCashReceived(0);
 			setCustomer({
 				id: `guest_${Date.now()}`,
 				name: "KHÁCH VÃNG LAI",
@@ -745,6 +751,8 @@ const SalesPage = () => {
 									isDisabled={orderItems.length === 0}
 									customer={customer}
 									onCustomerChange={handleCustomerChange}
+									cashReceived={cashReceived}
+									onCashReceivedChange={setCashReceived}
 								/>
 							</TabPanel>
 

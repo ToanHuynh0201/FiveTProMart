@@ -25,6 +25,7 @@ import {
 	Flex,
 } from "@chakra-ui/react";
 import type { Customer } from "@/types";
+import { customerService } from "@/services/customerService";
 
 interface EditCustomerModalProps {
 	isOpen: boolean;
@@ -65,16 +66,15 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 
 		setIsFetching(true);
 		try {
-			// TODO: Implement API call to fetch customer by ID
-			// const customer = await customerService.getCustomerById(customerId);
-			// if (customer) {
-			// 	setFormData({
-			// 		name: customer.name,
-			// 		phone: customer.phone,
-			// 		gender: customer.gender,
-			// 		loyaltyPoints: customer.loyaltyPoints,
-			// 	});
-			// }
+			const customer = await customerService.getCustomerById(customerId);
+			if (customer) {
+				setFormData({
+					name: customer.name,
+					phone: customer.phone,
+					gender: customer.gender || "male",
+					loyaltyPoints: customer.loyaltyPoints || 0,
+				});
+			}
 		} catch (error) {
 			console.error("Error loading customer:", error);
 			toast({
@@ -128,8 +128,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			// TODO: Implement API call to update customer
-			// await onUpdate(customerId, formData);
+			await onUpdate(customerId, formData);
 			toast({
 				title: "Thành công",
 				description: "Cập nhật thông tin khách hàng thành công",

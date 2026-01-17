@@ -24,6 +24,7 @@ import { usePagination, useFilters } from "@/hooks";
 import type { Promotion, PromotionStats, PromotionFormData } from "@/types";
 import type { PromotionFilters } from "@/types/filters";
 import { promotionService } from "@/services/promotionService";
+import apiService from "@/lib/api";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -98,8 +99,17 @@ const PromotionPage = () => {
 
 	// Load stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load promotion stats
-		setStats(null);
+		const loadStats = async () => {
+			try {
+				// Stats endpoint - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: PromotionStats }>("/promotions/stats");
+				setStats(response.data || null);
+			} catch {
+				// API not available - show empty stats
+				setStats(null);
+			}
+		};
+		loadStats();
 	}, []);
 
 	const handleAddPromotion = async (promotion: PromotionFormData) => {

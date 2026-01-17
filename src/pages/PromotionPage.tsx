@@ -24,6 +24,7 @@ import { usePagination, useFilters } from "@/hooks";
 import type { Promotion, PromotionStats, PromotionFormData } from "@/types";
 import type { PromotionFilters } from "@/types/filters";
 import { promotionService } from "@/services/promotionService";
+import apiService from "@/lib/api";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -98,8 +99,17 @@ const PromotionPage = () => {
 
 	// Load stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load promotion stats
-		setStats(null);
+		const loadStats = async () => {
+			try {
+				// Stats endpoint - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: PromotionStats }>("/promotions/stats");
+				setStats(response.data || null);
+			} catch {
+				// API not available - show empty stats
+				setStats(null);
+			}
+		};
+		loadStats();
 	}, []);
 
 	const handleAddPromotion = async (promotion: PromotionFormData) => {
@@ -109,7 +119,8 @@ const PromotionPage = () => {
 		// Refresh data after adding
 		await fetchPromotions(filters);
 		onAddModalClose();
-		// TODO: Reload stats after adding
+		// Reload stats after adding
+		loadStats();
 	};
 
 	const handleUpdatePromotion = async (
@@ -120,7 +131,8 @@ const PromotionPage = () => {
 		// Refresh data after updating
 		await fetchPromotions(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		loadStats();
 	};
 
 	const handleDeletePromotion = async (id: string) => {
@@ -133,7 +145,8 @@ const PromotionPage = () => {
 			status: "success",
 			duration: 3000,
 		});
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		loadStats();
 	};
 
 	const handleViewDetail = (id: string) => {

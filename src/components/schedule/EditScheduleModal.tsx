@@ -13,10 +13,13 @@ import {
 	IconButton,
 	Box,
 	useToast,
+	Spinner,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { ShiftAssignment, Staff } from "@/types";
+import { scheduleService, type ShiftConfig, type StaffShiftCount } from "@/services/scheduleService";
+import { staffService } from "@/services/staffService";
 
 interface EditScheduleModalProps {
 	isOpen: boolean;
@@ -41,11 +44,14 @@ const EditScheduleModal = ({
 	const [selectedSalesStaffId, setSelectedSalesStaffId] =
 		useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
+	const [isLoadingData, setIsLoadingData] = useState(false);
 	const [shiftName, setShiftName] = useState<string>("");
+	const [shiftConfig, setShiftConfig] = useState<ShiftConfig | null>(null);
+	// Default staffing requirements - can be configured per shift via API
 	const [requiredWarehouseStaff, setRequiredWarehouseStaff] =
-		useState<number>(0);
-	const [requiredSalesStaff, setRequiredSalesStaff] = useState<number>(0);
-	const [maxShiftsPerWeek, setMaxShiftsPerWeek] = useState<number>(6);
+		useState<number>(2);
+	const [requiredSalesStaff, setRequiredSalesStaff] = useState<number>(3);
+	const [maxShiftsPerWeek] = useState<number>(6);
 	const [staffShiftCounts, setStaffShiftCounts] = useState<{
 		[staffId: string]: number;
 	}>({});
@@ -71,26 +77,66 @@ const EditScheduleModal = ({
 
 	useEffect(() => {
 		if (isOpen) {
-			loadAvailableStaff();
-			loadShiftName();
+			loadAllData();
 		}
 	}, [isOpen, date, shift, assignments]);
 
-	const loadShiftName = async () => {
-		// TODO: Fetch shift configuration from API
-		console.log("TODO: Load shift name from scheduleService.getShiftConfig()");
+	const loadAllData = async () => {
+		setIsLoadingData(true);
+		try {
+			await Promise.all([
+				loadShiftConfig(),
+				loadAvailableStaff(),
+				loadStaffShiftCounts(),
+			]);
+		} finally {
+			setIsLoadingData(false);
+		}
+	};
+
+	const loadShiftConfig = async () => {
+		const configs = await scheduleService.getShiftConfig();
+		const config = configs.find(c => c.id === shift);
+		if (config) {
+			setShiftConfig(config);
+			setShiftName(`${config.name} (${config.startTime} - ${config.endTime})`);
+		} else {
+			// Fallback to synchronous getter
+			setShiftName(scheduleService.getShiftName(shift));
+		}
 	};
 
 	const loadAvailableStaff = async () => {
-		// TODO: Fetch available staff from scheduleService.getAvailableStaff()
-		setAvailableStaff([]);
-		console.log("TODO: Load available staff from API");
+		try {
+			// Try to get available staff from schedule API
+			const available = await scheduleService.getAvailableStaff(date, shift);
+			if (available.length > 0) {
+				// Filter out staff already assigned to this shift
+				const assignedIds = new Set(assignments.map(a => a.staffId));
+				setAvailableStaff(available.filter(s => !assignedIds.has(s.id)));
+			} else {
+				// Fallback: get all active staff from staffService
+				const response = await staffService.getStaff({ status: "active" });
+				const allStaff = response.data || [];
+				const assignedIds = new Set(assignments.map(a => a.staffId));
+				setAvailableStaff(allStaff.filter(s => !assignedIds.has(s.id)));
+			}
+		} catch {
+			setAvailableStaff([]);
+		}
 	};
 
-	const loadStaffShiftCounts = async (staffIds: string[]) => {
-		// TODO: Fetch staff shift counts from scheduleService.getStaffShiftCount()
-		setStaffShiftCounts({});
-		console.log("TODO: Load staff shift counts from API");
+	const loadStaffShiftCounts = async () => {
+		try {
+			const counts = await scheduleService.getStaffShiftCounts();
+			const countsMap: { [staffId: string]: number } = {};
+			counts.forEach((c: StaffShiftCount) => {
+				countsMap[c.staffId] = c.shiftsThisWeek;
+			});
+			setStaffShiftCounts(countsMap);
+		} catch {
+			setStaffShiftCounts({});
+		}
 	};
 
 	// Filter staff by position
@@ -127,9 +173,30 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
-		// TODO: Call scheduleService.createAssignment() to add warehouse staff
-		console.log("TODO: Create assignment for warehouse staff via API");
-		setSelectedWarehouseStaffId("");
+		setIsLoading(true);
+		try {
+			await scheduleService.createAssignment({
+				staffId: selectedWarehouseStaffId,
+				shiftId: shift,
+				date,
+				role: "warehouse",
+			});
+			toast({
+				title: "Đã thêm nhân viên",
+				status: "success",
+				duration: 2000,
+			});
+			setSelectedWarehouseStaffId("");
+			onUpdate();
+		} catch {
+			toast({
+				title: "Không thể thêm nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleAddSalesStaff = async () => {
@@ -150,14 +217,51 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
-		// TODO: Call scheduleService.createAssignment() to add sales staff
-		console.log("TODO: Create assignment for sales staff via API");
-		setSelectedSalesStaffId("");
+		setIsLoading(true);
+		try {
+			await scheduleService.createAssignment({
+				staffId: selectedSalesStaffId,
+				shiftId: shift,
+				date,
+				role: "sales",
+			});
+			toast({
+				title: "Đã thêm nhân viên",
+				status: "success",
+				duration: 2000,
+			});
+			setSelectedSalesStaffId("");
+			onUpdate();
+		} catch {
+			toast({
+				title: "Không thể thêm nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleRemoveStaff = async (assignmentId: string) => {
-		// TODO: Call scheduleService.deleteAssignment() to remove staff
-		console.log("TODO: Delete assignment via API");
+		setIsLoading(true);
+		try {
+			await scheduleService.deleteAssignment(assignmentId);
+			toast({
+				title: "Đã xóa phân công",
+				status: "success",
+				duration: 2000,
+			});
+			onUpdate();
+		} catch {
+			toast({
+				title: "Không thể xóa phân công",
+				status: "error",
+				duration: 3000,
+			});
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (

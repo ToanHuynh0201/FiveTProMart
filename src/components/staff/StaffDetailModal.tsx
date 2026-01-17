@@ -59,31 +59,18 @@ const StaffDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Replace with actual API call - staffService.getStaffDetailById(staffId)
-			const mockData: StaffDetail = {
-				id: staffId,
-				name: "Nhân viên mẫu",
-				phone: "",
-				email: "",
-				address: "",
-				salary: 0,
-				status: "active" as const,
-				position: "Nhân viên bán hàng",
-				dateOfBirth: "",
-				hireDate: "",
-			};
-
-			setStaffDetail(mockData || null);
-			if (mockData) {
+			const data = await staffService.getStaffById(staffId);
+			setStaffDetail(data || null);
+			if (data) {
 				setFormData({
-					phone: mockData.phone,
-					email: mockData.email,
-					address: mockData.address,
-					salary: mockData.salary,
-					status: mockData.status,
-					position: mockData.position,
-					dateOfBirth: mockData.dateOfBirth,
-					hireDate: mockData.hireDate,
+					phone: data.phone,
+					email: data.email,
+					address: data.address,
+					salary: data.salary,
+					status: data.status,
+					position: data.position,
+					dateOfBirth: data.dateOfBirth,
+					hireDate: data.hireDate,
 				});
 			}
 		} catch (error) {
@@ -106,8 +93,7 @@ const StaffDetailModal = ({
 
 		setIsSaving(true);
 		try {
-			// TODO: Replace with actual API call - staffService.updateStaff(staffId, formData)
-			const updatedStaff: StaffDetail | null = null;
+			const updatedStaff = await staffService.updateStaff(staffId, formData);
 
 			if (updatedStaff) {
 				setStaffDetail(updatedStaff);
@@ -155,20 +141,16 @@ const StaffDetailModal = ({
 
 		setIsDeleting(true);
 		try {
-			// TODO: Replace with actual API call - staffService.deleteStaff(staffId)
-			const success = false;
-
-			if (success) {
-				onDelete(staffId);
-				onClose();
-				toast({
-					title: "Thành công",
-					description: "Xóa nhân viên thành công",
-					status: "success",
-					duration: 3000,
-					isClosable: true,
-				});
-			}
+			await staffService.deleteStaff(staffId);
+			onDelete(staffId);
+			onClose();
+			toast({
+				title: "Thành công",
+				description: "Xóa nhân viên thành công",
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+			});
 		} catch (error) {
 			console.error("Error deleting staff:", error);
 			toast({

@@ -33,7 +33,8 @@ import type {
 	PromotionType,
 	PromotionProduct,
 } from "../../types/promotion";
-// TODO: Import promotionService
+import { promotionService } from "@/services/promotionService";
+import { inventoryService } from "@/services/inventoryService";
 
 interface AddPromotionModalProps {
 	isOpen: boolean;
@@ -78,13 +79,25 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 	useEffect(() => {
 		if (isOpen) {
 			loadProducts();
-			// TODO: Generate promotion code
-			setFormData((prev) => ({ ...prev, code: "" }));
+			// Generate promotion code
+			generatePromotionCode();
 		} else {
 			// Reset form when modal closes
 			resetForm();
 		}
 	}, [isOpen]);
+
+	const generatePromotionCode = async () => {
+		try {
+			const code = await promotionService.generateCode();
+			setFormData((prev) => ({ ...prev, code }));
+		} catch {
+			// Fallback: generate client-side
+			const now = new Date();
+			const code = `KM${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+			setFormData((prev) => ({ ...prev, code }));
+		}
+	};
 
 	const resetForm = () => {
 		setFormData({
@@ -103,10 +116,17 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 
 	const loadProducts = async () => {
 		try {
-			// TODO: Fetch available products from API
-			setProducts([]);
+			// Fetch available products from inventoryService
+			const response = await inventoryService.getProducts({ page: 1, limit: 100 });
+			const productsData = response.data || [];
+			setProducts(productsData.map(p => ({
+				id: p.id,
+				code: p.barcode || p.id,
+				name: p.productName || p.name || '',
+			})));
 		} catch (error) {
 			console.error("Error loading products:", error);
+			setProducts([]);
 		}
 	};
 

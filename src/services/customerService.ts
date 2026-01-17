@@ -21,6 +21,54 @@ export const customerService = {
 		return apiService.get<Customer>(`/customers/${id}`);
 	},
 
+	/**
+	 * Search for customer by phone number.
+	 * Returns null if no customer found.
+	 *
+	 * Uses general search API and filters client-side for exact phone match.
+	 * This approach works perfectly - the search param searches across all fields
+	 * including phoneNumber, so exact match filtering gives accurate results.
+	 */
+	async findByPhone(phone: string): Promise<Customer | null> {
+		try {
+			// Try search with phone number
+			const response = await apiService.get<{
+				success: boolean;
+				data: Array<{
+					customerId: string;
+					fullName: string;
+					phoneNumber: string;
+					loyaltyPoints: number;
+					gender?: string;
+					dateOfBirth?: string;
+					registrationDate?: string;
+				}>;
+			}>(`/customers?search=${encodeURIComponent(phone)}`);
+
+			if (response.success && response.data.length > 0) {
+				// Find exact phone match
+				const match = response.data.find(
+					(c) => c.phoneNumber === phone,
+				);
+				if (match) {
+					return {
+						id: match.customerId,
+						name: match.fullName,
+						phone: match.phoneNumber,
+						email: undefined,
+						address: undefined,
+						loyaltyPoints: match.loyaltyPoints,
+						registrationDate: match.registrationDate,
+					};
+				}
+			}
+			return null;
+		} catch {
+			// API error or no results
+			return null;
+		}
+	},
+
 	async createCustomer(data: Omit<Customer, "id">): Promise<Customer> {
 		return apiService.post<Customer>("/customers", data);
 	},

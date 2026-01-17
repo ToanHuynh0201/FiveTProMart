@@ -34,7 +34,8 @@ import type {
 	PromotionType,
 	PromotionProduct,
 } from "../../types/promotion";
-// TODO: Import promotionService
+import { promotionService } from "@/services/promotionService";
+import { inventoryService } from "@/services/inventoryService";
 
 interface EditPromotionModalProps {
 	isOpen: boolean;
@@ -91,24 +92,35 @@ export const EditPromotionModal: React.FC<EditPromotionModalProps> = ({
 	const loadData = async () => {
 		setIsFetching(true);
 		try {
-			// TODO: Fetch available products
-			setProducts([]);
+			// Fetch available products from inventoryService
+			const productsResponse = await inventoryService.getProducts({ page: 1, limit: 100 });
+			const productsData = productsResponse.data || [];
+			setProducts(productsData.map(p => ({
+				id: p.id,
+				code: p.barcode || p.id,
+				name: p.productName || p.name || '',
+			})));
 
-			// TODO: Fetch promotion data by ID
-			// TODO: Convert promotion to form data based on type
-			setFormData({
-				code: "",
-				name: "",
-				description: "",
-				type: "discount",
-				discountPercentage: 0,
-				discountProducts: [],
-				purchaseGroups: [],
-				giftProducts: [],
-				startDate: "",
-				endDate: "",
-				status: "inactive",
-			});
+			// Fetch promotion data by ID
+			if (promotionId) {
+				const promotion = await promotionService.getPromotionById(promotionId);
+				setPromotion(promotion);
+				
+				// Convert promotion to form data based on type
+				setFormData({
+					code: promotion.code || '',
+					name: promotion.name,
+					description: promotion.description || '',
+					type: promotion.type,
+					discountPercentage: promotion.discountPercentage || 0,
+					discountProducts: promotion.discountProducts || [],
+					purchaseGroups: promotion.purchaseGroups || [],
+					giftProducts: promotion.giftProducts || [],
+					startDate: promotion.startDate,
+					endDate: promotion.endDate,
+					status: promotion.status,
+				});
+			}
 		} catch (error) {
 			console.error("Error loading data:", error);
 			toast({

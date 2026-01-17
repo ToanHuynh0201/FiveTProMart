@@ -8,9 +8,11 @@ import {
 	Badge,
 	Grid,
 	Input,
+	useToast,
 } from "@chakra-ui/react";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import type { PaymentMethod } from "@/types/sales";
+import { customerService } from "@/services/customerService";
 
 interface Customer {
 	id: string;
@@ -28,6 +30,9 @@ interface PaymentFooterProps {
 	isDisabled?: boolean;
 	customer: Customer | null;
 	onCustomerChange: (customer: Customer | null) => void;
+	/** Amount given by customer for change calculation */
+	cashReceived: number;
+	onCashReceivedChange: (amount: number) => void;
 }
 
 export const PaymentFooter: React.FC<PaymentFooterProps> = ({
@@ -39,10 +44,17 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	isDisabled = false,
 	customer,
 	onCustomerChange,
+	cashReceived,
+	onCashReceivedChange,
 }) => {
 	const [phoneInput, setPhoneInput] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
-	const [cashReceived, setCashReceived] = useState<string>("");
+	// Local string for input, synced with parent number
+	const [cashInput, setCashInput] = useState<string>(
+		cashReceived > 0 ? cashReceived.toString() : "",
+	);
+
+	const toast = useToast();
 
 	const handlePhoneSearch = async () => {
 		if (!phoneInput.trim()) {
@@ -59,27 +71,57 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		// Validate phone
 		const phoneRegex = /^(0|\+84)[0-9]{9,10}$/;
 		if (!phoneRegex.test(phoneInput.trim())) {
+			toast({
+				title: "Số điện thoại không hợp lệ",
+				description: "Vui lòng nhập số điện thoại đúng định dạng",
+				status: "warning",
+				duration: 3000,
+			});
 			return;
 		}
 
 		setIsSearching(true);
 		try {
-			// TODO: Replace with actual salesService.findCustomerByPhone() API call
-			const foundCustomer = null;
+			const foundCustomer = await customerService.findByPhone(
+				phoneInput.trim(),
+			);
 			if (foundCustomer) {
-				onCustomerChange(foundCustomer);
-				setPhoneInput(foundCustomer.phone);
+				onCustomerChange({
+					id: foundCustomer.id,
+					name: foundCustomer.name,
+					phone: foundCustomer.phone ?? "",
+					points: foundCustomer.loyaltyPoints ?? 0,
+				});
+				setPhoneInput(foundCustomer.phone ?? "");
+				toast({
+					title: "Tìm thấy khách hàng",
+					description: `${foundCustomer.name} - ${foundCustomer.loyaltyPoints ?? 0} điểm`,
+					status: "success",
+					duration: 2000,
+				});
 			} else {
 				const guestCustomer: Customer = {
 					id: `guest_${Date.now()}`,
 					name: "KHÁCH VÃNG LAI",
-					phone: "",
+					phone: phoneInput.trim(),
 					points: 0,
 				};
 				onCustomerChange(guestCustomer);
+				toast({
+					title: "Không tìm thấy khách hàng",
+					description: "Tiếp tục với khách vãng lai",
+					status: "info",
+					duration: 2000,
+				});
 			}
 		} catch (error) {
 			console.error(error);
+			toast({
+				title: "Lỗi tìm kiếm",
+				description: "Không thể tìm kiếm khách hàng",
+				status: "error",
+				duration: 3000,
+			});
 		} finally {
 			setIsSearching(false);
 		}
@@ -91,10 +133,23 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		}
 	}, [customer]);
 
-	// Calculate change
-	const cashReceivedNumber = parseFloat(cashReceived) || 0;
-	const change = cashReceivedNumber - total;
-	const hasEnoughCash = cashReceivedNumber >= total;
+	// Sync cashInput with prop when prop changes externally
+	React.useEffect(() => {
+		if (cashReceived > 0 && cashInput === "") {
+			setCashInput(cashReceived.toString());
+		}
+	}, [cashReceived, cashInput]);
+
+	// Handle cash input change
+	const handleCashInputChange = (value: string) => {
+		setCashInput(value);
+		const numValue = parseFloat(value) || 0;
+		onCashReceivedChange(numValue);
+	};
+
+	// Calculate change from prop (source of truth)
+	const change = cashReceived - total;
+	const hasEnoughCash = cashReceived >= total;
 
 	return (
 		<Box
@@ -238,15 +293,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Input
 										placeholder="0"
 										type="number"
-										value={cashReceived}
+										value={cashInput}
 										onChange={(e) =>
-											setCashReceived(e.target.value)
+											handleCashInputChange(e.target.value)
 										}
 										size="md"
 										fontSize="sm"
 										borderRadius="md"
 										borderColor={
-											cashReceived && !hasEnoughCash
+											cashInput && !hasEnoughCash
 												? "red.300"
 												: "gray.300"
 										}
@@ -458,15 +513,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										<Input
 											placeholder="0"
 											type="number"
-											value={cashReceived}
+											value={cashInput}
 											onChange={(e) =>
-												setCashReceived(e.target.value)
+												handleCashInputChange(e.target.value)
 											}
 											size="md"
 											fontSize="sm"
 											borderRadius="md"
 											borderColor={
-												cashReceived && !hasEnoughCash
+												cashInput && !hasEnoughCash
 													? "red.300"
 													: "gray.300"
 											}
@@ -618,15 +673,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Input
 										placeholder="0"
 										type="number"
-										value={cashReceived}
+										value={cashInput}
 										onChange={(e) =>
-											setCashReceived(e.target.value)
+											handleCashInputChange(e.target.value)
 										}
 										size="md"
 										fontSize="sm"
 										borderRadius="md"
 										borderColor={
-											cashReceived && !hasEnoughCash
+											cashInput && !hasEnoughCash
 												? "red.300"
 												: "gray.300"
 										}

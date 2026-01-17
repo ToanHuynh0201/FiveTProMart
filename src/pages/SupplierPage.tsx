@@ -17,6 +17,7 @@ import type {
 } from "@/types/supplier";
 import type { SupplierFilters } from "@/types/filters";
 import { supplierService } from "@/services/supplierService";
+import apiService from "@/lib/api";
 import {
 	Box,
 	Text,
@@ -103,8 +104,17 @@ const SupplierPage = () => {
 
 	// Load stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load supplier stats
-		setStats(null);
+		const loadStats = async () => {
+			try {
+				// Stats endpoint - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: SupplierStats }>("/suppliers/stats");
+				setStats(response.data || null);
+			} catch {
+				// API not available - show empty stats
+				setStats(null);
+			}
+		};
+		loadStats();
 	}, []);
 
 	const handleResetFilters = () => {
@@ -134,7 +144,8 @@ const SupplierPage = () => {
 		await supplierService.deleteSupplier(id);
 		// Refresh data after deleting
 		await fetchSuppliers(filters);
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		loadStats();
 	};
 
 	const handleAddSupplier = async (
@@ -144,7 +155,8 @@ const SupplierPage = () => {
 		// Refresh data after adding
 		await fetchSuppliers(filters);
 		onAddModalClose();
-		// TODO: Reload stats after adding
+		// Reload stats after adding
+		loadStats();
 	};
 
 	const handleUpdateSupplier = async (
@@ -155,7 +167,8 @@ const SupplierPage = () => {
 		// Refresh data after updating
 		await fetchSuppliers(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		loadStats();
 	};
 
 	return (

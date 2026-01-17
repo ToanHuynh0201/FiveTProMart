@@ -33,7 +33,7 @@ import {
 	ExpenseDetailModal,
 } from "@/components/reports";
 import { LoadingSpinner } from "@/components/common";
-// TODO: Import API functions from @/services/reportService and @/services/expenseService
+import { reportService } from "@/services/reportService";
 import type {
 	DateRange,
 	DateRangeFilter,
@@ -98,19 +98,33 @@ export const ReportsPage: React.FC = () => {
 
 	// Fetch data
 	useEffect(() => {
-		setLoading(false);
-		// TODO: Replace with API calls to getRevenueReport
-		setRevenueData(null);
-		// TODO: Replace with API calls to getOrdersReport
-		setOrdersData(null);
-		// TODO: Replace with API calls to getProductsReport
-		setProductsData(null);
-		// TODO: Replace with API calls to getCategoryReport
-		setCategoryData(null);
-		// TODO: Replace with API calls to getCustomerStats
-		setCustomerData(null);
-		// TODO: Replace with API calls to getExpenseReport
-		setExpenseData(null);
+		const loadAllReports = async () => {
+			setLoading(true);
+			try {
+				// Load all reports in parallel
+				const [revenue, orders, products, category, customers, expenses] = await Promise.all([
+					reportService.getRevenueReport(dateRange),
+					reportService.getOrdersReport(dateRange),
+					reportService.getProductsReport(dateRange),
+					reportService.getCategoryReport(dateRange),
+					reportService.getCustomerStats(),
+					reportService.getExpenseReport(dateRange),
+				]);
+				
+				setRevenueData(revenue);
+				setOrdersData(orders);
+				setProductsData(products);
+				setCategoryData(category);
+				setCustomerData(customers);
+				setExpenseData(expenses);
+			} catch {
+				// Data will remain null - components handle empty states
+			} finally {
+				setLoading(false);
+			}
+		};
+
+		loadAllReports();
 	}, [dateRange]);
 
 	const formatCurrency = (value: number) => {

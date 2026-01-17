@@ -58,14 +58,11 @@ const CustomerDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Implement API call to fetch customer detail by ID
-			// const data = await customerService.getCustomerDetailById(customerId);
-			// setCustomerDetail(data || null);
-
-			// Mock data for now
-			setCustomerDetail(null);
+			const data = await customerService.getCustomerById(customerId);
+			setCustomerDetail(data || null);
 		} catch (error) {
 			console.error("Error loading customer detail:", error);
+			setCustomerDetail(null);
 		} finally {
 			setIsLoading(false);
 		}

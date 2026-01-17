@@ -1,5 +1,9 @@
 import { Box, Flex, Text, Icon } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import type { IconType } from "react-icons";
+
+/** Severity level for visual styling */
+export type StatsSeverity = "normal" | "warning" | "critical";
 
 interface StatsCardProps {
 	title: string;
@@ -8,7 +12,32 @@ interface StatsCardProps {
 	color: string;
 	bgGradient: string;
 	onClick?: () => void;
+	/** Severity level - affects border color and animations */
+	severity?: StatsSeverity;
 }
+
+// Pulse animation for critical alerts
+const pulseAnimation = keyframes`
+	0% {
+		box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4);
+	}
+	70% {
+		box-shadow: 0 0 0 8px rgba(229, 62, 62, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+	}
+`;
+
+// Subtle glow for warning
+const warningGlow = keyframes`
+	0%, 100% {
+		border-color: #ED8936;
+	}
+	50% {
+		border-color: #F6AD55;
+	}
+`;
 
 export const StatsCard: React.FC<StatsCardProps> = ({
 	title,
@@ -16,22 +45,56 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 	icon,
 	bgGradient,
 	onClick,
+	severity = "normal",
 }) => {
+	// Only show severity styling when value > 0
+	const showSeverityStyle = typeof value === "number" ? value > 0 : value !== "0";
+	const effectiveSeverity = showSeverityStyle ? severity : "normal";
+
+	const getSeverityStyles = () => {
+		switch (effectiveSeverity) {
+			case "critical":
+				return {
+					borderColor: "red.400",
+					borderWidth: "2px",
+					bg: "red.50",
+					animation: `${pulseAnimation} 2s infinite`,
+				};
+			case "warning":
+				return {
+					borderColor: "orange.300",
+					borderWidth: "2px",
+					bg: "orange.50",
+					animation: `${warningGlow} 2s ease-in-out infinite`,
+				};
+			default:
+				return {
+					borderColor: "gray.100",
+					borderWidth: "1px",
+					bg: "white",
+					animation: undefined,
+				};
+		}
+	};
+
+	const severityStyles = getSeverityStyles();
+
 	return (
 		<Box
-			bg="white"
+			bg={severityStyles.bg}
 			p={6}
 			borderRadius="16px"
 			boxShadow="sm"
-			border="1px solid"
-			borderColor="gray.100"
+			border={`${severityStyles.borderWidth} solid`}
+			borderColor={severityStyles.borderColor}
 			transition="all 0.3s"
 			cursor={onClick ? "pointer" : "default"}
 			onClick={onClick}
+			animation={severityStyles.animation}
 			_hover={{
 				transform: "translateY(-4px)",
 				boxShadow: "lg",
-				bg: onClick ? "gray.50" : "white",
+				bg: onClick ? (effectiveSeverity === "normal" ? "gray.50" : severityStyles.bg) : severityStyles.bg,
 			}}>
 			<Flex
 				justify="space-between"
@@ -41,14 +104,14 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 					<Text
 						fontSize="14px"
 						fontWeight="500"
-						color="gray.600"
+						color={effectiveSeverity === "critical" ? "red.600" : effectiveSeverity === "warning" ? "orange.600" : "gray.600"}
 						mb={2}>
 						{title}
 					</Text>
 					<Text
 						fontSize="28px"
 						fontWeight="700"
-						color="gray.800">
+						color={effectiveSeverity === "critical" ? "red.700" : effectiveSeverity === "warning" ? "orange.700" : "gray.800"}>
 						{value}
 					</Text>
 				</Box>

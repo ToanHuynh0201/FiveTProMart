@@ -11,6 +11,7 @@ import {
 	HStack,
 	Badge,
 } from "@chakra-ui/react";
+import { customerService } from "@/services/customerService";
 
 interface Customer {
 	id: string;
@@ -48,11 +49,16 @@ export const CustomerInfoInput: React.FC<CustomerInfoInputProps> = ({
 		setIsSearching(true);
 
 		try {
-			// TODO: Replace with actual salesService.findCustomerByPhone() API call
-			const foundCustomer = null;
+			// Find customer by phone using customerService
+			const foundCustomer = await customerService.findByPhone(phoneNumber.trim());
 
 			if (foundCustomer) {
-				setCustomer(foundCustomer);
+				setCustomer({
+					id: foundCustomer.id,
+					name: foundCustomer.name,
+					phone: foundCustomer.phone || phoneNumber.trim(),
+					points: foundCustomer.loyaltyPoints,
+				});
 			} else {
 				setError(
 					"Không tìm thấy khách hàng. Vui lòng kiểm tra lại số điện thoại hoặc đăng ký khách hàng mới.",

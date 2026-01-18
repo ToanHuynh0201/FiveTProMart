@@ -20,6 +20,7 @@ import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import type { InventoryProduct } from "../../types/inventory";
 import { isExpired, isExpiringSoon } from "../../utils/date";
+import { EmptyState } from "../common";
 
 interface ProductTableProps {
 	products: InventoryProduct[];
@@ -356,17 +357,12 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 			</Box>
 
 			{products.length === 0 && (
-				<Flex
-					justify="center"
-					align="center"
-					py={12}>
-					<Text
-						fontSize="16px"
-						color="gray.500"
-						fontWeight="500">
-						Không tìm thấy sản phẩm nào
-					</Text>
-				</Flex>
+				<EmptyState 
+					variant="no-search-results" 
+					size="md"
+					title="Không tìm thấy sản phẩm"
+					description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+				/>
 			)}
 		</Box>
 	);

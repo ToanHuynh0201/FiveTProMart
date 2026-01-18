@@ -27,14 +27,13 @@ import { useAuthStore } from "@/store/authStore";
 import type {
 	PurchaseListItem,
 	PurchaseDetail,
-	Supplier,
-	SupplierProduct,
 	CreateDraftRequest,
 	ConfirmReceiptRequest,
-	CancelOrderRequest,
+	CancelPurchaseOrderRequest,
 	LotToPrint,
 	PurchaseFilter,
 } from "@/types/purchase";
+import type { Supplier, SupplierProduct } from "@/types/supplier";
 import type { PurchaseFilters } from "@/types/filters";
 import { purchaseService } from "@/services/purchaseService";
 import { supplierService } from "@/services/supplierService";
@@ -269,7 +268,7 @@ const PurchasePage = () => {
 
 	const handleCancelOrderSubmit = async (
 		id: string,
-		data: CancelOrderRequest,
+		data: CancelPurchaseOrderRequest,
 	) => {
 		const result = await purchaseService.cancelPurchaseOrder(id, data);
 		if (result.success) {

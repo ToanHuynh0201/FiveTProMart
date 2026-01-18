@@ -82,8 +82,8 @@ class AuthService {
 	 */
 	async getUserDetail(): Promise<User | null> {
 		try {
-			const response = await apiService.get("/auth/me");
-			const user: User = response.data;
+			const response = await apiService.get<User>("/auth/me");
+			const user: User = response;
 
 			// Update store with fresh user data
 			useAuthStore.getState().setUser(user);
@@ -107,6 +107,27 @@ class AuthService {
 	 */
 	isAuthenticated(): boolean {
 		return useAuthStore.getState().isAuthenticated;
+	}
+
+	/**
+	 * Request password reset OTP
+	 */
+	async forgotPassword(email: string): Promise<void> {
+		await apiService.post("/auth/forgot-password", { email });
+	}
+
+	/**
+	 * Verify OTP for password reset
+	 */
+	async verifyOtp(email: string, otp: string): Promise<void> {
+		await apiService.post("/auth/verify-otp", { email, otp });
+	}
+
+	/**
+	 * Reset password with OTP verification
+	 */
+	async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+		await apiService.post("/auth/reset-password", { email, otp, newPassword });
 	}
 }
 

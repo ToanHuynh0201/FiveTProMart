@@ -246,74 +246,40 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 												<Th>STT</Th>
 												<Th>Mã SP</Th>
 												<Th>Tên sản phẩm</Th>
-												<Th>Nhóm hàng</Th>
-												<Th>Đơn vị</Th>
-												<Th isNumeric>SL</Th>
-												<Th isNumeric>Đơn giá</Th>
-												<Th isNumeric>VAT (%)</Th>
-												<Th>NSX</Th>
-												<Th>HSD</Th>
+												<Th isNumeric>SL đặt</Th>
+												<Th isNumeric>Giá nhập</Th>
 												<Th isNumeric>Thành tiền</Th>
 											</Tr>
 										</Thead>
 										<Tbody>
 											{previewItems.map((item, index) => (
-												<Tr key={item.id}>
+												<Tr key={item.productId}>
 													<Td>{index + 1}</Td>
 													<Td fontSize="13px">
-														{item.productCode}
+														{item.productId}
 													</Td>
 													<Td fontSize="13px">
 														{item.productName}
-													</Td>
-													<Td fontSize="13px">
-														{item.category || "-"}
-													</Td>
-													<Td fontSize="13px">
-														{item.unit}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px"
 														fontWeight="600">
-														{item.quantity}
+														{item.quantityOrdered}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px">
 														{formatCurrency(
-															item.unitPrice,
+															item.importPrice,
 														)}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px">
-														{item.vat}%
-													</Td>
-													<Td fontSize="13px">
-														{item.manufactureDate
-															? new Date(
-																	item.manufactureDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
-													</Td>
-													<Td fontSize="13px">
-														{item.expiryDate
-															? new Date(
-																	item.expiryDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px"
 														fontWeight="700">
 														{formatCurrency(
-															item.totalPrice,
+															item.subTotal,
 														)}
 													</Td>
 												</Tr>
@@ -340,7 +306,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 											{formatCurrency(
 												previewItems.reduce(
 													(sum, item) =>
-														sum + item.totalPrice,
+														sum + item.subTotal,
 													0,
 												),
 											)}

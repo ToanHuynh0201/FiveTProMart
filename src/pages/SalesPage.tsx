@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
 	Box,
 	Flex,
@@ -23,16 +23,24 @@ import {
 	OrderFilterBar,
 	PendingOrdersList,
 	BarcodeScanner,
+	QuickActionsBar,
 } from "../components/sales";
+import { KeyboardShortcutsModal, SaleCelebration, useSaleCelebration } from "../components/common";
 import type {
 	OrderItem,
 	PaymentMethod,
 	Product,
 	SalesOrder,
 	PendingOrder,
+	OrderFilters as ApiOrderFilters,
+	OrderListItem,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
+import { salesService } from "../services/salesService";
+import { reservationService } from "../services/reservationService";
+import { useAuthStore } from "../store/authStore";
+import { useKeyboardShortcuts } from "../hooks";
 
 interface Customer {
 	id: string;
@@ -43,6 +51,7 @@ interface Customer {
 
 const SalesPage = () => {
 	const toast = useToast();
+	const { user } = useAuthStore();
 	const [customer, setCustomer] = useState<Customer | null>({
 		id: `guest_${Date.now()}`,
 		name: "KHÁCH VÃNG LAI",
@@ -53,6 +62,7 @@ const SalesPage = () => {
 	const [paymentMethod, setPaymentMethod] = useState<
 		PaymentMethod | undefined
 	>();
+	const [cashReceived, setCashReceived] = useState<number>(0);
 	const [orderNumber] = useState(
 		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
 	);
@@ -99,9 +109,129 @@ const SalesPage = () => {
 		onClose: onBarcodeScannerClose,
 	} = useDisclosure();
 
-	useEffect(() => {
-		// TODO: Implement API call to load products
+	const {
+		isOpen: isShortcutsHelpOpen,
+		onOpen: onShortcutsHelpOpen,
+		onClose: onShortcutsHelpClose,
+	} = useDisclosure();
 
+	// Sale celebration hook - triggers confetti on successful payment
+	const { celebrationData, celebrate, closeCelebration } = useSaleCelebration();
+
+	// Refs for handlers that are defined later (needed for keyboard shortcuts)
+	const handlePrintRef = useRef<() => void>(() => {});
+	const handlePauseOrderRef = useRef<() => void>(() => {});
+
+	// Keyboard shortcut handlers (memoized for stable references)
+	const handleClearCart = useCallback(async () => {
+		if (orderItems.length > 0) {
+			// Release all reservations
+			const reservationIds = orderItems
+				.filter((item) => item.reservationId)
+				.map((item) => item.reservationId as string);
+			
+			if (reservationIds.length > 0) {
+				try {
+					await reservationService.releaseAll(reservationIds, "Cart cleared");
+				} catch (error) {
+					console.error("Failed to release some reservations:", error);
+					// Continue with clearing cart
+				}
+			}
+			
+			setOrderItems([]);
+			setPaymentMethod(undefined);
+			setCashReceived(0);
+			localStorage.removeItem("salesPage_currentOrder");
+			toast({
+				title: "Đã xóa giỏ hàng",
+				status: "info",
+				duration: 2000,
+				position: "top",
+			});
+		}
+	}, [orderItems, toast]);
+
+	const handleSelectCash = useCallback(() => {
+		if (activeTabIndex === 0) {
+			setPaymentMethod("cash");
+			toast({
+				title: "💵 Tiền mặt",
+				status: "info",
+				duration: 1500,
+				position: "top",
+			});
+		}
+	}, [activeTabIndex, toast]);
+
+	const handleSelectTransfer = useCallback(() => {
+		if (activeTabIndex === 0) {
+			setPaymentMethod("transfer");
+			toast({
+				title: "🏦 Chuyển khoản",
+				status: "info",
+				duration: 1500,
+				position: "top",
+			});
+		}
+	}, [activeTabIndex, toast]);
+
+	// Focus search input handler
+	const handleFocusSearch = useCallback(() => {
+		const searchInput = document.getElementById("sales-product-search");
+		if (searchInput) {
+			searchInput.focus();
+		}
+	}, []);
+
+	// Keyboard shortcuts for Sales page
+	useKeyboardShortcuts([
+		{
+			key: "?",
+			shift: true,
+			action: onShortcutsHelpOpen,
+			description: "Mở hướng dẫn phím tắt",
+		},
+		{
+			key: "b",
+			ctrl: true,
+			action: onBarcodeScannerOpen,
+			description: "Mở máy quét mã vạch",
+			enabled: activeTabIndex === 0,
+		},
+		{
+			key: "f",
+			action: handleFocusSearch,
+			description: "Tìm kiếm sản phẩm",
+			enabled: activeTabIndex === 0,
+		},
+		{
+			key: "1",
+			action: handleSelectCash,
+			description: "Chọn thanh toán tiền mặt",
+			enabled: activeTabIndex === 0,
+		},
+		{
+			key: "2",
+			action: handleSelectTransfer,
+			description: "Chọn thanh toán chuyển khoản",
+			enabled: activeTabIndex === 0,
+		},
+		{
+			key: "p",
+			action: () => handlePrintRef.current(),
+			description: "Thanh toán & In hóa đơn",
+			enabled: activeTabIndex === 0 && orderItems.length > 0 && !!paymentMethod,
+		},
+		{
+			key: "Escape",
+			action: () => handlePauseOrderRef.current(),
+			description: "Tạm dừng đơn hàng",
+			enabled: activeTabIndex === 0 && orderItems.length > 0,
+		},
+	]);
+
+	useEffect(() => {
 		// Load orders for history
 		loadOrders();
 
@@ -164,14 +294,70 @@ const SalesPage = () => {
 	}, [orderItems, paymentMethod, customer, orderNumber, createdAt]);
 
 	const loadOrders = async () => {
-		// TODO: Implement API call to load orders
-		setOrders([]);
-		setFilteredOrders([]);
+		try {
+			// Convert UI filters to API format
+			const apiFilters: ApiOrderFilters = {
+				search: filters.searchQuery || undefined,
+				status: filters.status as ApiOrderFilters["status"],
+				paymentMethod:
+					filters.paymentMethod as ApiOrderFilters["paymentMethod"],
+				startDate: filters.dateFrom || undefined,
+				endDate: filters.dateTo || undefined,
+				page: 0,
+				size: 50,
+				sort: "orderDate,desc",
+			};
+
+			const response = await salesService.getOrders(apiFilters);
+
+			// Map API response to UI SalesOrder format for display
+			const uiOrders: SalesOrder[] = response.data.map(
+				(order: OrderListItem) => ({
+					id: order.orderId,
+					orderNumber: `#${order.orderId}`,
+					items: [], // Not available in list view
+					subtotal: order.totalAmount,
+					discount: 0,
+					total: order.totalAmount,
+					paymentMethod:
+						order.paymentMethod === "Tiền mặt" ? "cash" : "transfer",
+					customer: {
+						id: "",
+						name: order.customerName,
+						phone: "",
+					},
+					staff: {
+						id: "",
+						name: order.staffName,
+					},
+					createdAt: new Date(order.createdAt),
+					status:
+						order.status === "Đã huỷ"
+							? "cancelled"
+							: order.status === "Đã thanh toán"
+								? "completed"
+								: "draft",
+				}),
+			);
+
+			setOrders(uiOrders);
+			setFilteredOrders(uiOrders);
+		} catch (error) {
+			console.error("Error loading orders:", error);
+			toast({
+				title: "Lỗi tải đơn hàng",
+				description: "Không thể tải danh sách đơn hàng",
+				status: "error",
+				duration: 3000,
+			});
+			setOrders([]);
+			setFilteredOrders([]);
+		}
 	};
 
 	const applyFilters = async () => {
-		// TODO: Implement API call to filter orders
-		setFilteredOrders([]);
+		// Filters are applied via loadOrders which reads the filters state
+		await loadOrders();
 	};
 
 	const handleFiltersChange = (newFilters: OrderFilters) => {
@@ -193,7 +379,7 @@ const SalesPage = () => {
 		onOpen();
 	};
 
-	const handleProductSelect = (
+	const handleProductSelect = async (
 		product: Product,
 		batchId?: string,
 		batchNumber?: string,
@@ -226,43 +412,63 @@ const SalesPage = () => {
 					});
 				}
 
-				addProductToCart(product, 1, batchId, batchNumber);
+				await addProductToCart(product, 1, batchId, batchNumber);
 			}
 		}
 		// Không làm gì nếu không có mã lô - bắt buộc phải quét mã lô hàng
 	};
 
-	const addProductToCart = (
+	const addProductToCart = async (
 		product: Product,
 		quantity: number,
 		batchId?: string,
 		batchNumber?: string,
 	) => {
-		setOrderItems((prevItems) => {
-			// Check if same product and batch already exists
-			const existingItem = prevItems.find(
-				(item) =>
-					item.product.id === product.id && item.batchId === batchId,
+		// Check if same product and batch already exists
+		const existingItem = orderItems.find(
+			(item) =>
+				item.product.id === product.id && item.batchId === batchId,
+		);
+
+		if (existingItem) {
+			// Increase quantity - tìm số lượng tồn kho của lô
+			let maxQuantity = existingItem.product.stock;
+			if (existingItem.batchId) {
+				const batch = existingItem.product.batches?.find(
+					(b) => b.id === existingItem.batchId,
+				);
+				if (batch) {
+					maxQuantity = batch.quantity;
+				}
+			}
+
+			const newQuantity = Math.min(
+				existingItem.quantity + quantity,
+				maxQuantity,
 			);
 
-			if (existingItem) {
-				// Increase quantity - tìm số lượng tồn kho của lô
-				let maxQuantity = existingItem.product.stock;
-				if (existingItem.batchId) {
-					const batch = existingItem.product.batches?.find(
-						(b) => b.id === existingItem.batchId,
-					);
-					if (batch) {
-						maxQuantity = batch.quantity;
-					}
+			// Reserve additional stock
+			if (batchId && user?.id) {
+				try {
+					await reservationService.reserve({
+						lotId: batchId,
+						quantity: quantity, // Only reserve the additional quantity
+						reservedBy: user.id,
+					});
+				} catch (error) {
+					toast({
+						title: "Không thể đặt trước hàng",
+						description: "Có thể đã hết hàng hoặc đã được đặt bởi quầy khác",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't add to cart if reservation fails
 				}
+			}
 
-				const newQuantity = Math.min(
-					existingItem.quantity + quantity,
-					maxQuantity,
-				);
-
-				return prevItems.map((item) =>
+			setOrderItems((prevItems) =>
+				prevItems.map((item) =>
 					item.id === existingItem.id
 						? {
 								...item,
@@ -270,21 +476,44 @@ const SalesPage = () => {
 								totalPrice: item.unitPrice * newQuantity,
 						  }
 						: item,
-				);
-			} else {
-				// Add new item
-				const newItem: OrderItem = {
-					id: `item_${Date.now()}_${Math.random()}`,
-					product,
-					quantity,
-					unitPrice: product.price,
-					totalPrice: product.price * quantity,
-					batchId,
-					batchNumber,
-				};
-				return [...prevItems, newItem];
+				),
+			);
+		} else {
+			// Reserve stock for new item
+			let reservationId: string | undefined;
+			if (batchId && user?.id) {
+				try {
+					const reservation = await reservationService.reserve({
+						lotId: batchId,
+						quantity: quantity,
+						reservedBy: user.id,
+					});
+					reservationId = reservation.reservationId;
+				} catch (error) {
+					toast({
+						title: "Không thể đặt trước hàng",
+						description: "Có thể đã hết hàng hoặc đã được đặt bởi quầy khác",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't add to cart if reservation fails
+				}
 			}
-		});
+
+			// Add new item with reservation ID
+			const newItem: OrderItem = {
+				id: `item_${Date.now()}_${Math.random()}`,
+				product,
+				quantity,
+				unitPrice: product.price,
+				totalPrice: product.price * quantity,
+				batchId,
+				batchNumber,
+				reservationId,
+			};
+			setOrderItems((prevItems) => [...prevItems, newItem]);
+		}
 	};
 
 	const handleUpdateQuantity = (itemId: string, quantity: number) => {
@@ -316,7 +545,22 @@ const SalesPage = () => {
 		);
 	};
 
-	const handleRemoveItem = (itemId: string) => {
+	const handleRemoveItem = async (itemId: string) => {
+		const itemToRemove = orderItems.find((item) => item.id === itemId);
+		
+		// Release reservation if exists
+		if (itemToRemove?.reservationId) {
+			try {
+				await reservationService.release({
+					reservationId: itemToRemove.reservationId,
+					reason: "Item removed from cart",
+				});
+			} catch (error) {
+				console.error("Failed to release reservation:", error);
+				// Continue with removal even if release fails
+			}
+		}
+		
 		setOrderItems(orderItems.filter((item) => item.id !== itemId));
 	};
 
@@ -331,39 +575,111 @@ const SalesPage = () => {
 
 	const handlePrint = async () => {
 		if (orderItems.length === 0) {
-			alert("Vui lòng thêm sản phẩm vào đơn hàng");
+			toast({
+				title: "Đơn hàng trống",
+				description: "Vui lòng thêm sản phẩm vào đơn hàng",
+				status: "warning",
+				duration: 3000,
+				isClosable: true,
+			});
 			return;
 		}
 
 		if (!paymentMethod) {
-			alert("Vui lòng chọn phương thức thanh toán");
+			toast({
+				title: "Chưa chọn thanh toán",
+				description: "Vui lòng chọn phương thức thanh toán",
+				status: "warning",
+				duration: 3000,
+				isClosable: true,
+			});
 			return;
 		}
 
-		// TODO: Implement API call to create and complete order
-		console.log("Create order:", {
-			orderNumber,
-			items: orderItems,
-			subtotal: calculateTotal(),
-			discount: 0,
-			total: calculateTotal(),
-			paymentMethod,
-			customer,
-		});
+		try {
+			// Convert orderItems to API format
+			// NOTE: batchId IS the lotId (stored from BarcodeScanner)
+			const apiItems = orderItems
+				.filter((item) => item.batchId) // Only items with lotId
+				.map((item) => ({
+					lotId: item.batchId!,
+					quantity: item.quantity,
+				}));
 
-		// Clear localStorage
-		localStorage.removeItem("salesPage_currentOrder");
+			if (apiItems.length === 0) {
+				toast({
+					title: "Lỗi đơn hàng",
+					description:
+						"Không có sản phẩm hợp lệ. Vui lòng quét mã lô hàng.",
+					status: "error",
+					duration: 4000,
+					isClosable: true,
+				});
+				return;
+			}
 
-		// Reset form
-		setOrderItems([]);
-		setPaymentMethod(undefined);
-		setCustomer({
-			id: `guest_${Date.now()}`,
-			name: "KHÁCH VÃNG LAI",
-			phone: "",
-			points: 0,
-		});
+			// Map FE paymentMethod to BE format
+			const bePaymentMethod =
+				paymentMethod === "cash" ? "CASH" : "TRANSFER";
+
+			// Get staffId from auth store
+			const staffId = user?.id ?? "guest_staff";
+
+			// Use cashReceived if provided, otherwise use total (for transfer payments)
+			const amountGiven =
+				cashReceived > 0 ? cashReceived : calculateTotal();
+
+			// Call API to create order
+			const response = await salesService.createOrder({
+				staffId,
+				customerId: customer?.phone ? customer.id : null,
+				paymentMethod: bePaymentMethod,
+				amountGiven,
+				items: apiItems,
+			});
+
+			// Success notification - brief, professional confirmation
+			celebrate({
+				amount: response.totalAmount,
+				orderId: response.orderId,
+				change: response.changeReturned,
+				originalAmount: response.originalAmount,
+				roundingAdjustment: response.roundingAdjustment,
+			});
+
+			// Clear localStorage
+			localStorage.removeItem("salesPage_currentOrder");
+
+			// Reset form
+			setOrderItems([]);
+			setPaymentMethod(undefined);
+			setCashReceived(0);
+			setCustomer({
+				id: `guest_${Date.now()}`,
+				name: "KHÁCH VÃNG LAI",
+				phone: "",
+				points: 0,
+			});
+
+			// Reload orders list
+			loadOrders();
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Không thể tạo đơn hàng";
+			toast({
+				title: "Lỗi thanh toán",
+				description: errorMessage,
+				status: "error",
+				duration: 5000,
+				isClosable: true,
+			});
+		}
 	};
+
+	// Update refs for keyboard shortcuts
+	handlePrintRef.current = handlePrint;
 
 	const handleCustomerChange = (updatedCustomer: Customer | null) => {
 		setCustomer(updatedCustomer);
@@ -417,6 +733,9 @@ const SalesPage = () => {
 			position: "top",
 		});
 	};
+
+	// Update refs for keyboard shortcuts
+	handlePauseOrderRef.current = handlePauseOrder;
 
 	// Khôi phục hóa đơn tạm dừng
 	const handleRestoreOrder = (order: PendingOrder) => {
@@ -621,6 +940,8 @@ const SalesPage = () => {
 									isDisabled={orderItems.length === 0}
 									customer={customer}
 									onCustomerChange={handleCustomerChange}
+									cashReceived={cashReceived}
+									onCashReceivedChange={setCashReceived}
 								/>
 							</TabPanel>
 
@@ -658,11 +979,46 @@ const SalesPage = () => {
 					</Tabs>
 				</Box>
 
+				{/* Quick Actions Floating Bar - Only visible on Sales tab */}
+				{activeTabIndex === 0 && (
+					<QuickActionsBar
+						itemCount={orderItems.length}
+						totalAmount={calculateTotal()}
+					paymentMethod={paymentMethod === "card" ? undefined : paymentMethod}
+						onOpenBarcodeScanner={onBarcodeScannerOpen}
+						onFocusSearch={handleFocusSearch}
+						onSelectCash={handleSelectCash}
+						onSelectTransfer={handleSelectTransfer}
+						onPrint={handlePrint}
+						onPauseOrder={handlePauseOrder}
+						onClearCart={handleClearCart}
+						onShowShortcuts={onShortcutsHelpOpen}
+						isCartEmpty={orderItems.length === 0}
+						isPrintDisabled={orderItems.length === 0 || !paymentMethod}
+					/>
+				)}
+
 				{/* Order Detail Modal */}
 				<OrderDetailModal
 					isOpen={isOpen}
 					onClose={onClose}
 					order={selectedOrder}
+				/>
+
+				{/* Keyboard Shortcuts Help Modal */}
+				<KeyboardShortcutsModal
+					isOpen={isShortcutsHelpOpen}
+					onClose={onShortcutsHelpClose}
+					context="sales"
+				/>
+
+				{/* Sale success notification */}
+				<SaleCelebration
+					isOpen={celebrationData.isOpen}
+					onClose={closeCelebration}
+					amount={celebrationData.amount}
+					orderId={celebrationData.orderId}
+					change={celebrationData.change}
 				/>
 			</Box>
 		</MainLayout>

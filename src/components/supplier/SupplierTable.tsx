@@ -125,14 +125,6 @@ const SupplierTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									width="150px">
-									Loại sản phẩm
-								</Th>
-								<Th
-									fontSize="13px"
-									fontWeight="700"
-									color="gray.700"
-									textTransform="none"
 									width="120px"
 									textAlign="right">
 									Công nợ
@@ -152,7 +144,7 @@ const SupplierTable = ({
 							{supplierList.length === 0 ? (
 								<Tr>
 									<Td
-										colSpan={6}
+										colSpan={5}
 										textAlign="center"
 										py={8}
 										color="gray.500">
@@ -194,19 +186,6 @@ const SupplierTable = ({
 											fontSize="13px"
 											color="gray.600">
 											{supplier.phoneNumber}
-										</Td>
-										<Td
-											fontSize="13px"
-											color="gray.600">
-											<Tooltip
-												label={supplier.suppliedProductType}
-												placement="top">
-												<Text
-													noOfLines={1}
-													maxW="130px">
-													{supplier.suppliedProductType}
-												</Text>
-											</Tooltip>
 										</Td>
 										<Td
 											fontSize="13px"

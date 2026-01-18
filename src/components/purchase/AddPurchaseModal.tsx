@@ -31,11 +31,9 @@ import {
 	Flex,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import type {
-	Supplier,
-	SupplierProduct,
-	CreateDraftRequest,
-} from "@/types/purchase";
+import type { CreateDraftRequest } from "@/types/purchase";
+import type { Supplier } from "@/types/supplier";
+import type { SupplierProduct } from "@/types/supplier";
 
 interface DraftItem {
 	productId: string;
@@ -258,9 +256,9 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 										placeholder="Chọn nhà cung cấp">
 										{suppliers.map((supplier) => (
 											<option
-												key={supplier.id}
-												value={supplier.id}>
-												{supplier.name}
+												key={supplier.supplierId}
+												value={supplier.supplierId}>
+												{supplier.supplierName}
 											</option>
 										))}
 									</Select>
@@ -356,10 +354,8 @@ export const AddPurchaseModal: React.FC<AddPurchaseModalProps> = ({
 																{
 																	product.productName
 																}
-																{product.productCode &&
-																	` - ${product.productCode}`}
-																{product.unit &&
-																	` (${product.unit})`}
+																{product.unitOfMeasure &&
+																	` (${product.unitOfMeasure})`}
 															</option>
 														))}
 												</Select>

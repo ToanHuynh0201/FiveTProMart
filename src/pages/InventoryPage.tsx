@@ -21,6 +21,7 @@ import {
 	ProductDetailModal,
 	BatchListModal,
 	DisposalModal,
+	CriticalAlertsBanner,
 } from "@/components/inventory";
 import { Pagination } from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
@@ -33,11 +34,13 @@ import type {
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
 import { inventoryService } from "@/services/inventoryService";
+import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
 	const toast = useToast();
+	const { user } = useAuthStore();
 
 	// State for data from API
 	const [products, setProducts] = useState<InventoryProduct[]>([]);
@@ -116,10 +119,27 @@ const InventoryPage = () => {
 
 	// Load categories and stats on mount
 	useEffect(() => {
-		// TODO: Implement API call to load categories
-		setCategories([]);
-		// TODO: Implement API call to load stats
-		setStats(null);
+		const loadInitialData = async () => {
+			try {
+				// Load categories from API
+				const categoriesData = await inventoryService.getCategories();
+				setCategories(categoriesData);
+			} catch (error) {
+				console.error("Error loading categories:", error);
+				setCategories([]);
+			}
+
+			try {
+				// Load stats from API
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error loading stats:", error);
+				setStats(null);
+			}
+		};
+
+		loadInitialData();
 	}, []);
 
 	const handleUpdateProduct = async (
@@ -130,7 +150,13 @@ const InventoryPage = () => {
 		// Refresh data after updating
 		await fetchProducts(filters);
 		onEditModalClose();
-		// TODO: Reload stats after updating
+		// Reload stats after updating
+		try {
+			const statsData = await inventoryService.getStats();
+			setStats(statsData);
+		} catch (error) {
+			console.error("Error reloading stats:", error);
+		}
 	};
 
 	const handleDeleteProduct = async (id: string) => {
@@ -143,7 +169,13 @@ const InventoryPage = () => {
 			status: "success",
 			duration: 3000,
 		});
-		// TODO: Reload stats after deletion
+		// Reload stats after deletion
+		try {
+			const statsData = await inventoryService.getStats();
+			setStats(statsData);
+		} catch (error) {
+			console.error("Error reloading stats:", error);
+		}
 	};
 
 	const handleViewDetail = (id: string) => {
@@ -171,13 +203,21 @@ const InventoryPage = () => {
 	};
 
 	const handleUpdateBatch = async (
-		_batchId: string,
-		_updates: Partial<ProductBatch>,
+		batchId: string,
+		updates: Partial<ProductBatch>,
 	) => {
 		if (!selectedProduct) return;
 
 		try {
-			// TODO: Replace with actual API call to inventoryService.updateBatch(selectedProduct.id, batchId, updates)
+			// Call API to update lot
+			if (updates.quantity !== undefined) {
+				await inventoryService.updateLot(
+					batchId,
+					updates.quantity ?? 0,
+					"active",
+				);
+			}
+
 			await fetchProducts(filters);
 
 			// Update selected product for the modal
@@ -194,7 +234,14 @@ const InventoryPage = () => {
 				status: "success",
 				duration: 3000,
 			});
-			// TODO: Reload stats after updating
+
+			// Reload stats after updating
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (statsError) {
+				console.error("Error reloading stats:", statsError);
+			}
 		} catch (error) {
 			console.error("Error updating batch:", error);
 			toast({
@@ -222,18 +269,39 @@ const InventoryPage = () => {
 
 	const handleSubmitDisposal = async (
 		items: DisposalItem[],
-		_note: string,
+		note: string,
 	) => {
 		try {
-			// TODO: Replace with actual API call to inventoryService.createDisposal(items, note)
-			await fetchProducts(filters); // Reload data to update stats and inventory
+			// Process each disposal item
+			const staffId = user?.id ?? "guest_staff";
+
+			for (const item of items) {
+				await inventoryService.disposeLot(
+					item.batchId,
+					item.quantity,
+					item.reason as "expired" | "damaged" | "lost" | "other",
+					staffId,
+					note,
+				);
+			}
+
+			// Reload data to update stats and inventory
+			await fetchProducts(filters);
+
+			// Reload stats
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error reloading stats:", error);
+			}
+
 			toast({
 				title: "Thành công",
 				description: `Đã hủy ${items.length} lô hàng`,
 				status: "success",
 				duration: 3000,
 			});
-			// TODO: Reload stats after disposal
 		} catch (error) {
 			console.error("Error creating disposal:", error);
 			throw error;
@@ -266,6 +334,18 @@ const InventoryPage = () => {
 						Hủy hàng
 					</Button>
 				</Flex>
+
+				{/* Critical Alerts Banner - Shows when there are urgent issues */}
+				{stats && (stats.expiredBatches > 0 || stats.outOfStockProducts > 0 || stats.expiringSoonBatches > 0 || stats.lowStockProducts > 0) && (
+					<CriticalAlertsBanner
+						expiredBatches={stats.expiredBatches}
+						expiringSoonBatches={stats.expiringSoonBatches}
+						outOfStockProducts={stats.outOfStockProducts}
+						lowStockProducts={stats.lowStockProducts}
+						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
+					/>
+				)}
+
 				{/* Stats Cards */}
 				{stats && (
 					<SimpleGrid
@@ -279,6 +359,7 @@ const InventoryPage = () => {
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
 							onClick={() => handleStatClick("low")}
+							severity="warning"
 						/>
 						<StatsCard
 							title="Hết hàng"
@@ -287,6 +368,7 @@ const InventoryPage = () => {
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
 							onClick={() => handleStatClick("out")}
+							severity="critical"
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
@@ -295,6 +377,7 @@ const InventoryPage = () => {
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
 							onClick={() => handleStatClick("expiring-soon")}
+							severity="warning"
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
@@ -303,6 +386,7 @@ const InventoryPage = () => {
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"
 							onClick={() => handleStatClick("expired")}
+							severity="critical"
 						/>
 					</SimpleGrid>
 				)}

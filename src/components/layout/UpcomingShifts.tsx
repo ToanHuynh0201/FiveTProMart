@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	Box,
 	VStack,
@@ -8,9 +8,11 @@ import {
 	Icon,
 	Collapse,
 	Tooltip,
+	Spinner,
 } from "@chakra-ui/react";
 import { LockIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { MdCalendarToday } from "react-icons/md";
+import apiService from "@/lib/api";
 
 interface UpcomingShift {
 	id: string;
@@ -22,44 +24,88 @@ interface UpcomingShift {
 	status: "upcoming" | "today";
 }
 
-// Hardcoded data
-const upcomingShifts: UpcomingShift[] = [
-	{
-		id: "1",
-		date: "04/12/2024",
-		dayOfWeek: "Thứ 4",
-		shiftName: "Ca Sáng",
-		startTime: "08:00",
-		endTime: "12:00",
-		status: "today",
-	},
-	{
-		id: "2",
-		date: "05/12/2024",
-		dayOfWeek: "Thứ 5",
-		shiftName: "Ca Chiều",
-		startTime: "13:00",
-		endTime: "17:00",
-		status: "upcoming",
-	},
-	{
-		id: "3",
-		date: "06/12/2024",
-		dayOfWeek: "Thứ 6",
-		shiftName: "Ca Sáng",
-		startTime: "08:00",
-		endTime: "12:00",
-		status: "upcoming",
-	},
-];
-
 interface UpcomingShiftsProps {
 	isCollapsed: boolean;
 }
 
 export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
-	const nearestShift = upcomingShifts[0];
+	const [shifts, setShifts] = useState<UpcomingShift[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+
+	useEffect(() => {
+		const fetchShifts = async () => {
+			setIsLoading(true);
+			try {
+				// API endpoint for shifts - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: UpcomingShift[] }>("/shifts/upcoming");
+				setShifts(response.data || []);
+			} catch {
+				// API not yet available - show empty state
+				setShifts([]);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchShifts();
+	}, []);
+
+	const nearestShift = shifts[0];
+
+	// Loading state
+	if (isLoading) {
+		return (
+			<Box
+				px={3}
+				py={3}
+				borderTop="1px solid"
+				borderColor="rgba(187, 214, 255, 0.1)">
+				{isCollapsed ? (
+					<Spinner size="xs" color="whiteAlpha.500" mx="auto" display="block" />
+				) : (
+					<HStack spacing={2}>
+						<Spinner size="xs" color="whiteAlpha.500" />
+						<Text fontSize="xs" color="whiteAlpha.500">
+							Đang tải...
+						</Text>
+					</HStack>
+				)}
+			</Box>
+		);
+	}
+
+	// Empty state - no shifts available or API not implemented
+	if (shifts.length === 0) {
+		return (
+			<Box
+				px={3}
+				py={3}
+				borderTop="1px solid"
+				borderColor="rgba(187, 214, 255, 0.1)">
+				{isCollapsed ? (
+					<Tooltip label="Không có ca làm sắp tới" placement="right" hasArrow>
+						<Box>
+							<Icon
+								as={MdCalendarToday}
+								boxSize={5}
+								color="whiteAlpha.400"
+								mx="auto"
+								display="block"
+							/>
+						</Box>
+					</Tooltip>
+				) : (
+					<HStack spacing={2}>
+						<Icon as={MdCalendarToday} boxSize={4} color="whiteAlpha.400" />
+						<Text fontSize="xs" color="whiteAlpha.500">
+							Không có ca làm sắp tới
+						</Text>
+					</HStack>
+				)}
+			</Box>
+		);
+	}
 
 	// When sidebar is collapsed - show only icon
 	if (isCollapsed) {
@@ -126,7 +172,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 					px={1.5}
 					py={0.5}
 					borderRadius="full">
-					{upcomingShifts.length}
+					{shifts.length}
 				</Badge>
 				<Icon
 					as={isExpanded ? ChevronUpIcon : ChevronDownIcon}
@@ -144,7 +190,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 					px={3}
 					pb={2}
 					align="stretch">
-					{upcomingShifts.map((shift) => (
+					{shifts.map((shift) => (
 						<Box
 							key={shift.id}
 							p={2}

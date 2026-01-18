@@ -28,6 +28,7 @@ import type {
 	InventoryProduct,
 	InventoryCategory,
 } from "../../types/inventory";
+import { inventoryService } from "../../services/inventoryService";
 
 interface EditProductModalProps {
 	isOpen: boolean;
@@ -60,29 +61,12 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Implement API call to fetch product by ID
-			// For now, set product to null to show loading state
-			await new Promise((resolve) => setTimeout(resolve, 500));
-			setProduct({
-				id: productId,
-				code: "",
-				name: "",
-				category: categories[0]?.name || "",
-				unit: "",
-				costPrice: 0,
-				price: 0,
-				barcode: "",
-				minStock: 0,
-				maxStock: 0,
-				supplier: "",
-				status: "active" as const,
-				description: "",
-				stock: 0,
-				batches: [],
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-			});
+			const data = await inventoryService.getProductById(productId);
+			if (data) {
+				setProduct(data);
+			}
 		} catch (error) {
+			console.error("Error loading product:", error);
 			toast({
 				title: "Lỗi",
 				description: "Không thể tải thông tin sản phẩm",

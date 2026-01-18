@@ -2,7 +2,7 @@ import apiService from "@/lib/api";
 import type {
 	CreateDraftRequest,
 	ConfirmReceiptRequest,
-	CancelOrderRequest,
+	CancelPurchaseOrderRequest,
 } from "@/types/purchase";
 import { withErrorHandling } from "@/utils/error";
 
@@ -81,7 +81,7 @@ class PurchaseService {
 	 * POST /api/v1/purchase_orders/{id}/cancel
 	 */
 	cancelPurchaseOrder = withErrorHandling(
-		async (id: string, data: CancelOrderRequest) => {
+		async (id: string, data: CancelPurchaseOrderRequest) => {
 			return await apiService.post(`${BASE_URL}/${id}/cancel`, data);
 		},
 	);

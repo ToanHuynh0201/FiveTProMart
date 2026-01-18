@@ -172,25 +172,25 @@ class ApiService {
 		window.location.href = ROUTES.LOGIN;
 	}
 
-	// Proxy methods to axios instance
-	get(url: any, config?: any) {
-		return this.api.get(url, config);
+	// Proxy methods to axios instance with generic type support
+	get<T = unknown>(url: string, config?: object): Promise<T> {
+		return this.api.get(url, config).then((res) => res.data as T);
 	}
 
-	post(url: any, data: any, config?: any) {
-		return this.api.post(url, data, config);
+	post<T = unknown>(url: string, data?: unknown, config?: object): Promise<T> {
+		return this.api.post(url, data, config).then((res) => res.data as T);
 	}
 
-	put(url: any, data: any, config?: any) {
-		return this.api.put(url, data, config);
+	put<T = unknown>(url: string, data?: unknown, config?: object): Promise<T> {
+		return this.api.put(url, data, config).then((res) => res.data as T);
 	}
 
-	patch(url: any, data: any, config?: any) {
-		return this.api.patch(url, data, config);
+	patch<T = unknown>(url: string, data?: unknown, config?: object): Promise<T> {
+		return this.api.patch(url, data, config).then((res) => res.data as T);
 	}
 
-	delete(url: any, config?: any) {
-		return this.api.delete(url, config);
+	delete<T = void>(url: string, config?: object): Promise<T> {
+		return this.api.delete(url, config).then((res) => res.data as T);
 	}
 }
 

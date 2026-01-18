@@ -24,23 +24,19 @@ import {
 	Select,
 } from "@chakra-ui/react";
 import {
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	CartesianGrid,
 	Tooltip,
 	ResponsiveContainer,
 	PieChart,
 	Pie,
 	Cell,
-	Legend,
 } from "recharts";
 import Pagination from "@/components/common/Pagination";
 import { usePagination } from "@/hooks";
 import type { ExpenseReport } from "@/types/reports";
 
-// TODO: Implement getExpenseCategoryLabel service
+/**
+ * Get Vietnamese label for expense category
+ */
 const getExpenseCategoryLabel = (category: string): string => {
 	const labels: Record<string, string> = {
 		electricity: "Điện",
@@ -52,7 +48,9 @@ const getExpenseCategoryLabel = (category: string): string => {
 	return labels[category] || category;
 };
 
-// TODO: Implement getExpenseCategoryColor service
+/**
+ * Get color for expense category visualization
+ */
 const getExpenseCategoryColor = (category: string): string => {
 	const colors: Record<string, string> = {
 		electricity: "#FF8C42",
@@ -321,7 +319,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 									cy="50%"
 									labelLine={false}
 									label={({ name, percent }) =>
-										`${name}: ${(percent * 100).toFixed(1)}%`
+									`${name}: ${((percent ?? 0) * 100).toFixed(1)}%`
 									}
 									outerRadius={100}
 									fill="#8884d8"

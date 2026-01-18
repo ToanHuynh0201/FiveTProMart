@@ -115,15 +115,15 @@ export interface ConfirmReceiptResponse {
 	lotsToPrint: LotToPrint[];
 }
 
-// Cancel order request body
-export interface CancelOrderRequest {
+// Cancel purchase order request body
+export interface CancelPurchaseOrderRequest {
 	staffIdChecked: string;
 	checkDate: string;
 	cancelNotesReason: string;
 }
 
-// Cancel order response
-export interface CancelOrderResponse {
+// Cancel purchase order response
+export interface CancelPurchaseOrderResponse {
 	poId: string;
 	poCode: string;
 	status: "Cancelled";
@@ -145,24 +145,4 @@ export interface PurchaseFilter {
 	status?: string; // "Draft" | "Completed" | "Cancelled" | "all"
 	startDate?: string; // dd-MM-yyyy
 	endDate?: string; // dd-MM-yyyy
-}
-
-// Supplier type for dropdown selection
-export interface Supplier {
-	id: string;
-	name: string;
-	phone?: string;
-	email?: string;
-	address?: string;
-	representName?: string;
-	representPhoneNumber?: string;
-}
-
-// Product type for dropdown selection when creating draft
-export interface SupplierProduct {
-	productId: string;
-	productName: string;
-	productCode?: string;
-	unit?: string;
-	category?: string;
 }

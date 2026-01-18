@@ -18,7 +18,9 @@ import {
 import { ChartCard } from "./ChartCard";
 import type { ExpenseReport } from "@/types/reports";
 
-// TODO: Implement getExpenseCategoryLabel service
+/**
+ * Get Vietnamese label for expense category
+ */
 const getExpenseCategoryLabel = (category: string): string => {
 	const labels: Record<string, string> = {
 		electricity: "Điện",
@@ -30,7 +32,9 @@ const getExpenseCategoryLabel = (category: string): string => {
 	return labels[category] || category;
 };
 
-// TODO: Implement getExpenseCategoryColor service
+/**
+ * Get color for expense category visualization
+ */
 const getExpenseCategoryColor = (category: string): string => {
 	const colors: Record<string, string> = {
 		electricity: "#FF8C42",

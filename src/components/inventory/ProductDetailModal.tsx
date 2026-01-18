@@ -30,6 +30,7 @@ import {
 } from "@chakra-ui/react";
 import { FiPackage, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 import type { InventoryProduct, ProductBatch } from "../../types/inventory";
+import { inventoryService } from "../../services/inventoryService";
 import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductDetailModalProps {
@@ -70,16 +71,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Implement API call to fetch product details by ID
-			await new Promise((resolve) => setTimeout(resolve, 500));
-			setProduct(null);
+			const data = await inventoryService.getProductById(productId);
+			setProduct(data || null);
 		} catch (error) {
+			console.error("Error loading product:", error);
 			toast({
 				title: "Lỗi",
 				description: "Không thể tải thông tin sản phẩm",
 				status: "error",
 				duration: 3000,
 			});
+			setProduct(null);
 		} finally {
 			setIsLoading(false);
 		}
@@ -181,8 +183,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 		if (!product) return;
 
 		try {
-			// TODO: Implement API call to update batch quantities
-			// TODO: Update product with returned data from API
+			// API currently supports updating total quantity and status
+			// For display/stock split, backend API extension needed
+			const totalQuantity = editValues.quantityInStock + editValues.quantityOnDisplay;
+			await inventoryService.updateLot(batchId, totalQuantity, "available");
+
+			// Reload product to get updated data
+			await loadProduct();
 
 			toast({
 				title: "Thành công",

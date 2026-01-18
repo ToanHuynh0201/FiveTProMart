@@ -7,7 +7,6 @@ import {
 	InputGroup,
 	InputLeftElement,
 	Grid,
-	Text,
 	FormControl,
 	FormLabel,
 } from "@chakra-ui/react";

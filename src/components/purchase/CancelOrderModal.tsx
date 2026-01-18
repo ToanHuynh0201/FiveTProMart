@@ -18,14 +18,14 @@ import {
 	Textarea,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import type { PurchaseDetail, CancelOrderRequest } from "@/types/purchase";
+import type { PurchaseDetail, CancelPurchaseOrderRequest } from "@/types/purchase";
 
 interface CancelOrderModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	purchase: PurchaseDetail | null;
 	staffId: string;
-	onCancel: (id: string, data: CancelOrderRequest) => Promise<void>;
+	onCancel: (id: string, data: CancelPurchaseOrderRequest) => Promise<void>;
 }
 
 export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
@@ -60,7 +60,7 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 		setIsSubmitting(true);
 
 		try {
-			const requestData: CancelOrderRequest = {
+			const requestData: CancelPurchaseOrderRequest = {
 				staffIdChecked: staffId,
 				checkDate: new Date().toISOString(),
 				cancelNotesReason: cancelReason,

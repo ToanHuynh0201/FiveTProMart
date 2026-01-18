@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import {
 	Box,
 	Input,
@@ -16,6 +16,7 @@ import { SearchIcon } from "@chakra-ui/icons";
 import { FiCamera } from "react-icons/fi";
 import type { Product } from "../../types/sales";
 import { getExpiryStatus, isExpired } from "../../utils/date";
+import { inventoryService } from "@/services/inventoryService";
 
 interface ProductSearchBarProps {
 	onProductSelect: (
@@ -62,11 +63,33 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		if (query.trim()) {
 			// Debounce search for better performance
 			searchTimeoutRef.current = setTimeout(async () => {
-				// TODO: Implement searchProducts API call from salesService
-				// const results = await salesService.searchProducts(query);
-				const results: Product[] = [];
-				setSearchResults(results);
-				setShowResults(true);
+				try {
+					// Search products via inventoryService
+					const response = await inventoryService.getProducts({ page: 1, size: 50, searchQuery: query });
+					const products = response.data || [];
+					// Transform to Product format expected by sales
+					const results = products.map(p => ({
+						id: p.id,
+						barcode: p.barcode || '',
+						name: p.name || '',
+						category: p.category || '',
+						price: p.price || 0,
+						code: p.barcode || p.id,
+					stock: (p.batches || []).reduce((sum, b) => sum + (b.quantity || 0), 0),
+						unit: p.unit || 'cái',
+						batches: (p.batches || []).map(b => ({
+							id: b.id,
+							batchNumber: b.batchNumber,
+							expiryDate: b.expiryDate,
+							quantity: b.quantity,
+						})),
+					}));
+					setSearchResults(results as any);
+					setShowResults(true);
+				} catch {
+					setSearchResults([]);
+					setShowResults(false);
+				}
 			}, 300);
 		} else {
 			setSearchResults([]);
@@ -105,6 +128,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					<SearchIcon color="gray.500" />
 				</InputLeftElement>
 				<Input
+					id="sales-product-search"
 					ref={inputRef}
 					h="48px"
 					bg="gray.50"

@@ -2,6 +2,7 @@ export * from "./layout";
 export * from "./staff";
 export * from "./schedule";
 export * from "./sales";
+export * from "./reservation";
 export type {
 	InventoryProduct,
 	ProductBatch as InventoryProductBatch,

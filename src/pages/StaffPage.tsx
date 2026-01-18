@@ -15,11 +15,9 @@ import {
 	Text,
 	Flex,
 	Spinner,
-	Button,
 	useDisclosure,
 	useToast,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
 import { useFilters } from "@/hooks/useFilters";
 import { usePagination } from "@/hooks/usePagination";
 
@@ -238,17 +236,6 @@ const StaffPage = () => {
 							color="#161f70">
 							Quản lý nhân viên
 						</Text>
-						<Button
-							leftIcon={<AddIcon />}
-							colorScheme="blue"
-							size={{ base: "md", md: "lg" }}
-							onClick={onAddModalOpen}
-							bg="#161f70"
-							_hover={{ bg: "#0f1654" }}
-							px={6}
-							boxShadow="md">
-							Thêm nhân viên
-						</Button>
 					</Flex>
 
 					{/* Search Bar */}

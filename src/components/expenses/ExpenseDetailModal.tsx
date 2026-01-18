@@ -28,7 +28,7 @@ import Pagination from "@/components/common/Pagination";
 import { usePagination } from "@/hooks";
 import { LoadingSpinner } from "@/components/common";
 import { ExpenseChart } from "@/components/reports";
-import type { ExpenseReport, DateRangeFilter } from "@/types/reports";
+import type { ExpenseReport } from "@/types/reports";
 
 interface ExpenseDetailModalProps {
 	isOpen: boolean;
@@ -75,8 +75,11 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 			// };
 			// const data = await getExpenseReport(period);
 
-			// Mock data for development
+			// Placeholder until API is implemented
 			const data: ExpenseReport = {
+				period: {
+					type: "year",
+				},
 				totalExpense: 0,
 				byCategory: {
 					electricity: 0,
@@ -226,6 +229,7 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 		);
 
 		return {
+			period: expenseData.period,
 			totalExpense: filteredStats.totalExpense,
 			byCategory: filteredStats.byCategory,
 			expenses: filteredExpenses,
@@ -447,15 +451,15 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 																		"electricity"
 																			? "orange"
 																			: expense.category ===
-																			  "water"
-																			? "blue"
-																			: expense.category ===
-																			  "supplies"
-																			? "green"
-																			: expense.category ===
-																			  "repairs"
-																			? "red"
-																			: "gray"
+																				  "water"
+																				? "blue"
+																				: expense.category ===
+																					  "supplies"
+																					? "green"
+																					: expense.category ===
+																						  "repairs"
+																						? "red"
+																						: "gray"
 																	}>
 																	{getExpenseCategoryLabel(
 																		expense.category,
@@ -524,10 +528,10 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 									{timeFilter === "7days"
 										? "7 ngày qua"
 										: timeFilter === "30days"
-										? "30 ngày qua"
-										: timeFilter === "3months"
-										? "3 tháng qua"
-										: "Trong năm nay"}
+											? "30 ngày qua"
+											: timeFilter === "3months"
+												? "3 tháng qua"
+												: "Trong năm nay"}
 									)
 								</Text>
 								<Text

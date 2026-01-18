@@ -44,13 +44,11 @@ import {
 	NumberInputStepper,
 	NumberIncrementStepper,
 	NumberDecrementStepper,
-	Divider,
 } from "@chakra-ui/react";
 import type {
 	PromotionDetail,
 	PromotionType,
 	PromotionStatus,
-	CreatePromotionRequest,
 } from "@/types/promotion";
 import { promotionService } from "@/services/promotionService";
 import {
@@ -62,40 +60,6 @@ import {
 	FiTag,
 } from "react-icons/fi";
 import { ProductSelector } from "../supplier/ProductSelector";
-
-// ============ MOCK DATA FOR TESTING ============
-const MOCK_PROMOTION_DETAIL: PromotionDetail = {
-	promotionId: "PROMO-001",
-	promotionName: "Giảm giá mùa hè 2024",
-	promotionDescription: "Chương trình giảm giá dành cho các sản phẩm nước giải khát trong mùa hè",
-	promotionType: "Discount",
-	discountPercent: 20,
-	buyQuantity: null,
-	getQuantity: null,
-	status: "Active",
-	startDate: "01-06-2024",
-	endDate: "31-08-2024",
-	products: [
-		{
-			productId: "prod-001",
-			productName: "Sữa tươi Vinamilk 1L",
-			unitOfMeasure: "Hộp",
-			sellingPrice: 32000,
-			promotionPrice: 25600,
-		},
-		{
-			productId: "prod-002",
-			productName: "Nước ngọt Coca Cola 330ml",
-			unitOfMeasure: "Lon",
-			sellingPrice: 12000,
-			promotionPrice: 9600,
-		},
-	],
-};
-
-// Set this to true to use mock data, false to use real API
-const USE_MOCK_DATA = true;
-// ============ END MOCK DATA ============
 
 interface SelectedProduct {
 	productId: string;
@@ -148,7 +112,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 	const [isCancelling, setIsCancelling] = useState(false);
-	const [promotionData, setPromotionData] = useState<PromotionDetail | null>(null);
+	const [promotionData, setPromotionData] = useState<PromotionDetail | null>(
+		null,
+	);
 
 	// Cancel confirmation dialog
 	const {
@@ -171,7 +137,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 	});
 
 	// Selected products for edit mode
-	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+		[],
+	);
 
 	const handleProductsChange = (newProducts: SelectedProduct[]) => {
 		setSelectedProducts(newProducts);
@@ -192,29 +160,6 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 
 		setIsFetching(true);
 		try {
-			if (USE_MOCK_DATA) {
-				// Use mock data for testing
-				await new Promise((resolve) => setTimeout(resolve, 300));
-				setPromotionData(MOCK_PROMOTION_DETAIL);
-				setFormData({
-					promotionName: MOCK_PROMOTION_DETAIL.promotionName,
-					promotionDescription: MOCK_PROMOTION_DETAIL.promotionDescription || "",
-					promotionType: MOCK_PROMOTION_DETAIL.promotionType,
-					discountPercent: MOCK_PROMOTION_DETAIL.discountPercent || 10,
-					buyQuantity: MOCK_PROMOTION_DETAIL.buyQuantity || 1,
-					getQuantity: MOCK_PROMOTION_DETAIL.getQuantity || 1,
-					startDate: parseDDMMYYYYToInput(MOCK_PROMOTION_DETAIL.startDate),
-					endDate: parseDDMMYYYYToInput(MOCK_PROMOTION_DETAIL.endDate),
-				});
-				const existingProducts: SelectedProduct[] = MOCK_PROMOTION_DETAIL.products.map((p) => ({
-					productId: p.productId,
-					productName: p.productName,
-				}));
-				setSelectedProducts(existingProducts);
-				setIsFetching(false);
-				return;
-			}
-
 			const result = await promotionService.getPromotionById(promotionId);
 
 			if (result.success && result.data) {
@@ -222,7 +167,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 				// Populate form data for edit mode
 				setFormData({
 					promotionName: result.data.promotionName,
-					promotionDescription: result.data.promotionDescription || "",
+					promotionDescription:
+						result.data.promotionDescription || "",
 					promotionType: result.data.promotionType,
 					discountPercent: result.data.discountPercent || 10,
 					buyQuantity: result.data.buyQuantity || 1,
@@ -232,15 +178,17 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 				});
 
 				// Map products for edit mode
-				const existingProducts: SelectedProduct[] = result.data.products.map((p) => ({
-					productId: p.productId,
-					productName: p.productName,
-				}));
+				const existingProducts: SelectedProduct[] =
+					result.data.products.map((p: any) => ({
+						productId: p.productId,
+						productName: p.productName,
+					}));
 				setSelectedProducts(existingProducts);
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể tải thông tin khuyến mãi",
+					description:
+						result.error || "Không thể tải thông tin khuyến mãi",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -304,7 +252,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 
 		// Validate based on type
 		if (formData.promotionType === "Discount") {
-			if (formData.discountPercent < 1 || formData.discountPercent > 100) {
+			if (
+				formData.discountPercent < 1 ||
+				formData.discountPercent > 100
+			) {
 				toast({
 					title: "Lỗi",
 					description: "Phần trăm giảm giá phải từ 1% đến 100%",
@@ -332,27 +283,12 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				console.log("Mock: Update promotion", formData);
-				toast({
-					title: "Mock: Cập nhật thành công",
-					description: `Đã cập nhật: ${formData.promotionName}`,
-					status: "success",
-					duration: 3000,
-					isClosable: true,
-				});
-				onSuccess?.();
-				onClose();
-				setIsLoading(false);
-				return;
-			}
-
 			// TODO: Call update API when available
 			// const result = await promotionService.updatePromotion(promotionId, {...});
 			toast({
 				title: "Thông báo",
-				description: "Chức năng cập nhật khuyến mãi đang được phát triển",
+				description:
+					"Chức năng cập nhật khuyến mãi đang được phát triển",
 				status: "info",
 				duration: 3000,
 				isClosable: true,
@@ -381,23 +317,6 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		setIsCancelling(true);
 
 		try {
-			if (USE_MOCK_DATA) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				console.log("Mock: Cancel promotion", promotionId);
-				toast({
-					title: "Mock: Hủy thành công",
-					description: `Đã hủy khuyến mãi ID: ${promotionId}`,
-					status: "success",
-					duration: 3000,
-					isClosable: true,
-				});
-				onCancelDialogClose();
-				onSuccess?.();
-				onClose();
-				setIsCancelling(false);
-				return;
-			}
-
 			const result = await promotionService.cancelPromotion(promotionId);
 
 			if (result.success) {
@@ -414,7 +333,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Có lỗi xảy ra khi hủy khuyến mãi",
+					description:
+						result.error || "Có lỗi xảy ra khi hủy khuyến mãi",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -435,7 +355,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 	};
 
 	const getStatusBadge = (status: PromotionStatus) => {
-		const statusConfig: Record<PromotionStatus, { color: string; label: string }> = {
+		const statusConfig: Record<
+			PromotionStatus,
+			{ color: string; label: string }
+		> = {
 			Active: { color: "green", label: "Đang áp dụng" },
 			Upcoming: { color: "orange", label: "Sắp diễn ra" },
 			Expired: { color: "gray", label: "Đã hết hạn" },
@@ -458,7 +381,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 	};
 
 	const getTypeBadge = (type: PromotionType) => {
-		const typeConfig: Record<PromotionType, { color: string; label: string }> = {
+		const typeConfig: Record<
+			PromotionType,
+			{ color: string; label: string }
+		> = {
 			Discount: { color: "blue", label: "Giảm giá" },
 			"Buy X Get Y": { color: "purple", label: "Mua X tặng Y" },
 		};
@@ -466,7 +392,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		const config = typeConfig[type] || { color: "gray", label: type };
 
 		return (
-			<Tag colorScheme={config.color} size="lg" fontWeight="600">
+			<Tag
+				colorScheme={config.color}
+				size="lg"
+				fontWeight="600">
 				{config.label}
 			</Tag>
 		);
@@ -500,13 +429,27 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 			border="1px solid"
 			borderColor="gray.200"
 			minH="70px">
-			<Flex align="center" gap={2} mb={1}>
-				<Icon as={icon} w="14px" h="14px" color="gray.500" />
-				<Text fontSize="12px" fontWeight="500" color="gray.500">
+			<Flex
+				align="center"
+				gap={2}
+				mb={1}>
+				<Icon
+					as={icon}
+					w="14px"
+					h="14px"
+					color="gray.500"
+				/>
+				<Text
+					fontSize="12px"
+					fontWeight="500"
+					color="gray.500">
 					{label}
 				</Text>
 			</Flex>
-			<Text fontSize="14px" fontWeight="600" color={valueColor}>
+			<Text
+				fontSize="14px"
+				fontWeight="600"
+				color={valueColor}>
 				{value ?? "-"}
 			</Text>
 		</Flex>
@@ -547,13 +490,20 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 					_hover={{ color: "gray.700", bg: "gray.100" }}
 				/>
 
-				<ModalBody px={6} py={4}>
+				<ModalBody
+					px={6}
+					py={4}>
 					{isFetching ? (
 						<Center py={10}>
-							<Spinner size="xl" color="brand.500" />
+							<Spinner
+								size="xl"
+								color="brand.500"
+							/>
 						</Center>
 					) : promotionData ? (
-						<VStack spacing={4} align="stretch">
+						<VStack
+							spacing={4}
+							align="stretch">
 							{mode === "view" ? (
 								/* VIEW MODE */
 								<>
@@ -572,7 +522,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 												mb={1}>
 												{promotionData.promotionName}
 											</Text>
-											<Flex gap={2} align="center">
+											<Flex
+												gap={2}
+												align="center">
 												<Badge
 													colorScheme="brand"
 													fontSize="13px"
@@ -580,7 +532,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													py={1}>
 													{promotionData.promotionId}
 												</Badge>
-												{getTypeBadge(promotionData.promotionType)}
+												{getTypeBadge(
+													promotionData.promotionType,
+												)}
 											</Flex>
 										</Box>
 										{getStatusBadge(promotionData.status)}
@@ -594,8 +548,12 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 											borderRadius="8px"
 											borderLeft="4px solid"
 											borderLeftColor="brand.500">
-											<Text fontSize="14px" color="gray.600">
-												{promotionData.promotionDescription}
+											<Text
+												fontSize="14px"
+												color="gray.600">
+												{
+													promotionData.promotionDescription
+												}
 											</Text>
 										</Box>
 									)}
@@ -622,7 +580,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 												value={promotionData.endDate}
 											/>
 										</GridItem>
-										{promotionData.promotionType === "Discount" && (
+										{promotionData.promotionType ===
+											"Discount" && (
 											<GridItem>
 												<InfoCard
 													icon={FiPercent}
@@ -632,13 +591,16 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 												/>
 											</GridItem>
 										)}
-										{promotionData.promotionType === "Buy X Get Y" && (
+										{promotionData.promotionType ===
+											"Buy X Get Y" && (
 											<>
 												<GridItem>
 													<InfoCard
 														icon={FiTag}
 														label="Số lượng mua"
-														value={promotionData.buyQuantity}
+														value={
+															promotionData.buyQuantity
+														}
 														valueColor="purple.600"
 													/>
 												</GridItem>
@@ -646,7 +608,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													<InfoCard
 														icon={FiGift}
 														label="Số lượng tặng"
-														value={promotionData.getQuantity}
+														value={
+															promotionData.getQuantity
+														}
 														valueColor="green.600"
 													/>
 												</GridItem>
@@ -661,14 +625,17 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 											fontWeight="600"
 											color="gray.700"
 											mb={3}>
-											Sản phẩm áp dụng ({promotionData.products.length})
+											Sản phẩm áp dụng (
+											{promotionData.products.length})
 										</Text>
 										<Box
 											border="1px solid"
 											borderColor="gray.200"
 											borderRadius="12px"
 											overflow="hidden">
-											<Table size="sm" variant="simple">
+											<Table
+												size="sm"
+												variant="simple">
 												<Thead bg="gray.50">
 													<Tr>
 														<Th
@@ -693,7 +660,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 															isNumeric>
 															Giá bán
 														</Th>
-														{promotionData.promotionType === "Discount" && (
+														{promotionData.promotionType ===
+															"Discount" && (
 															<Th
 																fontSize="12px"
 																fontWeight="700"
@@ -706,54 +674,76 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													</Tr>
 												</Thead>
 												<Tbody>
-													{promotionData.products.map((product) => (
-														<Tr
-															key={product.productId}
-															_hover={{ bg: "gray.50" }}>
-															<Td fontSize="13px" py={3}>
-																<VStack
-																	align="flex-start"
-																	spacing={0}>
-																	<Text
-																		fontWeight="600"
-																		color="gray.800">
-																		{product.productName}
-																	</Text>
-																	<Text
-																		fontSize="11px"
-																		color="gray.500">
-																		{product.productId}
-																	</Text>
-																</VStack>
-															</Td>
-															<Td
-																fontSize="13px"
-																color="gray.600"
-																py={3}>
-																{product.unitOfMeasure}
-															</Td>
-															<Td
-																fontSize="13px"
-																fontWeight="600"
-																color="gray.700"
-																py={3}
-																isNumeric>
-																{formatCurrency(product.sellingPrice)}
-															</Td>
-															{promotionData.promotionType === "Discount" && (
+													{promotionData.products.map(
+														(product) => (
+															<Tr
+																key={
+																	product.productId
+																}
+																_hover={{
+																	bg: "gray.50",
+																}}>
 																<Td
 																	fontSize="13px"
-																	fontWeight="700"
-																	color="green.600"
+																	py={3}>
+																	<VStack
+																		align="flex-start"
+																		spacing={
+																			0
+																		}>
+																		<Text
+																			fontWeight="600"
+																			color="gray.800">
+																			{
+																				product.productName
+																			}
+																		</Text>
+																		<Text
+																			fontSize="11px"
+																			color="gray.500">
+																			{
+																				product.productId
+																			}
+																		</Text>
+																	</VStack>
+																</Td>
+																<Td
+																	fontSize="13px"
+																	color="gray.600"
+																	py={3}>
+																	{
+																		product.unitOfMeasure
+																	}
+																</Td>
+																<Td
+																	fontSize="13px"
+																	fontWeight="600"
+																	color="gray.700"
 																	py={3}
 																	isNumeric>
-																	{product.promotionPrice !== null
-																		? formatCurrency(product.promotionPrice)
-																		: "-"}
+																	{formatCurrency(
+																		product.sellingPrice,
+																	)}
 																</Td>
-															)}
-														</Tr>
-													))}
+																{promotionData.promotionType ===
+																	"Discount" && (
+																	<Td
+																		fontSize="13px"
+																		fontWeight="700"
+																		color="green.600"
+																		py={3}
+																		isNumeric>
+																		{product.promotionPrice !==
+																		null
+																			? formatCurrency(
+																					product.promotionPrice,
+																				)
+																			: "-"}
+																	</Td>
+																)}
+															</Tr>
+														),
+													)}
 												</Tbody>
 											</Table>
 										</Box>
@@ -777,11 +767,14 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													Tên chương trình
 												</FormLabel>
 												<Input
-													value={formData.promotionName}
+													value={
+														formData.promotionName
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															promotionName: e.target.value,
+															promotionName:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -798,11 +791,14 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													Mô tả
 												</FormLabel>
 												<Textarea
-													value={formData.promotionDescription}
+													value={
+														formData.promotionDescription
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															promotionDescription: e.target.value,
+															promotionDescription:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -820,24 +816,37 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													Loại khuyến mãi
 												</FormLabel>
 												<Select
-													value={formData.promotionType}
+													value={
+														formData.promotionType
+													}
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															promotionType: e.target.value as PromotionType,
+															promotionType: e
+																.target
+																.value as PromotionType,
 														})
 													}
 													size="md"
-													isDisabled={promotionData.status !== "Upcoming"}>
-													<option value="Discount">Giảm giá (%)</option>
-													<option value="Buy X Get Y">Mua X tặng Y</option>
+													isDisabled={
+														promotionData.status !==
+														"Upcoming"
+													}>
+													<option value="Discount">
+														Giảm giá (%)
+													</option>
+													<option value="Buy X Get Y">
+														Mua X tặng Y
+													</option>
 												</Select>
 											</FormControl>
 										</GridItem>
 
 										{/* Discount Configuration */}
-										{formData.promotionType === "Discount" && (
-											<GridItem colSpan={{ base: 1, md: 2 }}>
+										{formData.promotionType ===
+											"Discount" && (
+											<GridItem
+												colSpan={{ base: 1, md: 2 }}>
 												<Box
 													p={4}
 													bg="blue.50"
@@ -856,16 +865,24 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 															fontSize="14px"
 															fontWeight="600"
 															color="gray.700">
-															Phần trăm giảm giá (%)
+															Phần trăm giảm giá
+															(%)
 														</FormLabel>
 														<NumberInput
 															min={1}
 															max={100}
-															value={formData.discountPercent}
-															onChange={(_, value) =>
+															value={
+																formData.discountPercent
+															}
+															onChange={(
+																_,
+																value,
+															) =>
 																setFormData({
 																	...formData,
-																	discountPercent: value || 0,
+																	discountPercent:
+																		value ||
+																		0,
 																})
 															}>
 															<NumberInputField
@@ -885,8 +902,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 										)}
 
 										{/* Buy X Get Y Configuration */}
-										{formData.promotionType === "Buy X Get Y" && (
-											<GridItem colSpan={{ base: 1, md: 2 }}>
+										{formData.promotionType ===
+											"Buy X Get Y" && (
+											<GridItem
+												colSpan={{ base: 1, md: 2 }}>
 												<Box
 													p={4}
 													bg="purple.50"
@@ -910,12 +929,21 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 															</FormLabel>
 															<NumberInput
 																min={1}
-																value={formData.buyQuantity}
-																onChange={(_, value) =>
-																	setFormData({
-																		...formData,
-																		buyQuantity: value || 1,
-																	})
+																value={
+																	formData.buyQuantity
+																}
+																onChange={(
+																	_,
+																	value,
+																) =>
+																	setFormData(
+																		{
+																			...formData,
+																			buyQuantity:
+																				value ||
+																				1,
+																		},
+																	)
 																}>
 																<NumberInputField
 																	placeholder="VD: 2"
@@ -935,16 +963,26 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 																fontSize="14px"
 																fontWeight="600"
 																color="gray.700">
-																Số lượng tặng (Y)
+																Số lượng tặng
+																(Y)
 															</FormLabel>
 															<NumberInput
 																min={1}
-																value={formData.getQuantity}
-																onChange={(_, value) =>
-																	setFormData({
-																		...formData,
-																		getQuantity: value || 1,
-																	})
+																value={
+																	formData.getQuantity
+																}
+																onChange={(
+																	_,
+																	value,
+																) =>
+																	setFormData(
+																		{
+																			...formData,
+																			getQuantity:
+																				value ||
+																				1,
+																		},
+																	)
 																}>
 																<NumberInputField
 																	placeholder="VD: 1"
@@ -977,7 +1015,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															startDate: e.target.value,
+															startDate:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -999,7 +1038,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													onChange={(e) =>
 														setFormData({
 															...formData,
-															endDate: e.target.value,
+															endDate:
+																e.target.value,
 														})
 													}
 													size="md"
@@ -1023,8 +1063,12 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 													borderRadius="lg"
 													bg="gray.50">
 													<ProductSelector
-														selectedProducts={selectedProducts}
-														onProductsChange={handleProductsChange}
+														selectedProducts={
+															selectedProducts
+														}
+														onProductsChange={
+															handleProductsChange
+														}
 													/>
 												</Box>
 											</FormControl>
@@ -1034,7 +1078,10 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 							)}
 						</VStack>
 					) : (
-						<Text textAlign="center" color="gray.500" py={10}>
+						<Text
+							textAlign="center"
+							color="gray.500"
+							py={10}>
 							Không tìm thấy thông tin khuyến mãi
 						</Text>
 					)}
@@ -1045,20 +1092,24 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 					py={4}
 					borderTop="1px solid"
 					borderColor="gray.200">
-					<Flex justify="space-between" w="full">
+					<Flex
+						justify="space-between"
+						w="full">
 						{/* Left side - Cancel button (only in view mode) */}
 						<Box>
-							{mode === "view" && promotionData && canCancel(promotionData.status) && (
-								<Button
-									leftIcon={<Icon as={FiXCircle} />}
-									colorScheme="red"
-									variant="ghost"
-									size="md"
-									onClick={onCancelDialogOpen}
-									_hover={{ bg: "red.50" }}>
-									Hủy khuyến mãi
-								</Button>
-							)}
+							{mode === "view" &&
+								promotionData &&
+								canCancel(promotionData.status) && (
+									<Button
+										leftIcon={<Icon as={FiXCircle} />}
+										colorScheme="red"
+										variant="ghost"
+										size="md"
+										onClick={onCancelDialogOpen}
+										_hover={{ bg: "red.50" }}>
+										Hủy khuyến mãi
+									</Button>
+								)}
 						</Box>
 
 						{/* Right side - Action buttons */}
@@ -1072,20 +1123,40 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 										// Reset form data
 										if (promotionData) {
 											setFormData({
-												promotionName: promotionData.promotionName,
-												promotionDescription: promotionData.promotionDescription || "",
-												promotionType: promotionData.promotionType,
-												discountPercent: promotionData.discountPercent || 10,
-												buyQuantity: promotionData.buyQuantity || 1,
-												getQuantity: promotionData.getQuantity || 1,
-												startDate: parseDDMMYYYYToInput(promotionData.startDate),
-												endDate: parseDDMMYYYYToInput(promotionData.endDate),
+												promotionName:
+													promotionData.promotionName,
+												promotionDescription:
+													promotionData.promotionDescription ||
+													"",
+												promotionType:
+													promotionData.promotionType,
+												discountPercent:
+													promotionData.discountPercent ||
+													10,
+												buyQuantity:
+													promotionData.buyQuantity ||
+													1,
+												getQuantity:
+													promotionData.getQuantity ||
+													1,
+												startDate: parseDDMMYYYYToInput(
+													promotionData.startDate,
+												),
+												endDate: parseDDMMYYYYToInput(
+													promotionData.endDate,
+												),
 											});
-											const existingProducts: SelectedProduct[] = promotionData.products.map((p) => ({
-												productId: p.productId,
-												productName: p.productName,
-											}));
-											setSelectedProducts(existingProducts);
+											const existingProducts: SelectedProduct[] =
+												promotionData.products.map(
+													(p) => ({
+														productId: p.productId,
+														productName:
+															p.productName,
+													}),
+												);
+											setSelectedProducts(
+												existingProducts,
+											);
 										}
 									} else {
 										onClose();
@@ -1104,20 +1175,23 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 									isLoading={isLoading}
 									loadingText="Đang cập nhật..."
 									_hover={{
-										bgGradient: "linear(135deg, brand.600 0%, brand.500 100%)",
+										bgGradient:
+											"linear(135deg, brand.600 0%, brand.500 100%)",
 									}}
 									isDisabled={isFetching}
 									px={6}>
 									Cập nhật
 								</Button>
 							) : (
-								promotionData && canEdit(promotionData.status) && (
+								promotionData &&
+								canEdit(promotionData.status) && (
 									<Button
 										leftIcon={<Icon as={FiEdit2} />}
 										bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
 										color="white"
 										_hover={{
-											bgGradient: "linear(135deg, brand.600 0%, brand.500 100%)",
+											bgGradient:
+												"linear(135deg, brand.600 0%, brand.500 100%)",
 										}}
 										size="md"
 										onClick={switchToEditMode}
@@ -1139,13 +1213,18 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 				isCentered>
 				<AlertDialogOverlay>
 					<AlertDialogContent>
-						<AlertDialogHeader fontSize="lg" fontWeight="bold">
+						<AlertDialogHeader
+							fontSize="lg"
+							fontWeight="bold">
 							Xác nhận hủy khuyến mãi
 						</AlertDialogHeader>
 
 						<AlertDialogBody>
 							Bạn có chắc chắn muốn hủy khuyến mãi{" "}
-							<Text as="span" fontWeight="bold" color="brand.600">
+							<Text
+								as="span"
+								fontWeight="bold"
+								color="brand.600">
 								{promotionData?.promotionName}
 							</Text>
 							? Hành động này không thể hoàn tác.

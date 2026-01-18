@@ -26,104 +26,6 @@ import { DeleteIcon } from "@chakra-ui/icons";
 import { inventoryService } from "@/services/inventoryService";
 import type { InventoryProduct } from "@/types/inventory";
 
-// ============ MOCK DATA FOR TESTING ============
-const MOCK_PRODUCTS: InventoryProduct[] = [
-	{
-		id: "prod-001",
-		code: "VNM-001",
-		name: "Sữa tươi Vinamilk 1L",
-		category: "Sữa",
-		unit: "Hộp",
-		price: 32000,
-		costPrice: 25000,
-		stock: 150,
-		minStock: 20,
-		maxStock: 500,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-	{
-		id: "prod-002",
-		code: "CC-330",
-		name: "Nước ngọt Coca Cola 330ml",
-		category: "Nước giải khát",
-		unit: "Lon",
-		price: 12000,
-		costPrice: 8000,
-		stock: 300,
-		minStock: 50,
-		maxStock: 1000,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-	{
-		id: "prod-003",
-		code: "HH-001",
-		name: "Mì gói Hảo Hảo tôm chua cay",
-		category: "Mì gói",
-		unit: "Gói",
-		price: 6000,
-		costPrice: 4500,
-		stock: 500,
-		minStock: 100,
-		maxStock: 2000,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-	{
-		id: "prod-004",
-		code: "NP-1L",
-		name: "Dầu ăn Neptune 1L",
-		category: "Dầu ăn",
-		unit: "Chai",
-		price: 55000,
-		costPrice: 45000,
-		stock: 80,
-		minStock: 20,
-		maxStock: 200,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-	{
-		id: "prod-005",
-		code: "OMO-3KG",
-		name: "Bột giặt OMO 3kg",
-		category: "Hóa phẩm",
-		unit: "Túi",
-		price: 105000,
-		costPrice: 85000,
-		stock: 60,
-		minStock: 15,
-		maxStock: 150,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-	{
-		id: "prod-006",
-		code: "TH-MILK",
-		name: "Sữa tươi TH True Milk 1L",
-		category: "Sữa",
-		unit: "Hộp",
-		price: 35000,
-		costPrice: 28000,
-		stock: 200,
-		minStock: 30,
-		maxStock: 600,
-		status: "active",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-15"),
-	},
-];
-
-// Set this to true to use mock data, false to use real API
-const USE_MOCK_DATA = true;
-// ============ END MOCK DATA ============
-
 interface SelectedProduct {
 	productId: string;
 	productName: string;
@@ -163,23 +65,6 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 	const searchProducts = async (query: string) => {
 		setIsSearching(true);
 		try {
-			if (USE_MOCK_DATA) {
-				// Use mock data for testing
-				await new Promise((resolve) => setTimeout(resolve, 200));
-				const queryLower = query.toLowerCase();
-				const selectedIds = selectedProducts.map((p) => p.productId);
-				const filtered = MOCK_PRODUCTS.filter(
-					(p) =>
-						(p.name.toLowerCase().includes(queryLower) ||
-							p.code.toLowerCase().includes(queryLower)) &&
-						!selectedIds.includes(p.id),
-				);
-				setSearchResults(filtered);
-				setShowResults(true);
-				setIsSearching(false);
-				return;
-			}
-
 			const response = await inventoryService.getProducts({
 				search: query,
 				page: 0,

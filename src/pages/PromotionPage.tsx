@@ -20,7 +20,11 @@ import {
 } from "@/components/promotion";
 import { Pagination } from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
-import type { Promotion, PromotionStats, CreatePromotionRequest } from "@/types/promotion";
+import type {
+	Promotion,
+	PromotionStats,
+	CreatePromotionRequest,
+} from "@/types/promotion";
 import type { PromotionFilters } from "@/types/filters";
 import { promotionService } from "@/services/promotionService";
 
@@ -35,7 +39,9 @@ const PromotionPage = () => {
 	const [stats, setStats] = useState<PromotionStats | null>(null);
 
 	// Modal states
-	const [selectedPromotionId, setSelectedPromotionId] = useState<string | null>(null);
+	const [selectedPromotionId, setSelectedPromotionId] = useState<
+		string | null
+	>(null);
 	const [modalMode, setModalMode] = useState<"view" | "edit">("view");
 
 	const {
@@ -61,17 +67,12 @@ const PromotionPage = () => {
 		});
 
 	// usePagination for pagination metadata
-	const {
-		currentPage,
-		total,
-		pagination,
-		goToPage,
-		setTotal,
-	} = usePagination({
-		initialPage: 1,
-		pageSize: ITEMS_PER_PAGE,
-		initialTotal: 0,
-	});
+	const { currentPage, total, pagination, goToPage, setTotal } =
+		usePagination({
+			initialPage: 1,
+			pageSize: ITEMS_PER_PAGE,
+			initialTotal: 0,
+		});
 
 	// Fetch promotions
 	const fetchPromotions = useCallback(async () => {
@@ -86,7 +87,6 @@ const PromotionPage = () => {
 				sortBy: debouncedFilters.sortBy,
 				order: debouncedFilters.order,
 			});
-
 			if (result.success) {
 				setPromotions(result.data || []);
 				setTotal(result.pagination?.totalItems || 0);
@@ -94,16 +94,16 @@ const PromotionPage = () => {
 				// Calculate stats from response (or could be separate API)
 				if (result.data) {
 					const activeCount = result.data.filter(
-						(p) => p.status === "Active",
+						(p: any) => p.status === "Active",
 					).length;
 					const upcomingCount = result.data.filter(
-						(p) => p.status === "Upcoming",
+						(p: any) => p.status === "Upcoming",
 					).length;
 					const expiredCount = result.data.filter(
-						(p) => p.status === "Expired",
+						(p: any) => p.status === "Expired",
 					).length;
 					const cancelledCount = result.data.filter(
-						(p) => p.status === "Cancelled",
+						(p: any) => p.status === "Cancelled",
 					).length;
 
 					setStats({
@@ -117,7 +117,8 @@ const PromotionPage = () => {
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể tải danh sách khuyến mãi",
+					description:
+						result.error || "Không thể tải danh sách khuyến mãi",
 					status: "error",
 					duration: 3000,
 				});

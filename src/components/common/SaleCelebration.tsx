@@ -11,6 +11,9 @@ interface SaleCelebrationProps {
 	orderId: string;
 	change: number;
 	duration?: number;
+	// Cash rounding (Vietnam retail)
+	originalAmount?: number;
+	roundingAdjustment?: number;
 }
 
 export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
@@ -20,6 +23,8 @@ export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
 	orderId,
 	change,
 	duration = 2500,
+	originalAmount,
+	roundingAdjustment,
 }) => {
 	useEffect(() => {
 		if (isOpen) {
@@ -67,6 +72,20 @@ export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
 						<Text>Mã đơn:</Text>
 						<Text fontWeight="semibold" fontFamily="mono">{orderId}</Text>
 					</HStack>
+					{originalAmount && roundingAdjustment !== undefined && roundingAdjustment !== 0 && (
+						<HStack justify="space-between" fontSize="xs" color="gray.500">
+							<Text>Tổng gốc:</Text>
+							<Text>{originalAmount.toLocaleString("vi-VN")}đ</Text>
+						</HStack>
+					)}
+					{roundingAdjustment !== undefined && roundingAdjustment !== 0 && (
+						<HStack justify="space-between" fontSize="xs" color={roundingAdjustment > 0 ? "orange.600" : "green.600"}>
+							<Text>Làm tròn:</Text>
+							<Text fontWeight="semibold">
+								{roundingAdjustment > 0 ? '+' : ''}{roundingAdjustment.toLocaleString("vi-VN")}đ
+							</Text>
+						</HStack>
+					)}
 					<HStack justify="space-between">
 						<Text>Tổng tiền:</Text>
 						<Text fontWeight="bold" fontSize="lg" color="brand.500">
@@ -92,6 +111,8 @@ export const useSaleCelebration = () => {
 		amount: number;
 		orderId: string;
 		change: number;
+		originalAmount?: number;
+		roundingAdjustment?: number;
 	}>({
 		isOpen: false,
 		amount: 0,
@@ -103,6 +124,8 @@ export const useSaleCelebration = () => {
 		amount: number;
 		orderId: string;
 		change: number;
+		originalAmount?: number;
+		roundingAdjustment?: number;
 	}) => {
 		setCelebrationData({
 			isOpen: true,

@@ -21,9 +21,13 @@ export interface StaffFilters extends BaseFilters {
 }
 
 export interface PromotionFilters extends BaseFilters {
-	searchQuery?: string;
-	type?: string;
-	status?: string;
+	search?: string; // Filter promotionId, promotionName, productName
+	type?: string; // "all" | "Discount" | "Buy X Get Y"
+	status?: string; // "all" | "Active" | "Expired" | "Upcoming" | "Cancelled"
+	startDate?: string; // dd-MM-yyyy
+	endDate?: string; // dd-MM-yyyy
+	sortBy?: "startDate" | "endDate";
+	order?: "asc" | "desc";
 }
 
 export interface PurchaseFilters extends BaseFilters {

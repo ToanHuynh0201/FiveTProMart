@@ -120,6 +120,9 @@ const SupplierTable = ({
 									width="130px">
 									Số điện thoại
 								</Th>
+								{/* TODO: Add "Loại sản phẩm" column when GET /suppliers returns suppliedProductType
+								    Currently the API only accepts this field in POST/PUT but doesn't return it in GET.
+								    See SupplierAPI.md - GET response doesn't include suppliedProductType */}
 								<Th
 									fontSize="13px"
 									fontWeight="700"

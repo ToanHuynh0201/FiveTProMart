@@ -149,35 +149,18 @@ const EditScheduleModal = ({
 	const loadAvailableStaff = async () => {
 		try {
 			// Fetch all active staff
-			const result = await staffService.getStaff({
+			const result = await staffService.getStaffs({
 				page: 0,
 				size: 1000, // Get all staff
-				status: "Active",
 			});
 
 			if (result.success && result.data) {
-				// Convert to Staff type expected by UI
-				const staffList: Staff[] = result.data.map((s: any) => ({
-					id: s.profileId,
-					name: s.fullName,
-					position:
-						s.accountType === "WarehouseStaff"
-							? "Nhân viên kho"
-							: "Nhân viên bán hàng",
-					email: s.email,
-					phone: s.phoneNumber,
-					status: s.status,
-					dateOfBirth: s.dateOfBirth,
-					gender: s.gender,
-					employmentType: "Fulltime",
-				}));
-
 				// Filter out already assigned staff
 				const assignedStaffIds = new Set(
 					assignments.map((a) => a.staffId),
 				);
-				const available = staffList.filter(
-					(s) => !assignedStaffIds.has(s.id),
+				const available = result.data.filter(
+					(s: Staff) => !assignedStaffIds.has(s.profileId),
 				);
 
 				setAvailableStaff(available);
@@ -185,7 +168,7 @@ const EditScheduleModal = ({
 				// Load shift counts for available staff
 				if (available.length > 0) {
 					await loadStaffShiftCounts(
-						available.map((s) => s.id),
+						available.map((s: Staff) => s.profileId),
 					);
 				}
 			}
@@ -228,12 +211,12 @@ const EditScheduleModal = ({
 		}
 	};
 
-	// Filter staff by position
+	// Filter staff by accountType
 	const warehouseStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên kho",
+		(staff) => staff.accountType === "WarehouseStaff",
 	);
 	const salesStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên bán hàng",
+		(staff) => staff.accountType === "SalesStaff",
 	);
 
 	// Count current assignments by position
@@ -669,13 +652,13 @@ const EditScheduleModal = ({
 											{warehouseStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>
@@ -754,13 +737,13 @@ const EditScheduleModal = ({
 											{salesStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>

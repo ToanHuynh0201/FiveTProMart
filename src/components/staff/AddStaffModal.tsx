@@ -1,4 +1,4 @@
-﻿import {
+import {
 	Modal,
 	ModalOverlay,
 	ModalContent,
@@ -11,44 +11,67 @@
 	FormLabel,
 	Input,
 	Select,
+	Textarea,
 	VStack,
 	Grid,
 	GridItem,
 	useToast,
 	HStack,
 	Text,
+	InputGroup,
+	InputRightElement,
+	IconButton,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import type { Staff } from "@/types";
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
+import type { CreateStaffDTO, AccountType } from "@/types/staff";
+import { ACCOUNT_TYPE_OPTIONS } from "@/types/staff";
+import { formatDateForAPI } from "@/utils/dateFormat";
 
 interface AddStaffModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (staff: Omit<Staff, "id">) => void;
+	onAdd: (staff: CreateStaffDTO) => Promise<void>;
 }
 
 const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 	const toast = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	const [formData, setFormData] = useState({
-		name: "",
-		position: "",
-		phone: "",
+		username: "",
+		password: "",
+		fullName: "",
 		email: "",
-		address: "",
+		phoneNumber: "",
+		accountType: "SalesStaff" as AccountType,
 		dateOfBirth: "",
-		hireDate: "",
-		salary: "",
-		status: "active" as "active" | "inactive" | "on-leave",
+		location: "",
+		bio: "",
 	});
+
+	const resetForm = () => {
+		setFormData({
+			username: "",
+			password: "",
+			fullName: "",
+			email: "",
+			phoneNumber: "",
+			accountType: "SalesStaff",
+			dateOfBirth: "",
+			location: "",
+			bio: "",
+		});
+		setShowPassword(false);
+	};
 
 	const handleSubmit = async () => {
 		// Validation
-		if (!formData.name.trim()) {
+		if (!formData.username.trim()) {
 			toast({
 				title: "Lỗi",
-				description: "Vui lòng nhập tên nhân viên",
+				description: "Vui lòng nhập tên đăng nhập",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -56,10 +79,10 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		if (!formData.position.trim()) {
+		if (!formData.password.trim()) {
 			toast({
 				title: "Lỗi",
-				description: "Vui lòng nhập vị trí công việc",
+				description: "Vui lòng nhập mật khẩu",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -67,10 +90,21 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		if (!formData.phone.trim()) {
+		if (formData.password.length < 6) {
 			toast({
 				title: "Lỗi",
-				description: "Vui lòng nhập số điện thoại",
+				description: "Mật khẩu phải có ít nhất 6 ký tự",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		if (!formData.fullName.trim()) {
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng nhập họ và tên",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -89,77 +123,78 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		setIsSubmitting(true);
-
-		try {
-			const newStaff: Omit<Staff, "id"> = {
-				name: formData.name.trim(),
-				position: formData.position.trim(),
-				phone: formData.phone.trim(),
-				email: formData.email.trim(),
-				address: formData.address.trim() || undefined,
-				dateOfBirth: formData.dateOfBirth || undefined,
-				hireDate: formData.hireDate || undefined,
-				salary: formData.salary ? Number(formData.salary) : undefined,
-				status: formData.status,
-			};
-
-			onAdd(newStaff);
-
-			toast({
-				title: "Thành công",
-				description: "Thêm nhân viên mới thành công",
-				status: "success",
-				duration: 3000,
-				isClosable: true,
-			});
-
-			// Reset form
-			setFormData({
-				name: "",
-				position: "",
-				phone: "",
-				email: "",
-				address: "",
-				dateOfBirth: "",
-				hireDate: "",
-				salary: "",
-				status: "active",
-			});
-			onClose();
-		} catch (error) {
-			console.error("Error adding staff:", error);
+		// Email validation
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(formData.email)) {
 			toast({
 				title: "Lỗi",
-				description: "Không thể thêm nhân viên",
+				description: "Email không hợp lệ",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
 			});
+			return;
+		}
+
+		if (!formData.phoneNumber.trim()) {
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng nhập số điện thoại",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		// Phone validation (Vietnamese phone number)
+		const phoneRegex = /^0\d{9}$/;
+		if (!phoneRegex.test(formData.phoneNumber)) {
+			toast({
+				title: "Lỗi",
+				description: "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		setIsSubmitting(true);
+
+		try {
+			const newStaff: CreateStaffDTO = {
+				username: formData.username.trim(),
+				password: formData.password,
+				fullName: formData.fullName.trim(),
+				email: formData.email.trim(),
+				phoneNumber: formData.phoneNumber.trim(),
+				accountType: formData.accountType,
+				dateOfBirth: formData.dateOfBirth
+					? formatDateForAPI(formData.dateOfBirth)
+					: undefined,
+				location: formData.location.trim() || undefined,
+				bio: formData.bio.trim() || undefined,
+			};
+
+			await onAdd(newStaff);
+			resetForm();
+		} catch (error) {
+			console.error("Error adding staff:", error);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
 	const handleCancel = () => {
-		setFormData({
-			name: "",
-			position: "",
-			phone: "",
-			email: "",
-			address: "",
-			dateOfBirth: "",
-			hireDate: "",
-			salary: "",
-			status: "active",
-		});
+		resetForm();
 		onClose();
 	};
 
 	return (
 		<Modal
 			isOpen={isOpen}
-			onClose={onClose}
+			onClose={handleCancel}
 			size="3xl"
 			isCentered
 			scrollBehavior="inside">
@@ -199,7 +234,99 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 					<VStack
 						spacing={5}
 						align="stretch">
-						{/* Basic Information */}
+						{/* Account Information */}
+						<Text
+							fontSize="16px"
+							fontWeight="600"
+							color="gray.700">
+							Thông tin tài khoản
+						</Text>
+						<Grid
+							templateColumns="repeat(2, 1fr)"
+							gap={4}>
+							<GridItem>
+								<FormControl isRequired>
+									<FormLabel
+										fontSize="14px"
+										fontWeight="600"
+										color="gray.700">
+										Tên đăng nhập
+									</FormLabel>
+									<Input
+										value={formData.username}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												username: e.target.value,
+											})
+										}
+										placeholder="username123"
+										size="md"
+									/>
+								</FormControl>
+							</GridItem>
+
+							<GridItem>
+								<FormControl isRequired>
+									<FormLabel
+										fontSize="14px"
+										fontWeight="600"
+										color="gray.700">
+										Mật khẩu
+									</FormLabel>
+									<InputGroup>
+										<Input
+											type={
+												showPassword
+													? "text"
+													: "password"
+											}
+											value={formData.password}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													password: e.target.value,
+												})
+											}
+											placeholder="Ít nhất 6 ký tự"
+											size="md"
+										/>
+										<InputRightElement>
+											<IconButton
+												aria-label={
+													showPassword
+														? "Ẩn mật khẩu"
+														: "Hiện mật khẩu"
+												}
+												icon={
+													showPassword ? (
+														<ViewOffIcon />
+													) : (
+														<ViewIcon />
+													)
+												}
+												variant="ghost"
+												size="sm"
+												onClick={() =>
+													setShowPassword(
+														!showPassword,
+													)
+												}
+											/>
+										</InputRightElement>
+									</InputGroup>
+								</FormControl>
+							</GridItem>
+						</Grid>
+
+						{/* Personal Information */}
+						<Text
+							fontSize="16px"
+							fontWeight="600"
+							color="gray.700"
+							mt={2}>
+							Thông tin cá nhân
+						</Text>
 						<Grid
 							templateColumns="repeat(2, 1fr)"
 							gap={4}>
@@ -212,11 +339,11 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 										Họ và tên
 									</FormLabel>
 									<Input
-										value={formData.name}
+										value={formData.fullName}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												name: e.target.value,
+												fullName: e.target.value,
 											})
 										}
 										placeholder="Nguyễn Văn A"
@@ -231,24 +358,25 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 										fontSize="14px"
 										fontWeight="600"
 										color="gray.700">
-										Vị trí
+										Chức vụ
 									</FormLabel>
 									<Select
-										value={formData.position}
+										value={formData.accountType}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												position: e.target.value,
+												accountType: e.target
+													.value as AccountType,
 											})
 										}
-										placeholder="Chọn vị trí"
 										size="md">
-										<option value="Nhân viên bán hàng">
-											Nhân viên bán hàng
-										</option>
-										<option value="Nhân viên kho">
-											Nhân viên kho
-										</option>
+										{ACCOUNT_TYPE_OPTIONS.map((option) => (
+											<option
+												key={option.value}
+												value={option.value}>
+												{option.label}
+											</option>
+										))}
 									</Select>
 								</FormControl>
 							</GridItem>
@@ -258,29 +386,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 						<Grid
 							templateColumns="repeat(2, 1fr)"
 							gap={4}>
-							<GridItem>
-								<FormControl isRequired>
-									<FormLabel
-										fontSize="14px"
-										fontWeight="600"
-										color="gray.700">
-										Số điện thoại
-									</FormLabel>
-									<Input
-										value={formData.phone}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												phone: e.target.value,
-											})
-										}
-										placeholder="0901234567"
-										size="md"
-										type="tel"
-									/>
-								</FormControl>
-							</GridItem>
-
 							<GridItem>
 								<FormControl isRequired>
 									<FormLabel
@@ -304,30 +409,31 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 								</FormControl>
 							</GridItem>
 
-							<GridItem colSpan={2}>
-								<FormControl>
+							<GridItem>
+								<FormControl isRequired>
 									<FormLabel
 										fontSize="14px"
 										fontWeight="600"
 										color="gray.700">
-										Địa chỉ
+										Số điện thoại
 									</FormLabel>
 									<Input
-										value={formData.address}
+										value={formData.phoneNumber}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												address: e.target.value,
+												phoneNumber: e.target.value,
 											})
 										}
-										placeholder="123 Đường ABC, Quận 1, TP.HCM"
+										placeholder="0901234567"
 										size="md"
+										type="tel"
 									/>
 								</FormControl>
 							</GridItem>
 						</Grid>
 
-						{/* Work Information */}
+						{/* Additional Information */}
 						<Grid
 							templateColumns="repeat(2, 1fr)"
 							gap={4}>
@@ -347,7 +453,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 												dateOfBirth: e.target.value,
 											})
 										}
-										placeholder="dd/mm/yyyy"
 										size="md"
 										type="date"
 									/>
@@ -360,79 +465,44 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 										fontSize="14px"
 										fontWeight="600"
 										color="gray.700">
-										Ngày vào làm
+										Địa chỉ
 									</FormLabel>
 									<Input
-										value={formData.hireDate}
+										value={formData.location}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												hireDate: e.target.value,
+												location: e.target.value,
 											})
 										}
+										placeholder="123 Đường ABC, Quận 1, TP.HCM"
 										size="md"
-										type="date"
 									/>
-								</FormControl>
-							</GridItem>
-
-							<GridItem>
-								<FormControl>
-									<FormLabel
-										fontSize="14px"
-										fontWeight="600"
-										color="gray.700">
-										Lương (VNĐ)
-									</FormLabel>
-									<Input
-										value={formData.salary}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												salary: e.target.value,
-											})
-										}
-										placeholder="8000000"
-										size="md"
-										type="number"
-									/>
-								</FormControl>
-							</GridItem>
-
-							<GridItem>
-								<FormControl>
-									<FormLabel
-										fontSize="14px"
-										fontWeight="600"
-										color="gray.700">
-										Trạng thái
-									</FormLabel>
-									<Select
-										value={formData.status}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												status: e.target.value as
-													| "active"
-													| "inactive"
-													| "on-leave",
-											})
-										}
-										size="md">
-										<option value="active">
-											Đang làm việc
-										</option>
-										<option value="on-leave">
-											Nghỉ phép
-										</option>
-										<option value="inactive">
-											Không hoạt động
-										</option>
-									</Select>
 								</FormControl>
 							</GridItem>
 						</Grid>
 
+						{/* Bio */}
+						<FormControl>
+							<FormLabel
+								fontSize="14px"
+								fontWeight="600"
+								color="gray.700">
+								Ghi chú
+							</FormLabel>
+							<Textarea
+								value={formData.bio}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										bio: e.target.value,
+									})
+								}
+								placeholder="Thông tin thêm về nhân viên..."
+								size="md"
+								rows={3}
+							/>
+						</FormControl>
 					</VStack>
 				</ModalBody>
 

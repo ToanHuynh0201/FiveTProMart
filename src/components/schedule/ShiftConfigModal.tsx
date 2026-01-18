@@ -25,6 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import type { ShiftTemplate, ShiftConfig } from "@/types";
+import { scheduleService } from "@/services/scheduleService";
 
 interface ShiftConfigModalProps {
 	isOpen: boolean;
@@ -87,7 +88,7 @@ const ShiftConfigModal = ({
 		return parseFloat(hours.toFixed(2));
 	};
 
-	const handleSaveShift = () => {
+	const handleSaveShift = async () => {
 		if (!editingShift) return;
 
 		if (!editingShift.name.trim()) {
@@ -142,16 +143,82 @@ const ShiftConfigModal = ({
 			return;
 		}
 
+		// If adding new shift, create via API
 		if (isAddingNew) {
-			setShifts([...shifts, editingShift]);
-			toast({
-				title: "Thành công",
-				description: `Đã thêm ca "${editingShift.name}"`,
-				status: "success",
-				duration: 2000,
-				isClosable: true,
-			});
+			try {
+				// First, create a role config for this shift
+				const roleConfigResult = await scheduleService.createRoleConfig({
+					configName: `Config cho ${editingShift.name}`,
+					requirements: [
+						{
+							accountType: "WarehouseStaff",
+							quantity: editingShift.requiredWarehouseStaff,
+						},
+						{
+							accountType: "SalesStaff",
+							quantity: editingShift.requiredSalesStaff,
+						},
+					],
+				});
+
+				if (!roleConfigResult.success) {
+					toast({
+						title: "Lỗi",
+						description:
+							roleConfigResult.error ||
+							"Không thể tạo cấu hình ca làm việc",
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+
+				// Then create the work shift template
+				const shiftResult = await scheduleService.createWorkShift({
+					shiftName: editingShift.name,
+					startTime: editingShift.startTime,
+					endTime: editingShift.endTime,
+					roleConfigId: roleConfigResult.data.id,
+				});
+
+				if (shiftResult.success) {
+					// Add to local list with the returned ID
+					const newShift = {
+						...editingShift,
+						id: shiftResult.data.id,
+					};
+					setShifts([...shifts, newShift]);
+
+					toast({
+						title: "Thành công",
+						description: `Đã thêm ca "${editingShift.name}"`,
+						status: "success",
+						duration: 2000,
+						isClosable: true,
+					});
+				} else {
+					toast({
+						title: "Lỗi",
+						description:
+							shiftResult.error || "Không thể tạo ca làm việc",
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+			} catch (error) {
+				console.error("Error creating shift:", error);
+				toast({
+					title: "Lỗi",
+					description: "Đã xảy ra lỗi khi tạo ca làm việc",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
 		} else {
+			// For editing existing shifts, just update local state
+			// (API doesn't have update endpoint)
 			setShifts(
 				shifts.map((shift) =>
 					shift.id === editingShift.id ? editingShift : shift,
@@ -159,7 +226,7 @@ const ShiftConfigModal = ({
 			);
 			toast({
 				title: "Thành công",
-				description: `Đã cập nhật ca "${editingShift.name}"`,
+				description: `Đã cập nhật ca "${editingShift.name}" (chỉ cục bộ)`,
 				status: "success",
 				duration: 2000,
 				isClosable: true,

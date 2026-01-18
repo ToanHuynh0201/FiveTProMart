@@ -1,4 +1,4 @@
-import { Select, HStack, Text } from "@chakra-ui/react";
+import { Select, HStack } from "@chakra-ui/react";
 import type { WeekRange } from "@/types";
 
 interface WeekSelectorProps {

@@ -30,7 +30,7 @@ const ViewShiftDetailModal = ({
 	shift,
 	assignments,
 }: ViewShiftDetailModalProps) => {
-	const [shiftName, setShiftName] = useState<string>("");
+	const [shiftName] = useState<string>("");
 
 	// Format date for display
 	const formatDateDisplay = (dateStr: string) => {

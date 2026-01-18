@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
 	Box,
 	Text,
@@ -39,6 +40,7 @@ import { useAuthStore } from "@/store/authStore";
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
+	const navigate = useNavigate();
 	const toast = useToast();
 	const { user } = useAuthStore();
 
@@ -343,6 +345,7 @@ const InventoryPage = () => {
 						outOfStockProducts={stats.outOfStockProducts}
 						lowStockProducts={stats.lowStockProducts}
 						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
+						onNavigateToPurchase={() => navigate("/purchase")}
 					/>
 				)}
 

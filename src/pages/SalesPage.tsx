@@ -25,6 +25,7 @@ import {
 	BarcodeScanner,
 	QuickActionsBar,
 } from "../components/sales";
+import type { ScannedPromotionInfo } from "../components/sales/BarcodeScanner";
 import { KeyboardShortcutsModal, SaleCelebration, useSaleCelebration } from "../components/common";
 import type {
 	OrderItem,
@@ -34,6 +35,7 @@ import type {
 	PendingOrder,
 	OrderFilters as ApiOrderFilters,
 	OrderListItem,
+	DiscountRequest,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
@@ -63,6 +65,7 @@ const SalesPage = () => {
 		PaymentMethod | undefined
 	>();
 	const [cashReceived, setCashReceived] = useState<number>(0);
+	const [discount, setDiscount] = useState<DiscountRequest | null>(null);
 	const [orderNumber] = useState(
 		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
 	);
@@ -383,6 +386,7 @@ const SalesPage = () => {
 		product: Product,
 		batchId?: string,
 		batchNumber?: string,
+		promotion?: ScannedPromotionInfo | null,
 	) => {
 		// Chỉ chấp nhận khi có thông tin lô hàng (từ quét mã lô)
 		if (batchId && batchNumber) {
@@ -412,7 +416,7 @@ const SalesPage = () => {
 					});
 				}
 
-				await addProductToCart(product, 1, batchId, batchNumber);
+				await addProductToCart(product, 1, batchId, batchNumber, promotion);
 			}
 		}
 		// Không làm gì nếu không có mã lô - bắt buộc phải quét mã lô hàng
@@ -423,12 +427,16 @@ const SalesPage = () => {
 		quantity: number,
 		batchId?: string,
 		batchNumber?: string,
+		promotion?: ScannedPromotionInfo | null,
 	) => {
 		// Check if same product and batch already exists
 		const existingItem = orderItems.find(
 			(item) =>
 				item.product.id === product.id && item.batchId === batchId,
 		);
+
+		// Calculate effective unit price (promotional or regular)
+		const effectiveUnitPrice = promotion?.promotionalPrice ?? product.price;
 
 		if (existingItem) {
 			// Increase quantity - tìm số lượng tồn kho của lô
@@ -467,13 +475,16 @@ const SalesPage = () => {
 				}
 			}
 
+			// Use the existing item's effective price (promotional if exists)
+			const existingEffectivePrice = existingItem.promotionalPrice ?? existingItem.unitPrice;
+
 			setOrderItems((prevItems) =>
 				prevItems.map((item) =>
 					item.id === existingItem.id
 						? {
 								...item,
 								quantity: newQuantity,
-								totalPrice: item.unitPrice * newQuantity,
+								totalPrice: existingEffectivePrice * newQuantity,
 						  }
 						: item,
 				),
@@ -501,16 +512,21 @@ const SalesPage = () => {
 				}
 			}
 
-			// Add new item with reservation ID
+			// Add new item with reservation ID and promotion info
 			const newItem: OrderItem = {
 				id: `item_${Date.now()}_${Math.random()}`,
 				product,
 				quantity,
-				unitPrice: product.price,
-				totalPrice: product.price * quantity,
+				unitPrice: product.price, // Original price
+				totalPrice: effectiveUnitPrice * quantity, // Uses promotional if available
 				batchId,
 				batchNumber,
 				reservationId,
+				// Promotion fields
+				promotionalPrice: promotion?.promotionalPrice,
+				savings: promotion?.savings,
+				promotionName: promotion?.promotionName,
+				promotionType: promotion?.promotionType,
 			};
 			setOrderItems((prevItems) => [...prevItems, newItem]);
 		}
@@ -569,8 +585,8 @@ const SalesPage = () => {
 	};
 
 	const calculateLoyaltyPoints = () => {
-		// Assuming 1 point per 10,000 VND
-		return Math.floor(calculateTotal() / 10000);
+		// 1 point per 100 VND spent (1% loyalty rate)
+		return Math.floor(calculateTotal() / 100);
 	};
 
 	const handlePrint = async () => {
@@ -620,7 +636,7 @@ const SalesPage = () => {
 
 			// Map FE paymentMethod to BE format
 			const bePaymentMethod =
-				paymentMethod === "cash" ? "CASH" : "TRANSFER";
+				paymentMethod === "cash" ? "CASH" : "BANK_TRANSFER";
 
 			// Get staffId from auth store
 			const staffId = user?.id ?? "guest_staff";
@@ -636,6 +652,7 @@ const SalesPage = () => {
 				paymentMethod: bePaymentMethod,
 				amountGiven,
 				items: apiItems,
+				discount: discount || undefined,
 			});
 
 			// Success notification - brief, professional confirmation
@@ -654,6 +671,7 @@ const SalesPage = () => {
 			setOrderItems([]);
 			setPaymentMethod(undefined);
 			setCashReceived(0);
+			setDiscount(null);
 			setCustomer({
 				id: `guest_${Date.now()}`,
 				name: "KHÁCH VÃNG LAI",
@@ -942,6 +960,8 @@ const SalesPage = () => {
 									onCustomerChange={handleCustomerChange}
 									cashReceived={cashReceived}
 									onCashReceivedChange={setCashReceived}
+									discount={discount}
+									onDiscountChange={setDiscount}
 								/>
 							</TabPanel>
 

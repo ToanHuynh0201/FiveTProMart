@@ -30,6 +30,8 @@ interface CriticalAlertsProps {
 	lowStockProducts: number;
 	/** Callback when user clicks on an alert to filter */
 	onFilterByIssue: (issue: "expired" | "expiring-soon" | "out" | "low") => void;
+	/** Callback when user clicks to navigate to purchase page */
+	onNavigateToPurchase?: () => void;
 }
 
 // Pulse animation for critical alerts
@@ -60,6 +62,7 @@ export const CriticalAlertsBanner: React.FC<CriticalAlertsProps> = ({
 	outOfStockProducts,
 	lowStockProducts,
 	onFilterByIssue,
+	onNavigateToPurchase,
 }) => {
 	const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: true });
 
@@ -222,6 +225,24 @@ export const CriticalAlertsBanner: React.FC<CriticalAlertsProps> = ({
 							/>
 						)}
 					</Flex>
+
+					{/* Quick Action: Navigate to Purchase when stock issues exist */}
+					{(outOfStockProducts > 0 || lowStockProducts > 0) && onNavigateToPurchase && (
+						<Flex mt={4} pt={4} borderTop="1px dashed" borderColor="gray.300">
+							<Button
+								colorScheme="brand"
+								size="md"
+								leftIcon={<Icon as={FiAlertTriangle} />}
+								onClick={onNavigateToPurchase}
+								_hover={{
+									transform: "translateY(-1px)",
+									boxShadow: "md",
+								}}
+								transition="all 0.2s">
+								📦 Đi tới Đặt hàng nhập kho
+							</Button>
+						</Flex>
+					)}
 				</Box>
 			</Collapse>
 		</Box>

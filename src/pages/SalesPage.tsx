@@ -38,6 +38,7 @@ import type {
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
 import { salesService } from "../services/salesService";
+import { reservationService } from "../services/reservationService";
 import { useAuthStore } from "../store/authStore";
 import { useKeyboardShortcuts } from "../hooks";
 
@@ -122,8 +123,22 @@ const SalesPage = () => {
 	const handlePauseOrderRef = useRef<() => void>(() => {});
 
 	// Keyboard shortcut handlers (memoized for stable references)
-	const handleClearCart = useCallback(() => {
+	const handleClearCart = useCallback(async () => {
 		if (orderItems.length > 0) {
+			// Release all reservations
+			const reservationIds = orderItems
+				.filter((item) => item.reservationId)
+				.map((item) => item.reservationId as string);
+			
+			if (reservationIds.length > 0) {
+				try {
+					await reservationService.releaseAll(reservationIds, "Cart cleared");
+				} catch (error) {
+					console.error("Failed to release some reservations:", error);
+					// Continue with clearing cart
+				}
+			}
+			
 			setOrderItems([]);
 			setPaymentMethod(undefined);
 			setCashReceived(0);
@@ -135,7 +150,7 @@ const SalesPage = () => {
 				position: "top",
 			});
 		}
-	}, [orderItems.length, toast]);
+	}, [orderItems, toast]);
 
 	const handleSelectCash = useCallback(() => {
 		if (activeTabIndex === 0) {
@@ -364,7 +379,7 @@ const SalesPage = () => {
 		onOpen();
 	};
 
-	const handleProductSelect = (
+	const handleProductSelect = async (
 		product: Product,
 		batchId?: string,
 		batchNumber?: string,
@@ -397,43 +412,63 @@ const SalesPage = () => {
 					});
 				}
 
-				addProductToCart(product, 1, batchId, batchNumber);
+				await addProductToCart(product, 1, batchId, batchNumber);
 			}
 		}
 		// Không làm gì nếu không có mã lô - bắt buộc phải quét mã lô hàng
 	};
 
-	const addProductToCart = (
+	const addProductToCart = async (
 		product: Product,
 		quantity: number,
 		batchId?: string,
 		batchNumber?: string,
 	) => {
-		setOrderItems((prevItems) => {
-			// Check if same product and batch already exists
-			const existingItem = prevItems.find(
-				(item) =>
-					item.product.id === product.id && item.batchId === batchId,
+		// Check if same product and batch already exists
+		const existingItem = orderItems.find(
+			(item) =>
+				item.product.id === product.id && item.batchId === batchId,
+		);
+
+		if (existingItem) {
+			// Increase quantity - tìm số lượng tồn kho của lô
+			let maxQuantity = existingItem.product.stock;
+			if (existingItem.batchId) {
+				const batch = existingItem.product.batches?.find(
+					(b) => b.id === existingItem.batchId,
+				);
+				if (batch) {
+					maxQuantity = batch.quantity;
+				}
+			}
+
+			const newQuantity = Math.min(
+				existingItem.quantity + quantity,
+				maxQuantity,
 			);
 
-			if (existingItem) {
-				// Increase quantity - tìm số lượng tồn kho của lô
-				let maxQuantity = existingItem.product.stock;
-				if (existingItem.batchId) {
-					const batch = existingItem.product.batches?.find(
-						(b) => b.id === existingItem.batchId,
-					);
-					if (batch) {
-						maxQuantity = batch.quantity;
-					}
+			// Reserve additional stock
+			if (batchId && user?.id) {
+				try {
+					await reservationService.reserve({
+						lotId: batchId,
+						quantity: quantity, // Only reserve the additional quantity
+						reservedBy: user.id,
+					});
+				} catch (error) {
+					toast({
+						title: "Không thể đặt trước hàng",
+						description: "Có thể đã hết hàng hoặc đã được đặt bởi quầy khác",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't add to cart if reservation fails
 				}
+			}
 
-				const newQuantity = Math.min(
-					existingItem.quantity + quantity,
-					maxQuantity,
-				);
-
-				return prevItems.map((item) =>
+			setOrderItems((prevItems) =>
+				prevItems.map((item) =>
 					item.id === existingItem.id
 						? {
 								...item,
@@ -441,21 +476,44 @@ const SalesPage = () => {
 								totalPrice: item.unitPrice * newQuantity,
 						  }
 						: item,
-				);
-			} else {
-				// Add new item
-				const newItem: OrderItem = {
-					id: `item_${Date.now()}_${Math.random()}`,
-					product,
-					quantity,
-					unitPrice: product.price,
-					totalPrice: product.price * quantity,
-					batchId,
-					batchNumber,
-				};
-				return [...prevItems, newItem];
+				),
+			);
+		} else {
+			// Reserve stock for new item
+			let reservationId: string | undefined;
+			if (batchId && user?.id) {
+				try {
+					const reservation = await reservationService.reserve({
+						lotId: batchId,
+						quantity: quantity,
+						reservedBy: user.id,
+					});
+					reservationId = reservation.reservationId;
+				} catch (error) {
+					toast({
+						title: "Không thể đặt trước hàng",
+						description: "Có thể đã hết hàng hoặc đã được đặt bởi quầy khác",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't add to cart if reservation fails
+				}
 			}
-		});
+
+			// Add new item with reservation ID
+			const newItem: OrderItem = {
+				id: `item_${Date.now()}_${Math.random()}`,
+				product,
+				quantity,
+				unitPrice: product.price,
+				totalPrice: product.price * quantity,
+				batchId,
+				batchNumber,
+				reservationId,
+			};
+			setOrderItems((prevItems) => [...prevItems, newItem]);
+		}
 	};
 
 	const handleUpdateQuantity = (itemId: string, quantity: number) => {
@@ -487,7 +545,22 @@ const SalesPage = () => {
 		);
 	};
 
-	const handleRemoveItem = (itemId: string) => {
+	const handleRemoveItem = async (itemId: string) => {
+		const itemToRemove = orderItems.find((item) => item.id === itemId);
+		
+		// Release reservation if exists
+		if (itemToRemove?.reservationId) {
+			try {
+				await reservationService.release({
+					reservationId: itemToRemove.reservationId,
+					reason: "Item removed from cart",
+				});
+			} catch (error) {
+				console.error("Failed to release reservation:", error);
+				// Continue with removal even if release fails
+			}
+		}
+		
 		setOrderItems(orderItems.filter((item) => item.id !== itemId));
 	};
 
@@ -567,9 +640,11 @@ const SalesPage = () => {
 
 			// Success notification - brief, professional confirmation
 			celebrate({
-				amount: calculateTotal(),
+				amount: response.totalAmount,
 				orderId: response.orderId,
 				change: response.changeReturned,
+				originalAmount: response.originalAmount,
+				roundingAdjustment: response.roundingAdjustment,
 			});
 
 			// Clear localStorage

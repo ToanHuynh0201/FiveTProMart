@@ -893,7 +893,8 @@ const SalesPage = () => {
 							<TabPanel px={0}>
 								<Box
 									pt={1}
-									pb="50px">
+									pb="200px">
+									{/* pb=200px to clear PaymentFooter (~180px) which is position:fixed at bottom */}
 									<Box
 										mb={2}
 										flex={1}

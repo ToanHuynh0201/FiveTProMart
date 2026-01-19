@@ -49,7 +49,7 @@ export const parseError = (error: any) => {
 		errorMessage && errorMessage !== ERROR_MESSAGES.GENERIC_ERROR
 			? errorMessage
 			: ERROR_MESSAGES[validCode as keyof typeof ERROR_MESSAGES] ||
-			  errorMessage;
+				errorMessage;
 
 	return new ApiError(finalMessage, status, validCode);
 };
@@ -69,14 +69,14 @@ export const withErrorHandling = <TArgs extends any[], TReturn>(
 			// If response is successful, return it
 			// Support both formats: status === "success" OR success === true
 			if (
-				(response as any).data?.status === "success" ||
-				(response as any).data?.success === true
+				(response as any).status === "success" ||
+				(response as any).success === true
 			) {
 				return {
 					success: true,
-					data: (response as any).data.data,
-					pagination: (response as any).data.pagination,
-					message: (response as any).data.message,
+					data: (response as any).data,
+					pagination: (response as any).pagination,
+					message: (response as any).message,
 				};
 			}
 

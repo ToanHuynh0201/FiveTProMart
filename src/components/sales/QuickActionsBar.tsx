@@ -11,14 +11,11 @@ import {
 import {
 	FaBarcode,
 	FaSearch,
-	FaMoneyBillWave,
-	FaCreditCard,
 	FaPause,
 	FaTrash,
 	FaKeyboard,
 	FaShoppingCart,
 } from "react-icons/fa";
-import { MdPayment } from "react-icons/md";
 
 // Quick Actions Bar - Fixed action bar for common sales operations
 
@@ -27,38 +24,26 @@ interface QuickActionsBarProps {
 	itemCount: number;
 	totalAmount: number;
 	
-	// Payment state
-	paymentMethod?: "cash" | "transfer";
-	
 	// Action handlers
 	onOpenBarcodeScanner: () => void;
 	onFocusSearch: () => void;
-	onSelectCash: () => void;
-	onSelectTransfer: () => void;
-	onPrint: () => void;
 	onPauseOrder: () => void;
 	onClearCart: () => void;
 	onShowShortcuts: () => void;
 	
 	// Disable states
 	isCartEmpty?: boolean;
-	isPrintDisabled?: boolean;
 }
 
 export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 	itemCount,
 	totalAmount,
-	paymentMethod,
 	onOpenBarcodeScanner,
 	onFocusSearch,
-	onSelectCash,
-	onSelectTransfer,
-	onPrint,
 	onPauseOrder,
 	onClearCart,
 	onShowShortcuts,
 	isCartEmpty = true,
-	isPrintDisabled = true,
 }) => {
 	const isMac = typeof navigator !== "undefined" && navigator.platform?.includes("Mac");
 	const modKey = isMac ? "⌘" : "Ctrl";
@@ -84,8 +69,11 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 				py={3}
 				spacing={3}
 				border="1px solid"
-				borderColor="gray.200"
-			>
+				borderColor="gray.200"				_hover={{
+					shadow: "xl",
+					borderColor: "brand.200",
+				}}
+				transition="all 0.2s"			>
 					{/* Cart summary - left side */}
 					<HStack spacing={2} pr={2} borderRight="1px solid" borderColor="gray.200">
 						<Box
@@ -173,61 +161,7 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 
 						<Divider orientation="vertical" h="32px" />
 
-						{/* Cash payment */}
-						<Tooltip
-							label={
-								<HStack spacing={2}>
-									<Text>Tiền mặt</Text>
-									<Kbd size="sm">1</Kbd>
-								</HStack>
-							}
-							hasArrow
-							placement="top"
-						>
-							<IconButton
-								aria-label="Tiền mặt"
-								icon={<FaMoneyBillWave />}
-								variant={paymentMethod === "cash" ? "solid" : "ghost"}
-								colorScheme={paymentMethod === "cash" ? "success" : "gray"}
-								size="md"
-								onClick={onSelectCash}
-								isDisabled={isCartEmpty}
-								_hover={!isCartEmpty ? { bg: paymentMethod === "cash" ? "success.600" : "gray.100" } : {}}
-							/>
-						</Tooltip>
 
-						{/* Transfer payment */}
-						<Tooltip
-							label={
-								<HStack spacing={2}>
-									<Text>Chuyển khoản</Text>
-									<Kbd size="sm">2</Kbd>
-								</HStack>
-							}
-							hasArrow
-							placement="top"
-						>
-							<IconButton
-								aria-label="Chuyển khoản"
-								icon={<FaCreditCard />}
-								variant={paymentMethod === "transfer" ? "solid" : "ghost"}
-								colorScheme={paymentMethod === "transfer" ? "success" : "gray"}
-								size="md"
-								onClick={onSelectTransfer}
-								isDisabled={isCartEmpty}
-								_hover={!isCartEmpty ? { bg: paymentMethod === "transfer" ? "success.600" : "gray.100" } : {}}
-							/>
-						</Tooltip>
-
-						<Divider orientation="vertical" h="32px" />
-
-						{/* Pause order */}
-						<Tooltip
-							label={
-								<HStack spacing={2}>
-									<Text>Tạm dừng đơn</Text>
-									<Kbd size="sm">Esc</Kbd>
-								</HStack>
 							}
 							hasArrow
 							placement="top"
@@ -290,33 +224,6 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 							/>
 						</Tooltip>
 					</HStack>
-
-				<Divider orientation="vertical" h="32px" />
-
-				{/* Print/Complete button - right side, primary action */}
-				<Tooltip
-					label={
-						<HStack spacing={2}>
-							<Text>Thanh toán & In hóa đơn</Text>
-							<Kbd size="sm">P</Kbd>
-						</HStack>
-					}
-					hasArrow
-					placement="top"
-				>
-					<IconButton
-						aria-label="Thanh toán"
-						icon={<MdPayment size={20} />}
-						colorScheme="brand"
-						size="lg"
-						onClick={onPrint}
-						isDisabled={isPrintDisabled}
-						borderRadius="xl"
-						px={6}
-					/>
-				</Tooltip>
 			</HStack>
 		</Box>
-
 	);
-};

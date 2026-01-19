@@ -1005,22 +1005,12 @@ const SalesPage = () => {
 					<QuickActionsBar
 						itemCount={orderItems.length}
 						totalAmount={calculateTotal()}
-					paymentMethod={paymentMethod === "card" ? undefined : paymentMethod}
-						onOpenBarcodeScanner={onBarcodeScannerOpen}
-						onFocusSearch={handleFocusSearch}
-						onSelectCash={handleSelectCash}
-						onSelectTransfer={handleSelectTransfer}
-						onPrint={handlePrint}
-						onPauseOrder={handlePauseOrder}
-						onClearCart={handleClearCart}
-						onShowShortcuts={onShortcutsHelpOpen}
-						isCartEmpty={orderItems.length === 0}
-						isPrintDisabled={orderItems.length === 0 || !paymentMethod}
-					/>
-				)}
-
-				{/* Order Detail Modal */}
-				<OrderDetailModal
+					onOpenBarcodeScanner={onBarcodeScannerOpen}
+					onFocusSearch={handleFocusSearch}
+					onPauseOrder={handlePauseOrder}
+					onClearCart={handleClearCart}
+					onShowShortcuts={onShortcutsHelpOpen}
+					isCartEmpty={orderItems.length === 0}
 					isOpen={isOpen}
 					onClose={onClose}
 					order={selectedOrder}

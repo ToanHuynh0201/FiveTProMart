@@ -1,8 +1,9 @@
-import { Box, Heading, Text, Container, VStack, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Icon, HStack, Spinner, Center } from "@chakra-ui/react";
+import { Box, Heading, Text, Container, VStack, SimpleGrid, Stat, StatLabel, StatNumber, StatHelpText, Icon, HStack, Spinner, Center, Divider } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useState, useEffect } from "react";
 import { inventoryService } from "@/services/inventoryService";
 import { MdInventory, MdWarning, MdAccessTime, MdCheckCircle } from "react-icons/md";
+import { AnalyticsSection } from "@/components/analytics";
 
 const DashboardPage = () => {
 	const [stats, setStats] = useState<{
@@ -127,6 +128,11 @@ const DashboardPage = () => {
 							</Text>
 						</Box>
 					)}
+
+					{/* AI Analytics Section */}
+					<Divider my={4} />
+					
+					<AnalyticsSection />
 				</VStack>
 			</Container>
 		</MainLayout>

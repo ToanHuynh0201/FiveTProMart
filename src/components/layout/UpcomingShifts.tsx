@@ -33,23 +33,25 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 	const [shifts, setShifts] = useState<UpcomingShift[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// useEffect(() => {
-	// 	const fetchShifts = async () => {
-	// 		setIsLoading(true);
-	// 		try {
-	// 			// API endpoint for shifts - will fail gracefully if not implemented
-	// 			const response = await apiService.get<{ data: UpcomingShift[] }>("/shifts/upcoming");
-	// 			setShifts(response.data || []);
-	// 		} catch {
-	// 			// API not yet available - show empty state
-	// 			setShifts([]);
-	// 		} finally {
-	// 			setIsLoading(false);
-	// 		}
-	// 	};
+	useEffect(() => {
+		const fetchShifts = async () => {
+			setIsLoading(true);
+			try {
+				// API endpoint for shifts - will fail gracefully if not implemented
+				const response = await apiService.get<{ data: UpcomingShift[] }>(
+					"/shifts/upcoming",
+				);
+				setShifts(response.data || []);
+			} catch {
+				// API not yet available - show empty state
+				setShifts([]);
+			} finally {
+				setIsLoading(false);
+			}
+		};
 
-	// 	fetchShifts();
-	// }, []);
+		fetchShifts();
+	}, []);
 
 	const nearestShift = shifts[0];
 

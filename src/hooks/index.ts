@@ -4,3 +4,4 @@ export { useFilters } from "./useFilters";
 export type { Filters } from "./useFilters";
 export { useKeyboardShortcuts, formatShortcut, getModifierSymbol } from "./useKeyboardShortcuts";
 export type { KeyboardShortcut } from "./useKeyboardShortcuts";
+export { useInventoryAlerts } from "./useInventoryAlerts";

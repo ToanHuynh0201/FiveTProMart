@@ -332,7 +332,7 @@ const EditBatchModal = ({
 
 						<Text
 							fontSize="sm"
-							color="gray.500"
+							color="gray.600"
 							alignSelf="flex-start">
 							* Các trường có dấu sao là bắt buộc
 						</Text>

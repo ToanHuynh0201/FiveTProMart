@@ -875,7 +875,7 @@ const DisposalModal = ({
 															spacing={0}>
 															<Text
 																fontSize="12px"
-																color="gray.500">
+																color="gray.600">
 																Thành tiền
 															</Text>
 															<Text
@@ -928,7 +928,7 @@ const DisposalModal = ({
 															/>
 															<Text
 																fontSize="11px"
-																color="gray.500"
+																color="gray.600"
 																mt={1}>
 																Tồn kho: {item.maxQuantity}
 															</Text>
@@ -1062,7 +1062,7 @@ const DisposalModal = ({
 									textAlign="center">
 									<Text
 										fontSize="16px"
-										color="gray.500">
+										color="gray.600">
 										Chưa có hàng hóa nào được thêm vào danh
 										sách hủy
 									</Text>
@@ -1151,7 +1151,7 @@ const DisposalModal = ({
 												</Text>
 												<Text
 													fontSize="14px"
-													color="gray.500">
+													color="gray.600">
 													Các đơn hủy hàng sẽ được hiển thị ở đây
 												</Text>
 											</VStack>
@@ -1204,7 +1204,7 @@ const DisposalModal = ({
 															spacing={0}>
 															<Text
 																fontSize="12px"
-																color="gray.500">
+																color="gray.600">
 																Tổng giá trị
 															</Text>
 															<Text
@@ -1380,7 +1380,7 @@ const DisposalModal = ({
 															borderRadius="8px">
 															<Text
 																fontSize="12px"
-																color="gray.500"
+																color="gray.600"
 																mb={1}
 																fontWeight="600">
 																Ghi chú:
@@ -1501,7 +1501,7 @@ const DisposalModal = ({
 											textAlign="center">
 											<Text
 												fontSize="16px"
-												color="gray.500">
+												color="gray.600">
 												{searchQuery
 													? "Không tìm thấy sản phẩm nào"
 													: "Nhập tên hoặc mã sản phẩm để tìm kiếm"}

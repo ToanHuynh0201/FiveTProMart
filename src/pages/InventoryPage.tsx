@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
 	Box,
 	Text,
 	SimpleGrid,
 	Flex,
-	Spinner,
 	useDisclosure,
 	useToast,
 	Button,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsTrash } from "react-icons/bs";
@@ -23,7 +29,11 @@ import {
 	DisposalModal,
 	CriticalAlertsBanner,
 } from "@/components/inventory";
-import { Pagination } from "@/components/common";
+import {
+	Pagination,
+	TableSkeleton,
+	StatsGridSkeleton,
+} from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
 import type {
 	InventoryProduct,
@@ -39,6 +49,7 @@ import { useAuthStore } from "@/store/authStore";
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
+	const navigate = useNavigate();
 	const toast = useToast();
 	const { user } = useAuthStore();
 
@@ -73,6 +84,15 @@ const InventoryPage = () => {
 		isOpen: isDisposalModalOpen,
 		onOpen: onDisposalModalOpen,
 		onClose: onDisposalModalClose,
+	} = useDisclosure();
+
+	// Delete confirmation dialog state
+	const [productToDelete, setProductToDelete] = useState<string | null>(null);
+	const cancelRef = useRef<HTMLButtonElement>(null);
+	const {
+		isOpen: isDeleteAlertOpen,
+		onOpen: onDeleteAlertOpen,
+		onClose: onDeleteAlertClose,
 	} = useDisclosure();
 
 	// Fetch function for API call
@@ -188,9 +208,16 @@ const InventoryPage = () => {
 		onEditModalOpen();
 	};
 
-	const handleDelete = async (id: string) => {
-		if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-			await handleDeleteProduct(id);
+	const handleDelete = (id: string) => {
+		setProductToDelete(id);
+		onDeleteAlertOpen();
+	};
+
+	const handleDeleteConfirm = async () => {
+		if (productToDelete) {
+			await handleDeleteProduct(productToDelete);
+			setProductToDelete(null);
+			onDeleteAlertClose();
 		}
 	};
 
@@ -343,6 +370,7 @@ const InventoryPage = () => {
 						outOfStockProducts={stats.outOfStockProducts}
 						lowStockProducts={stats.lowStockProducts}
 						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
+						onNavigateToPurchase={() => navigate("/purchase")}
 					/>
 				)}
 
@@ -419,18 +447,18 @@ const InventoryPage = () => {
 						handleFilterChange("stockLevel", newFilters.stockLevel);
 					}}
 				/>
-				{/* Loading State */}
+				{/* Loading State - Skeletons matching content shape to prevent CLS */}
 				{loading && (
-					<Flex
-						justify="center"
-						align="center"
-						minH="400px">
-						<Spinner
-							size="xl"
-							color="brand.500"
-							thickness="4px"
+					<Box>
+						{/* Stats Skeleton */}
+						<StatsGridSkeleton />
+						{/* Table Skeleton */}
+						<TableSkeleton
+							rows={ITEMS_PER_PAGE}
+							columns={6}
+							hasActionColumn
 						/>
-					</Flex>
+					</Box>
 				)}
 
 				{/* Error State */}
@@ -500,7 +528,7 @@ const InventoryPage = () => {
 						)}
 					</>
 				)}
-				{/* Empty State */}
+				{/* Empty State - gray.600 for WCAG AA contrast compliance (4.54:1) */}
 				{!loading && !error && products.length === 0 && (
 					<Flex
 						direction="column"
@@ -511,7 +539,7 @@ const InventoryPage = () => {
 						<Text
 							fontSize="20px"
 							fontWeight="500"
-							color="gray.500">
+							color="gray.600">
 							{filters.searchQuery ||
 							filters.category !== "all" ||
 							filters.status !== "all" ||
@@ -557,6 +585,41 @@ const InventoryPage = () => {
 				products={products}
 				onSubmit={handleSubmitDisposal}
 			/>
+
+			{/* Delete Confirmation Dialog - Branded, accessible, consistent UX */}
+			<AlertDialog
+				isOpen={isDeleteAlertOpen}
+				leastDestructiveRef={cancelRef}
+				onClose={onDeleteAlertClose}>
+				<AlertDialogOverlay>
+					<AlertDialogContent>
+						<AlertDialogHeader
+							fontSize="lg"
+							fontWeight="bold">
+							Xóa Sản Phẩm
+						</AlertDialogHeader>
+
+						<AlertDialogBody>
+							Bạn có chắc chắn muốn xóa sản phẩm này? Hành động
+							này không thể hoàn tác.
+						</AlertDialogBody>
+
+						<AlertDialogFooter>
+							<Button
+								ref={cancelRef}
+								onClick={onDeleteAlertClose}>
+								Hủy
+							</Button>
+							<Button
+								colorScheme="red"
+								onClick={handleDeleteConfirm}
+								ml={3}>
+								Xóa
+							</Button>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialogOverlay>
+			</AlertDialog>
 		</MainLayout>
 	);
 };

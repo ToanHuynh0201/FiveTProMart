@@ -183,8 +183,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 													alignItems="center"
 													gap={1}
 													mb={
-														item.product
-															.promotion ||
+														item.promotionName ||
 														item.product.expiryDate
 															? 1
 															: 0
@@ -192,21 +191,29 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 													📦 Lô: {item.batchNumber}
 												</Text>
 											)}
-											{item.product.promotion && (
-												<Text
-													fontSize="12px"
-													color="red.500"
-													fontWeight="500"
-													display="flex"
-													alignItems="center"
-													gap={1}
-													mb={
-														item.product.expiryDate
-															? 1
-															: 0
-													}>
-													✨ {item.product.promotion}
-												</Text>
+											{item.promotionName && (
+												<Tooltip
+													label={`Tiết kiệm ${item.savings?.toLocaleString("vi-VN")}đ/sản phẩm`}
+													placement="top">
+													<Badge
+														colorScheme="red"
+														fontSize="11px"
+														fontWeight="600"
+														px={2}
+														py={0.5}
+														borderRadius="md"
+														display="flex"
+														alignItems="center"
+														gap={1}
+														w="fit-content"
+														mb={
+															item.product.expiryDate
+																? 1
+																: 0
+														}>
+														🏷️ {item.promotionName}
+													</Badge>
+												</Tooltip>
 											)}
 											{item.product.expiryDate && (
 												<Tooltip
@@ -341,8 +348,29 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 										color="gray.700"
 										textAlign="right"
 										isNumeric>
-										{item.unitPrice.toLocaleString("vi-VN")}
-										đ
+										{item.promotionalPrice ? (
+											<Box>
+												<Text
+													as="span"
+													fontSize="13px"
+													color="gray.400"
+													textDecoration="line-through"
+													mr={1}>
+													{item.unitPrice.toLocaleString("vi-VN")}đ
+												</Text>
+												<Text
+													as="span"
+													color="red.500"
+													fontWeight="600">
+													{item.promotionalPrice.toLocaleString("vi-VN")}đ
+												</Text>
+											</Box>
+										) : (
+											<>
+												{item.unitPrice.toLocaleString("vi-VN")}
+												đ
+											</>
+										)}
 									</Td>
 									<Td
 										py={5}

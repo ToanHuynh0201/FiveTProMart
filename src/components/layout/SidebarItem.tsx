@@ -1,4 +1,4 @@
-import { Box, Flex, Text, Icon, Tooltip } from "@chakra-ui/react";
+import { Box, Flex, Text, Icon, Tooltip, Badge } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import type { NavItem } from "@/types/layout";
 
@@ -9,6 +9,8 @@ interface SidebarItemProps {
 }
 
 export function SidebarItem({ item, isActive, isCollapsed }: SidebarItemProps) {
+	const hasBadge = item.badge && item.badge.count > 0;
+
 	const content = (
 		<Box
 			as={Link}
@@ -32,15 +34,37 @@ export function SidebarItem({ item, isActive, isCollapsed }: SidebarItemProps) {
 				gap={3}
 				justify={isCollapsed ? "center" : "flex-start"}
 				position="relative">
-				{/* Icon */}
-				{item.icon && (
-					<Icon
-						as={item.icon}
-						boxSize={isCollapsed ? 6 : 5}
-						color={isActive ? "brand.100" : "white"}
-						transition="all 0.2s"
-					/>
-				)}
+				{/* Icon with badge overlay for collapsed state */}
+				<Box position="relative">
+					{item.icon && (
+						<Icon
+							as={item.icon}
+							boxSize={isCollapsed ? 6 : 5}
+							color={isActive ? "brand.100" : "white"}
+							transition="all 0.2s"
+						/>
+					)}
+					{/* Badge on icon when collapsed */}
+					{hasBadge && isCollapsed && (
+						<Badge
+							position="absolute"
+							top="-6px"
+							right="-8px"
+							colorScheme={item.badge?.colorScheme || "red"}
+							borderRadius="full"
+							minW="18px"
+							h="18px"
+							display="flex"
+							alignItems="center"
+							justifyContent="center"
+							fontSize="10px"
+							fontWeight="bold"
+							border="2px solid"
+							borderColor="brand.500">
+							{item.badge!.count > 99 ? "99+" : item.badge!.count}
+						</Badge>
+					)}
+				</Box>
 
 				{/* Label */}
 				{!isCollapsed && (
@@ -50,9 +74,27 @@ export function SidebarItem({ item, isActive, isCollapsed }: SidebarItemProps) {
 						fontWeight={isActive ? "700" : "500"}
 						lineHeight="1.21"
 						transition="all 0.2s"
-						whiteSpace="nowrap">
+						whiteSpace="nowrap"
+						flex={1}>
 						{item.label}
 					</Text>
+				)}
+
+				{/* Badge when expanded - positioned at end */}
+				{hasBadge && !isCollapsed && (
+					<Badge
+						colorScheme={item.badge?.colorScheme || "red"}
+						borderRadius="full"
+						minW="22px"
+						h="22px"
+						display="flex"
+						alignItems="center"
+						justifyContent="center"
+						fontSize="11px"
+						fontWeight="bold"
+						ml="auto">
+						{item.badge!.count > 99 ? "99+" : item.badge!.count}
+					</Badge>
 				)}
 			</Flex>
 

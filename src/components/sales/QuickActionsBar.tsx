@@ -100,7 +100,7 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 						<Box>
 							<Text
 								fontSize="xs"
-								color="gray.500"
+								color="gray.600"
 								lineHeight="1"
 								fontWeight="medium"
 							>

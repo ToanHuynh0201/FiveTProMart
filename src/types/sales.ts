@@ -23,11 +23,16 @@ export interface OrderItem {
 	id: string;
 	product: Product;
 	quantity: number; // Số lượng
-	unitPrice: number; // Đơn giá
-	totalPrice: number; // Thành tiền
+	unitPrice: number; // Đơn giá (original, before promotion)
+	totalPrice: number; // Thành tiền (uses promotional price if available)
 	batchId?: string; // ID của lô hàng được chọn (also known as lotId)
 	batchNumber?: string; // Số lô (để hiển thị)
 	reservationId?: string; // Stock reservation ID for preventing overselling
+	// Promotional pricing (from checkProduct API)
+	promotionalPrice?: number; // Unit price after promotion discount
+	savings?: number; // Amount saved per unit
+	promotionName?: string; // e.g., "Mua 2 tặng 1", "Giảm 10%"
+	promotionType?: "Discount" | "Buy X Get Y";
 }
 
 export type PaymentMethod = "cash" | "card" | "transfer";
@@ -106,31 +111,45 @@ export interface CheckProductResponse {
 	status: string; // StockInventory.status
 	/** Lot expiration date in dd-MM-yyyy format. Awaiting backend implementation. */
 	expirationDate?: string;
-	// Future: promotion field per FRONTEND_API_REQUIREMENTS.md
+	// Promotion info from backend (null if no active promotion)
 	promotion?: {
 		promotionId: string;
 		promotionName: string;
-		promotionType: "Discount" | "BuyXGetY";
-		discountPercent?: number;
-		promotionPrice?: number;
-		buyQuantity?: number;
-		getQuantity?: number;
+		promotionType: "Discount" | "Buy X Get Y";
+		discountPercent?: number; // For Discount type
+		buyQuantity?: number; // For Buy X Get Y
+		getQuantity?: number; // For Buy X Get Y
+		promotionalPrice: number; // Unit price after discount
+		savings: number; // Amount saved per unit
 	} | null;
+}
+
+/**
+ * Discount request for order creation
+ * Supports: LOYALTY_POINTS, PERCENTAGE, FIXED_AMOUNT, NONE
+ */
+export interface DiscountRequest {
+	type: "NONE" | "PERCENTAGE" | "FIXED_AMOUNT" | "LOYALTY_POINTS";
+	pointsToUse?: number; // For LOYALTY_POINTS: 1 point = 1 VND discount
+	percentage?: number; // For PERCENTAGE: e.g., 10 = 10% off
+	maxAmount?: number; // For PERCENTAGE: cap the discount
+	amount?: number; // For FIXED_AMOUNT: exact VND discount
 }
 
 /**
  * Request: POST /api/v1/orders
  */
 export interface CreateOrderRequest {
-	staffId: string;
-	customerId?: string | null; // Nullable = Khách lẻ
-	paymentMethod: "CASH" | "TRANSFER"; // Backend uses uppercase
+	staffId: string; // Staff processing the order
+	customerId?: string | null; // Nullable = Khách lẻ (walk-in customer)
+	paymentMethod: "CASH" | "BANK_TRANSFER"; // Backend uses uppercase
 	amountGiven: number;
-	pointsRedeemed?: number; // Future: per FRONTEND_API_REQUIREMENTS.md
 	items: Array<{
 		lotId: string;
 		quantity: number;
 	}>;
+	// Optional discount (loyalty points, percentage, or fixed amount)
+	discount?: DiscountRequest;
 }
 
 /**
@@ -150,9 +169,12 @@ export interface CreateOrderResponseItem {
 export interface CreateOrderResponse {
 	orderId: string;
 	orderDate: string; // "dd-MM-yyyy hh-mm-ss"
-	totalAmount: number;
+	subTotal: number; // Sum of all items before discount
+	discountAmount: number; // Amount deducted
+	totalAmount: number; // After discount (and cash rounding)
 	changeReturned: number;
-	pointsEarned: number;
+	pointsEarned: number; // 1% of totalAmount
+	pointsRedeemed?: number; // If loyalty points were used
 	items: CreateOrderResponseItem[];
 	// Cash rounding fields (Vietnam retail)
 	originalAmount?: number; // Total before rounding

@@ -71,7 +71,7 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 	return (
 		<Box
 			position="fixed"
-			bottom={4}
+			bottom="200px"
 			left="50%"
 			transform="translateX(-50%)"
 			zIndex={1000}

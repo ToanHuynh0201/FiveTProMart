@@ -112,6 +112,10 @@ const PromotionPage = () => {
 		loadStats();
 	}, []);
 
+	const loadStats = async () => {
+		// TODO: Wire to stats endpoint when available
+	};
+
 	const handleAddPromotion = async (promotion: PromotionFormData) => {
 		await promotionService.createPromotion(
 			promotion as Omit<Promotion, "id">,

@@ -73,9 +73,8 @@ export const ExpenseDetailModal: React.FC<ExpenseDetailModalProps> = ({
 			// Fetch all expenses and aggregate client-side
 			const response = await expenseService.getExpenses({
 				page: 1,
-				itemsPerPage: 1000, // Get all for aggregation
+				pageSize: 1000, // Get all for aggregation
 			});
-
 			const expenses: Expense[] = Array.isArray(response.data) ? response.data : [];
 
 			// Aggregate by category

@@ -117,12 +117,12 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 	const loadProducts = async () => {
 		try {
 			// Fetch available products from inventoryService
-			const response = await inventoryService.getProducts({ page: 1, limit: 100 });
+			const response = await inventoryService.getProducts({ page: 1, pageSize: 100 });
 			const productsData = response.data || [];
 			setProducts(productsData.map(p => ({
 				id: p.id,
 				code: p.barcode || p.id,
-				name: p.productName || p.name || '',
+				name: p.name || '',
 			})));
 		} catch (error) {
 			console.error("Error loading products:", error);

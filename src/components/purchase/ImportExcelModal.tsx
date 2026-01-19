@@ -96,7 +96,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
 		try {
 			const response = await purchaseService.importFromExcel(file);
-			const items: PurchaseItem[] = response.data ?? [];
+			const items: PurchaseItem[] = Array.isArray(response) ? response : [];
 
 			if (items.length === 0) {
 				toast({
@@ -118,7 +118,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 		} catch (error: unknown) {
 			toast({
 				title: "Lỗi",
-				description: error.message || "Không thể đọc file Excel",
+				description: (error as Error)?.message || "Không thể đọc file Excel",
 				status: "error",
 				duration: 4000,
 			});

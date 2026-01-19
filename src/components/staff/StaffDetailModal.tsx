@@ -24,6 +24,7 @@
 	useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { staffService } from "../../services";
 import type { StaffDetail, UpdateStaffData } from "@/types";
 
 interface StaffDetailModalProps {

@@ -25,8 +25,9 @@ export interface OrderItem {
 	quantity: number; // Số lượng
 	unitPrice: number; // Đơn giá
 	totalPrice: number; // Thành tiền
-	batchId?: string; // ID của lô hàng được chọn
+	batchId?: string; // ID của lô hàng được chọn (also known as lotId)
 	batchNumber?: string; // Số lô (để hiển thị)
+	reservationId?: string; // Stock reservation ID for preventing overselling
 }
 
 export type PaymentMethod = "cash" | "card" | "transfer";
@@ -153,6 +154,9 @@ export interface CreateOrderResponse {
 	changeReturned: number;
 	pointsEarned: number;
 	items: CreateOrderResponseItem[];
+	// Cash rounding fields (Vietnam retail)
+	originalAmount?: number; // Total before rounding
+	roundingAdjustment?: number; // +/- rounding amount
 }
 
 /**
@@ -219,6 +223,9 @@ export interface OrderDetail {
 	amountGiven: number;
 	changeReturned: number;
 	pointsEarned: number;
+	// Cash rounding fields (Vietnam retail)
+	originalAmount?: number;
+	roundingAdjustment?: number;
 }
 
 /**

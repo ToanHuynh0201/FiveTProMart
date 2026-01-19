@@ -6,10 +6,6 @@ import {
 	HStack,
 	Text,
 	Badge,
-	useDisclosure,
-	Input,
-	InputGroup,
-	InputLeftElement,
 } from "@chakra-ui/react";
 import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import { useState, useEffect } from "react";
@@ -29,8 +25,6 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 	onReset,
 }) => {
 	const [products, setProducts] = useState<PromotionProduct[]>([]);
-	const [productSearchQuery, setProductSearchQuery] = useState("");
-	const { isOpen, onToggle } = useDisclosure();
 
 	useEffect(() => {
 		loadProducts();
@@ -39,12 +33,12 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 	const loadProducts = async () => {
 		try {
 			// Fetch available products from inventoryService
-			const response = await inventoryService.getProducts({ page: 1, limit: 100 });
-			const productsData = response.data || [];
-			setProducts(productsData.map(p => ({
-				id: p.id,
-				code: p.barcode || p.id,
-				name: p.productName || p.name || '',
+		const response = await inventoryService.getProducts({ page: 1, pageSize: 100 });
+		const productsData = response.data || [];
+		setProducts(productsData.map(p => ({
+			id: p.id,
+			code: p.barcode || p.id,
+			name: p.name || '',
 			})));
 		} catch (error) {
 			console.error("Error loading products:", error);
@@ -72,12 +66,6 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 		filters.type !== "all" ||
 		filters.status !== "all" ||
 		filters.searchQuery !== "";
-
-	const filteredProducts = products.filter(
-		(p) =>
-			p.name.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
-			p.code.toLowerCase().includes(productSearchQuery.toLowerCase()),
-	);
 
 	return (
 		<Box

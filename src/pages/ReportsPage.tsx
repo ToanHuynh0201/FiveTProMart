@@ -6,7 +6,6 @@ import {
 	Heading,
 	Text,
 	useDisclosure,
-	useToast,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import {
@@ -36,7 +35,6 @@ import { LoadingSpinner } from "@/components/common";
 import { reportService } from "@/services/reportService";
 import type {
 	DateRange,
-	DateRangeFilter,
 	RevenueReport,
 	OrdersReport,
 	ProductsReport,
@@ -47,7 +45,6 @@ import type {
 import MainLayout from "@/components/layout/MainLayout";
 
 export const ReportsPage: React.FC = () => {
-	const toast = useToast();
 	const [dateRange, setDateRange] = useState<DateRange>("month");
 	const [loading, setLoading] = useState(true);
 

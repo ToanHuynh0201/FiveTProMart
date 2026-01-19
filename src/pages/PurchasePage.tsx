@@ -33,7 +33,6 @@ import { Pagination } from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
 import type {
 	Purchase,
-	PurchaseFilter,
 	PurchaseStats,
 	Supplier,
 	PurchaseItem,
@@ -47,6 +46,10 @@ const ITEMS_PER_PAGE = 10;
 
 const PurchasePage = () => {
 	const toast = useToast();
+
+	const loadStats = async () => {
+		// TODO: Wire to stats endpoint when available
+	};
 
 	// State for data from API
 	const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -122,7 +125,7 @@ const PurchasePage = () => {
 		const loadData = async () => {
 			// Load suppliers
 			try {
-				const suppliersResponse = await supplierService.getSuppliers({ page: 1, itemsPerPage: 100 });
+    const suppliersResponse = await supplierService.getSuppliers({ page: 1, pageSize: 100 });
 				const supplierData = Array.isArray(suppliersResponse.data) ? suppliersResponse.data : [];
 				setSuppliers(supplierData as unknown as Supplier[]);
 			} catch {
@@ -143,7 +146,7 @@ const PurchasePage = () => {
 	const handleAddPurchase = async (
 		purchase: Omit<Purchase, "id" | "createdAt" | "updatedAt">,
 	) => {
-		await purchaseService.createPurchase(purchase);
+		await purchaseService.createPurchase(purchase as Omit<Purchase, 'id'>);
 		// Refresh data after adding
 		await fetchPurchases(filters);
 		onAddModalClose();

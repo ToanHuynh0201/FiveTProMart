@@ -54,11 +54,9 @@ export const customerService = {
 					return {
 						id: match.customerId,
 						name: match.fullName,
-						phone: match.phoneNumber,
-						email: undefined,
+						phone: match.phoneNumber,					gender: 'Khác' as const,						email: undefined,
 						address: undefined,
 						loyaltyPoints: match.loyaltyPoints,
-						registrationDate: match.registrationDate,
 					};
 				}
 			}

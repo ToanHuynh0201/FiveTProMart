@@ -13,7 +13,6 @@ import {
 	IconButton,
 	Box,
 	useToast,
-	Spinner,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { DeleteIcon } from "@chakra-ui/icons";
@@ -44,13 +43,13 @@ const EditScheduleModal = ({
 	const [selectedSalesStaffId, setSelectedSalesStaffId] =
 		useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
-	const [isLoadingData, setIsLoadingData] = useState(false);
+	const [, setIsLoadingData] = useState(false);
 	const [shiftName, setShiftName] = useState<string>("");
-	const [shiftConfig, setShiftConfig] = useState<ShiftConfig | null>(null);
+	const [, setShiftConfig] = useState<ShiftConfig | null>(null);
 	// Default staffing requirements - can be configured per shift via API
-	const [requiredWarehouseStaff, setRequiredWarehouseStaff] =
+	const [requiredWarehouseStaff, _setRequiredWarehouseStaff] =
 		useState<number>(2);
-	const [requiredSalesStaff, setRequiredSalesStaff] = useState<number>(3);
+	const [requiredSalesStaff, _setRequiredSalesStaff] = useState<number>(3);
 	const [maxShiftsPerWeek] = useState<number>(6);
 	const [staffShiftCounts, setStaffShiftCounts] = useState<{
 		[staffId: string]: number;
@@ -116,7 +115,7 @@ const EditScheduleModal = ({
 				setAvailableStaff(available.filter(s => !assignedIds.has(s.id)));
 			} else {
 				// Fallback: get all active staff from staffService
-				const response = await staffService.getStaff({ status: "active" });
+				const response = await staffService.getStaff({ status: "active" } as any);
 				const allStaff = response.data || [];
 				const assignedIds = new Set(assignments.map(a => a.staffId));
 				setAvailableStaff(allStaff.filter(s => !assignedIds.has(s.id)));

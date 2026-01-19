@@ -256,17 +256,16 @@ export function ForgotPasswordModal({
 										variant="primary"
 										size="lg"
 										fullWidth
-										isLoading={isLoading}
-										loadingText="Đang gửi...">
+										isLoading={isLoading}>
 										Gửi mã OTP
 									</Button>
 									<Button
 										type="button"
-										variant="secondary"
+										variant="outline"
 										size="lg"
 										fullWidth
 										onClick={handleClose}
-										isDisabled={isLoading}>
+										disabled={isLoading}>
 										Hủy
 									</Button>
 								</VStack>
@@ -365,17 +364,16 @@ export function ForgotPasswordModal({
 										variant="primary"
 										size="lg"
 										fullWidth
-										isLoading={isLoading}
-										loadingText="Đang xác thực...">
+										isLoading={isLoading}>
 										Xác nhận
 									</Button>
 									<Button
 										type="button"
-										variant="secondary"
+										variant="outline"
 										size="lg"
 										fullWidth
 										onClick={() => setStep("email")}
-										isDisabled={isLoading}>
+										disabled={isLoading}>
 										Quay lại
 									</Button>
 								</VStack>
@@ -425,17 +423,16 @@ export function ForgotPasswordModal({
 										variant="primary"
 										size="lg"
 										fullWidth
-										isLoading={isLoading}
-										loadingText="Đang xử lý...">
+										isLoading={isLoading}>
 										Đặt lại mật khẩu
 									</Button>
 									<Button
 										type="button"
-										variant="secondary"
+										variant="outline"
 										size="lg"
 										fullWidth
 										onClick={() => setStep("otp")}
-										isDisabled={isLoading}>
+										disabled={isLoading}>
 										Quay lại
 									</Button>
 								</VStack>
@@ -467,3 +464,4 @@ export function ForgotPasswordModal({
 		</Modal>
 	);
 }
+

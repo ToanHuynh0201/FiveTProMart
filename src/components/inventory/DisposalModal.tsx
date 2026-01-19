@@ -14,7 +14,6 @@ import {
 	Tr,
 	Th,
 	Td,
-	IconButton,
 	Input,
 	Select,
 	Text,
@@ -25,7 +24,6 @@ import {
 	Textarea,
 	Badge,
 	Flex,
-	Tooltip,
 	Checkbox,
 	useDisclosure,
 	Tabs,
@@ -299,43 +297,6 @@ const DisposalModal = ({
 		setSelectedBatches(newSelected);
 	};
 
-	// Toggle tất cả lô hàng của một sản phẩm
-	const handleToggleAllBatchesForProduct = (productId: string) => {
-		const product = products.find((p) => p.id === productId);
-		if (!product || !product.batches) return;
-
-		const availableBatches = product.batches.filter((b) => b.quantity > 0);
-		const allSelected = availableBatches.every((batch) =>
-			selectedBatches.has(`${productId}-${batch.id}`),
-		);
-
-		const newSelected = new Map(selectedBatches);
-
-		if (allSelected) {
-			// Bỏ chọn tất cả
-			availableBatches.forEach((batch) => {
-				newSelected.delete(`${productId}-${batch.id}`);
-			});
-		} else {
-			// Chọn tất cả
-			availableBatches.forEach((batch) => {
-				const key = `${productId}-${batch.id}`;
-				if (!newSelected.has(key)) {
-					const defaultReason =
-						batch.expiryDate && isExpired(batch.expiryDate)
-							? "expired"
-							: "other";
-					newSelected.set(key, {
-						quantity: batch.quantity,
-						reason: defaultReason,
-					});
-				}
-			});
-		}
-
-		setSelectedBatches(newSelected);
-	};
-
 	// Cập nhật số lượng của lô hàng đã chọn
 	const handleUpdateBatchQuantity = (
 		productId: string,
@@ -474,62 +435,6 @@ const DisposalModal = ({
 		setDisposalItems(
 			disposalItems.map((item) =>
 				item.id === itemId ? { ...item, reason } : item,
-			),
-		);
-	};
-
-	// Cập nhật sản phẩm được chọn
-	const handleProductChange = (itemId: string, productId: string) => {
-		const product = products.find((p) => p.id === productId);
-		if (!product || !product.batches || product.batches.length === 0)
-			return;
-
-		const firstBatch = product.batches[0];
-		setDisposalItems(
-			disposalItems.map((item) =>
-				item.id === itemId
-					? {
-							...item,
-							productId: product.id,
-							productName: product.name,
-							productCode: product.code,
-							batchId: firstBatch.id,
-							batchNumber: firstBatch.batchNumber,
-							quantity: Math.min(
-								item.quantity,
-								firstBatch.quantity,
-							),
-							maxQuantity: firstBatch.quantity,
-							costPrice: firstBatch.costPrice,
-							expiryDate: firstBatch.expiryDate,
-					  }
-					: item,
-			),
-		);
-	};
-
-	// Cập nhật lô hàng được chọn
-	const handleBatchChange = (itemId: string, batchId: string) => {
-		const item = disposalItems.find((i) => i.id === itemId);
-		if (!item) return;
-
-		const product = products.find((p) => p.id === item.productId);
-		const batch = product?.batches?.find((b) => b.id === batchId);
-		if (!batch) return;
-
-		setDisposalItems(
-			disposalItems.map((i) =>
-				i.id === itemId
-					? {
-							...i,
-							batchId: batch.id,
-							batchNumber: batch.batchNumber,
-							quantity: Math.min(i.quantity, batch.quantity),
-							maxQuantity: batch.quantity,
-							costPrice: batch.costPrice,
-							expiryDate: batch.expiryDate,
-					  }
-					: i,
 			),
 		);
 	};
@@ -1632,7 +1537,7 @@ const DisposalModal = ({
 																product.id,
 															);
 														return batches.map(
-															(batch, idx) => {
+															(batch) => {
 																const key = `${product.id}-${batch.id}`;
 																const isSelected =
 																	selectedBatches.has(
@@ -1647,8 +1552,6 @@ const DisposalModal = ({
 																	isExpired(
 																		batch.expiryDate,
 																	);
-																const isFirstBatch =
-																	idx === 0;
 
 																return (
 																	<Tr

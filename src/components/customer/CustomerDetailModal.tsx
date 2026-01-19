@@ -19,6 +19,7 @@ import {
 	Icon,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { customerService } from "../../services";
 import type { CustomerDetail } from "@/types";
 import {
 	FiPhone,

@@ -93,12 +93,12 @@ export const EditPromotionModal: React.FC<EditPromotionModalProps> = ({
 		setIsFetching(true);
 		try {
 			// Fetch available products from inventoryService
-			const productsResponse = await inventoryService.getProducts({ page: 1, limit: 100 });
-			const productsData = productsResponse.data || [];
-			setProducts(productsData.map(p => ({
-				id: p.id,
-				code: p.barcode || p.id,
-				name: p.productName || p.name || '',
+const productsResponse = await inventoryService.getProducts({ page: 1, pageSize: 100 });
+		const productsData = productsResponse.data || [];
+		setProducts(productsData.map(p => ({
+			id: p.id,
+			code: p.barcode || p.id,
+			name: p.name || '',
 			})));
 
 			// Fetch promotion data by ID
@@ -112,12 +112,12 @@ export const EditPromotionModal: React.FC<EditPromotionModalProps> = ({
 					name: promotion.name,
 					description: promotion.description || '',
 					type: promotion.type,
-					discountPercentage: promotion.discountPercentage || 0,
-					discountProducts: promotion.discountProducts || [],
-					purchaseGroups: promotion.purchaseGroups || [],
-					giftProducts: promotion.giftProducts || [],
-					startDate: promotion.startDate,
-					endDate: promotion.endDate,
+					discountPercentage: promotion.discountConfig?.percentage || 0,
+					discountProducts: promotion.discountConfig?.products.map(p => p.id) || [],
+					purchaseGroups: promotion.buyThisGetThatConfig?.purchaseGroups.map(g => ({ productId: g.product.id, quantity: g.quantity })) || [],
+					giftProducts: promotion.buyThisGetThatConfig?.giftProducts.map(g => ({ productId: g.product.id, quantity: g.quantity })) || [],
+					startDate: promotion.startDate instanceof Date ? promotion.startDate.toISOString().split('T')[0] : String(promotion.startDate).split('T')[0],
+					endDate: promotion.endDate instanceof Date ? promotion.endDate.toISOString().split('T')[0] : String(promotion.endDate).split('T')[0],
 					status: promotion.status,
 				});
 			}

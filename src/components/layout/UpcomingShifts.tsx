@@ -33,23 +33,23 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 	const [shifts, setShifts] = useState<UpcomingShift[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
-	useEffect(() => {
-		const fetchShifts = async () => {
-			setIsLoading(true);
-			try {
-				// API endpoint for shifts - will fail gracefully if not implemented
-				const response = await apiService.get<{ data: UpcomingShift[] }>("/shifts/upcoming");
-				setShifts(response.data || []);
-			} catch {
-				// API not yet available - show empty state
-				setShifts([]);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+	// useEffect(() => {
+	// 	const fetchShifts = async () => {
+	// 		setIsLoading(true);
+	// 		try {
+	// 			// API endpoint for shifts - will fail gracefully if not implemented
+	// 			const response = await apiService.get<{ data: UpcomingShift[] }>("/shifts/upcoming");
+	// 			setShifts(response.data || []);
+	// 		} catch {
+	// 			// API not yet available - show empty state
+	// 			setShifts([]);
+	// 		} finally {
+	// 			setIsLoading(false);
+	// 		}
+	// 	};
 
-		fetchShifts();
-	}, []);
+	// 	fetchShifts();
+	// }, []);
 
 	const nearestShift = shifts[0];
 
@@ -62,11 +62,21 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				borderTop="1px solid"
 				borderColor="rgba(187, 214, 255, 0.1)">
 				{isCollapsed ? (
-					<Spinner size="xs" color="whiteAlpha.500" mx="auto" display="block" />
+					<Spinner
+						size="xs"
+						color="whiteAlpha.500"
+						mx="auto"
+						display="block"
+					/>
 				) : (
 					<HStack spacing={2}>
-						<Spinner size="xs" color="whiteAlpha.500" />
-						<Text fontSize="xs" color="whiteAlpha.500">
+						<Spinner
+							size="xs"
+							color="whiteAlpha.500"
+						/>
+						<Text
+							fontSize="xs"
+							color="whiteAlpha.500">
 							Đang tải...
 						</Text>
 					</HStack>
@@ -84,7 +94,10 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				borderTop="1px solid"
 				borderColor="rgba(187, 214, 255, 0.1)">
 				{isCollapsed ? (
-					<Tooltip label="Không có ca làm sắp tới" placement="right" hasArrow>
+					<Tooltip
+						label="Không có ca làm sắp tới"
+						placement="right"
+						hasArrow>
 						<Box>
 							<Icon
 								as={MdCalendarToday}
@@ -97,8 +110,14 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 					</Tooltip>
 				) : (
 					<HStack spacing={2}>
-						<Icon as={MdCalendarToday} boxSize={4} color="whiteAlpha.400" />
-						<Text fontSize="xs" color="whiteAlpha.500">
+						<Icon
+							as={MdCalendarToday}
+							boxSize={4}
+							color="whiteAlpha.400"
+						/>
+						<Text
+							fontSize="xs"
+							color="whiteAlpha.500">
 							Không có ca làm sắp tới
 						</Text>
 					</HStack>

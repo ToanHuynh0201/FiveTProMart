@@ -531,7 +531,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 																	) : (
 																		<Text
 																			fontSize="12px"
-																			color="gray.500">
+																			color="gray.600">
 																			Không
 																			có
 																			HSD
@@ -624,7 +624,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 										borderColor="gray.200">
 										<Text
 											fontSize="14px"
-											color="gray.500">
+											color="gray.600">
 											Chưa có lô hàng nào
 										</Text>
 									</Box>
@@ -760,7 +760,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 					{!isLoading && !product && (
 						<Text
 							fontSize="16px"
-							color="gray.500"
+							color="gray.600"
 							textAlign="center"
 							py={12}>
 							Không tìm thấy thông tin sản phẩm

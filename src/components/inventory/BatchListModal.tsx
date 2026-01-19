@@ -119,7 +119,7 @@ const BatchListModal = ({
 						<Text
 							fontSize="sm"
 							fontWeight="normal"
-							color="gray.500"
+							color="gray.600"
 							mt={1}>
 							Mã sản phẩm: {product.code} | Tổng tồn kho:{" "}
 							{product.stock} {product.unit}
@@ -131,7 +131,7 @@ const BatchListModal = ({
 							<Box
 								textAlign="center"
 								py={10}>
-								<Text color="gray.500">
+								<Text color="gray.600">
 									Chưa có lô hàng nào
 								</Text>
 							</Box>

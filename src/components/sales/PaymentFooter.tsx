@@ -213,7 +213,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase"
 									letterSpacing="wide">
 									SDT Khách hàng
@@ -348,7 +348,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										Tiền khách đưa
@@ -381,7 +381,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										Tiền thối
@@ -406,7 +406,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 											color={
 												cashReceived && change >= 0
 													? "green.700"
-													: "gray.500"
+													: "gray.600"
 											}
 											textAlign="center">
 											{cashReceived && change >= 0
@@ -425,7 +425,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										TỔNG TIỀN
@@ -504,7 +504,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									SDT Khách hàng
 								</Text>
@@ -544,7 +544,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>
@@ -590,7 +590,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										<Text
 											fontSize="xs"
 											fontWeight="600"
-											color="gray.500"
+											color="gray.600"
 											textTransform="uppercase">
 											Tiền khách đưa
 										</Text>
@@ -621,7 +621,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										<Text
 											fontSize="xs"
 											fontWeight="600"
-											color="gray.500"
+											color="gray.600"
 											textTransform="uppercase">
 											Tiền thối
 										</Text>
@@ -645,7 +645,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 												color={
 													cashReceived && change >= 0
 														? "green.700"
-														: "gray.500"
+														: "gray.600"
 												}>
 												{cashReceived && change >= 0
 													? change.toLocaleString(
@@ -700,7 +700,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 							<Text
 								fontSize="xs"
 								fontWeight="600"
-								color="gray.500"
+								color="gray.600"
 								textTransform="uppercase">
 								SDT Khách hàng
 							</Text>
@@ -750,7 +750,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase">
 										Tiền khách đưa
 									</Text>
@@ -781,7 +781,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase">
 										Tiền thối
 									</Text>
@@ -805,7 +805,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 											color={
 												cashReceived && change >= 0
 													? "green.700"
-													: "gray.500"
+													: "gray.600"
 											}
 											textAlign="center">
 											{cashReceived && change >= 0
@@ -833,7 +833,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>

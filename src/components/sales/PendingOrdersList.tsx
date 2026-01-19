@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import {
 	Box,
 	Flex,
@@ -8,6 +9,14 @@ import {
 	Tooltip,
 	useToast,
 	SimpleGrid,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
+	Button,
+	useDisclosure,
 } from "@chakra-ui/react";
 import type { PendingOrder } from "@/types/sales";
 import { DeleteIcon, RepeatIcon } from "@chakra-ui/icons";
@@ -24,6 +33,11 @@ const PendingOrdersList = ({
 	onDelete,
 }: PendingOrdersListProps) => {
 	const toast = useToast();
+	
+	// Delete confirmation dialog state
+	const [orderToDelete, setOrderToDelete] = useState<{id: string; orderNumber: string} | null>(null);
+	const cancelRef = useRef<HTMLButtonElement>(null);
+	const { isOpen: isDeleteAlertOpen, onOpen: onDeleteAlertOpen, onClose: onDeleteAlertClose } = useDisclosure();
 
 	const formatTime = (date: Date) => {
 		return new Date(date).toLocaleTimeString("vi-VN", {
@@ -45,20 +59,23 @@ const PendingOrdersList = ({
 	};
 
 	const handleDelete = (orderId: string, orderNumber: string) => {
-		if (
-			window.confirm(
-				`Bạn có chắc muốn xóa hóa đơn ${orderNumber}?\nDữ liệu sẽ mất vĩnh viễn!`,
-			)
-		) {
-			onDelete(orderId);
+		setOrderToDelete({ id: orderId, orderNumber });
+		onDeleteAlertOpen();
+	};
+
+	const handleDeleteConfirm = () => {
+		if (orderToDelete) {
+			onDelete(orderToDelete.id);
 			toast({
 				title: "Đã xóa hóa đơn",
-				description: `Hóa đơn ${orderNumber} đã được xóa`,
+				description: `Hóa đơn ${orderToDelete.orderNumber} đã được xóa`,
 				status: "info",
 				duration: 2000,
 				isClosable: true,
 				position: "top",
 			});
+			setOrderToDelete(null);
+			onDeleteAlertClose();
 		}
 	};
 
@@ -158,7 +175,7 @@ const PendingOrdersList = ({
 
 							<Text
 								fontSize="xs"
-								color="gray.500"
+								color="gray.600"
 								mt={1}>
 								{formatTime(order.pausedAt)}
 							</Text>
@@ -196,6 +213,37 @@ const PendingOrdersList = ({
 					</Box>
 				))}
 			</SimpleGrid>
+
+			{/* Delete Confirmation Dialog - Branded, accessible UX */}
+			<AlertDialog
+				isOpen={isDeleteAlertOpen}
+				leastDestructiveRef={cancelRef}
+				onClose={onDeleteAlertClose}>
+				<AlertDialogOverlay>
+					<AlertDialogContent>
+						<AlertDialogHeader fontSize="lg" fontWeight="bold">
+							Xóa Hóa Đơn Tạm Dừng
+						</AlertDialogHeader>
+
+						<AlertDialogBody>
+							Bạn có chắc muốn xóa hóa đơn{" "}
+							<Text as="span" fontWeight="bold">
+								{orderToDelete?.orderNumber}
+							</Text>
+							? Dữ liệu sẽ mất vĩnh viễn và không thể hoàn tác.
+						</AlertDialogBody>
+
+						<AlertDialogFooter>
+							<Button ref={cancelRef} onClick={onDeleteAlertClose}>
+								Hủy
+							</Button>
+							<Button colorScheme="red" onClick={handleDeleteConfirm} ml={3}>
+								Xóa
+							</Button>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialogOverlay>
+			</AlertDialog>
 		</Box>
 	);
 };

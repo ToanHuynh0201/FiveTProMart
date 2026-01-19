@@ -1,4 +1,4 @@
-Ôªøimport { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
 	Box,
 	Input,
@@ -76,7 +76,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 						price: p.price || 0,
 						code: p.barcode || p.id,
 					stock: (p.batches || []).reduce((sum, b) => sum + (b.quantity || 0), 0),
-						unit: p.unit || 'c√°i',
+						unit: p.unit || 'c·i',
 						batches: (p.batches || []).map(b => ({
 							id: b.id,
 							batchNumber: b.batchNumber,
@@ -102,14 +102,14 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		batchId: string,
 		batchNumber: string,
 	) => {
-		// Th√™m s·∫£n ph·∫©m v·ªõi l√¥ ƒë√£ ch·ªçn v√†o gi·ªè
+		// ThÍm s?n ph?m v?i lÙ d„ ch?n v‡o gi?
 		onProductSelect(product, batchId, batchNumber);
 		setSearchQuery("");
 		setSearchResults([]);
 		setShowResults(false);
 		toast({
-			title: "ƒê√£ th√™m v√†o gi·ªè h√†ng",
-			description: `${product.name} - L√¥ ${batchNumber}`,
+			title: "–„ thÍm v‡o gi? h‡ng",
+			description: `${product.name} - LÙ ${batchNumber}`,
 			status: "success",
 			duration: 2000,
 			position: "top",
@@ -125,7 +125,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				<InputLeftElement
 					pointerEvents="none"
 					h="48px">
-					<SearchIcon color="gray.500" />
+					<SearchIcon color="gray.600" />
 				</InputLeftElement>
 				<Input
 					id="sales-product-search"
@@ -135,7 +135,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="T√¨m theo t√™n s·∫£n ph·∫©m ho·∫∑c m√£ l√¥ (VD: B√°nh, LOT001)..."
+					placeholder="TÏm theo tÍn s?n ph?m ho?c m„ lÙ (VD: B·nh, LOT001)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>
@@ -154,7 +154,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					h="48px"
 					w="50px">
 					<Tooltip
-						label="Qu√©t m√£ v·∫°ch (Ctrl+B)"
+						label="QuÈt m„ v?ch (Ctrl+B)"
 						hasArrow
 						placement="top">
 						<IconButton
@@ -211,7 +211,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							borderBottom="1px solid"
 							borderColor="gray.100"
 							_last={{ borderBottom: "none" }}>
-							{/* Th√¥ng tin s·∫£n ph·∫©m */}
+							{/* ThÙng tin s?n ph?m */}
 							<Box
 								p={3.5}
 								bg="gray.50"
@@ -233,16 +233,16 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									color="gray.600"
 									gap={4}
 									flexWrap="wrap">
-									<Text>M√£: {product.code}</Text>
+									<Text>M„: {product.code}</Text>
 									<Text>
-										Gi√°:{" "}
-										{product.price.toLocaleString("vi-VN")}ƒë
+										Gi·:{" "}
+										{product.price.toLocaleString("vi-VN")}d
 									</Text>
-									<Text>T·ªìn: {product.stock}</Text>
+									<Text>T?n: {product.stock}</Text>
 								</Flex>
 							</Box>
 
-							{/* Danh s√°ch l√¥ h√†ng */}
+							{/* Danh s·ch lÙ h‡ng */}
 							{product.batches && product.batches.length > 0 ? (
 								<Box bg="white">
 									<Text
@@ -251,9 +251,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 										pb={1}
 										fontSize="12px"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase">
-										Ch·ªçn l√¥ h√†ng:
+										Ch?n lÙ h‡ng:
 									</Text>
 									{product.batches.map((batch) => {
 										const batchExpired = isExpired(
@@ -296,7 +296,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																fontSize="14px"
 																fontWeight="600"
 																color="gray.800">
-																L√¥{" "}
+																LÙ{" "}
 																{
 																	batch.batchNumber
 																}
@@ -305,7 +305,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																<Badge
 																	colorScheme="red"
 																	fontSize="10px">
-																	H·∫øt h·∫°n
+																	H?t h?n
 																</Badge>
 															)}
 														</Flex>
@@ -315,7 +315,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 															gap={3}
 															flexWrap="wrap">
 															<Text>
-																T·ªìn:{" "}
+																T?n:{" "}
 																{batch.quantity}
 															</Text>
 															<Text>
@@ -346,7 +346,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 														borderRadius="md"
 														flexShrink={0}>
 														{batchExpired
-															? "H·∫øt h·∫°n"
+															? "H?t h?n"
 															: expiryStatus.text}
 													</Badge>
 												</Flex>
@@ -359,9 +359,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									px={3.5}
 									py={2}
 									fontSize="13px"
-									color="gray.500"
+									color="gray.600"
 									fontStyle="italic">
-									Kh√¥ng c√≥ l√¥ h√†ng
+									KhÙng cÛ lÙ h‡ng
 								</Box>
 							)}
 						</Box>

@@ -37,7 +37,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				<InputLeftElement
 					pointerEvents="none"
 					h="56px">
-					<SearchIcon color="gray.500" />
+					<SearchIcon color="gray.600" />
 				</InputLeftElement>
 				<Input
 					h="56px"

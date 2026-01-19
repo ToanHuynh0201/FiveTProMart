@@ -165,7 +165,7 @@ export const inventoryService = {
 	},
 
 	// ===================================================================
-	// Update Lot - PUT /api/stock-inventories/{lot_id}
+	// Update Lot - PUT /api/v1/stock_inventories/{lot_id}
 	// (StockInventoryAPI.md §5.4)
 	// ===================================================================
 	/**
@@ -184,7 +184,7 @@ export const inventoryService = {
 			success: boolean;
 			message: string;
 			data: { lotId: string; stockQuantity: number; status: string };
-		}>(`/stock-inventories/${lotId}`, {
+		}>(`/stock_inventories/${lotId}`, {
 			stockQuantity,
 			status,
 		});

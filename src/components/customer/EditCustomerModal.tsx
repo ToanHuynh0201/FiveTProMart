@@ -47,12 +47,14 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 		name: "",
 		phone: "",
 		gender: "Nam" as "Nam" | "Nữ" | "Khác",
+		dateOfBirth: "" as string, // Required by backend
 		loyaltyPoints: 0,
 	});
 
 	const [errors, setErrors] = useState({
 		name: "",
 		phone: "",
+		dateOfBirth: "",
 	});
 
 	useEffect(() => {
@@ -69,9 +71,10 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 			const customer = await customerService.getCustomerById(customerId);
 			if (customer) {
 				setFormData({
-					name: customer.name,
-					phone: customer.phone,
-					gender: customer.gender || "male",
+					name: customer.fullName,
+					phone: customer.phoneNumber,
+					gender: (customer.gender || "Nam") as "Nam" | "Nữ" | "Khác",
+					dateOfBirth: customer.dateOfBirth || "",
 					loyaltyPoints: customer.loyaltyPoints || 0,
 				});
 			}
@@ -102,6 +105,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 		const newErrors = {
 			name: "",
 			phone: "",
+			dateOfBirth: "",
 		};
 
 		// Validation
@@ -118,17 +122,34 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
+		if (!formData.dateOfBirth) {
+			newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
+		} else {
+			// Validate date is in the past
+			const dob = new Date(formData.dateOfBirth);
+			if (dob >= new Date()) {
+				newErrors.dateOfBirth = "Ngày sinh phải là ngày trong quá khứ";
+			}
+		}
+
 		setErrors(newErrors);
 
 		// If there are errors, don't submit
-		if (newErrors.name || newErrors.phone) {
+		if (newErrors.name || newErrors.phone || newErrors.dateOfBirth) {
 			return;
 		}
 
 		setIsLoading(true);
 
 		try {
-			await onUpdate(customerId, formData);
+			// Transform formData to match Customer type field names
+			await onUpdate(customerId, {
+				fullName: formData.name,
+				phoneNumber: formData.phone,
+				gender: formData.gender,
+				dateOfBirth: formData.dateOfBirth,
+				loyaltyPoints: formData.loyaltyPoints,
+			});
 			toast({
 				title: "Thành công",
 				description: "Cập nhật thông tin khách hàng thành công",
@@ -294,6 +315,54 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 										fontSize="14px"
 										mt={1}>
 										{errors.phone}
+									</Text>
+								)}
+							</FormControl>
+
+							{/* Ngày sinh */}
+							<FormControl isRequired isInvalid={!!errors.dateOfBirth}>
+								<FormLabel
+									fontSize={{ base: "16px", md: "18px" }}
+									fontWeight="600"
+									color="gray.700"
+									mb={2}>
+									Ngày sinh
+								</FormLabel>
+								<Input
+									type="date"
+									value={formData.dateOfBirth}
+									onChange={(e) => {
+										setFormData({
+											...formData,
+											dateOfBirth: e.target.value,
+										});
+										setErrors({ ...errors, dateOfBirth: "" });
+									}}
+									size="lg"
+									fontSize={{ base: "14px", md: "16px" }}
+									borderColor={
+										errors.dateOfBirth ? "red.500" : "gray.300"
+									}
+									_hover={{
+										borderColor: errors.dateOfBirth
+											? "red.600"
+											: "gray.400",
+									}}
+									_focus={{
+										borderColor: errors.dateOfBirth
+											? "red.500"
+											: "brand.500",
+										boxShadow: errors.dateOfBirth
+											? "0 0 0 1px var(--chakra-colors-red-500)"
+											: "0 0 0 1px var(--chakra-colors-brand-500)",
+									}}
+								/>
+								{errors.dateOfBirth && (
+									<Text
+										color="red.500"
+										fontSize="14px"
+										mt={1}>
+										{errors.dateOfBirth}
 									</Text>
 								)}
 							</FormControl>

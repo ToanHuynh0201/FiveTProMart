@@ -102,15 +102,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 			);
 			if (foundCustomer) {
 				onCustomerChange({
-					id: foundCustomer.id,
-					name: foundCustomer.name,
-					phone: foundCustomer.phone ?? "",
+					id: foundCustomer.customerId,
+					name: foundCustomer.fullName,
+					phone: foundCustomer.phoneNumber ?? "",
 					points: foundCustomer.loyaltyPoints ?? 0,
 				});
-				setPhoneInput(foundCustomer.phone ?? "");
+				setPhoneInput(foundCustomer.phoneNumber ?? "");
 				toast({
 					title: "Tìm thấy khách hàng",
-					description: `${foundCustomer.name} - ${foundCustomer.loyaltyPoints ?? 0} điểm`,
+					description: `${foundCustomer.fullName} - ${foundCustomer.loyaltyPoints ?? 0} điểm`,
 					status: "success",
 					duration: 2000,
 				});

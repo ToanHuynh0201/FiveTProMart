@@ -27,7 +27,7 @@ import type { Customer } from "@/types";
 interface AddCustomerModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (customer: Omit<Customer, "id">) => Promise<void>;
+	onAdd: (customer: Omit<Customer, "customerId">) => Promise<void>;
 }
 
 export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
@@ -38,35 +38,35 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
 	const [formData, setFormData] = useState({
-		name: "",
-		phone: "",
-		email: "",
-		address: "",
-		gender: "Nam" as "Nam" | "Nữ" | "Khác",
+		fullName: "",
+		phoneNumber: "",
+		gender: "Nam" as string,
+		dateOfBirth: "" as string, // Required by backend
 		loyaltyPoints: 0,
 	});
 
 	const [errors, setErrors] = useState({
-		name: "",
-		phone: "",
-		email: "",
+		fullName: "",
+		phoneNumber: "",
+		gender: "",
+		dateOfBirth: "",
 	});
 
 	useEffect(() => {
 		if (!isOpen) {
 			// Reset form when modal closes
 			setFormData({
-				name: "",
-				phone: "",
-				email: "",
-				address: "",
+				fullName: "",
+				phoneNumber: "",
 				gender: "Nam",
+				dateOfBirth: "",
 				loyaltyPoints: 0,
 			});
 			setErrors({
-				name: "",
-				phone: "",
-				email: "",
+				fullName: "",
+				phoneNumber: "",
+				gender: "",
+				dateOfBirth: "",
 			});
 		}
 	}, [isOpen]);
@@ -77,50 +77,61 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 		return phoneRegex.test(phone);
 	};
 
-	const validateEmail = (email: string): boolean => {
-		// Basic email validation
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		return emailRegex.test(email);
-	};
-
 	const handleSubmit = async () => {
 		// Reset errors
 		const newErrors = {
-			name: "",
-			phone: "",
-			email: "",
+			fullName: "",
+			phoneNumber: "",
+			gender: "",
+			dateOfBirth: "",
 		};
 
 		// Validation
-		if (!formData.name.trim()) {
-			newErrors.name = "Vui lòng nhập tên khách hàng";
-		} else if (formData.name.trim().length < 2) {
-			newErrors.name = "Tên khách hàng phải có ít nhất 2 ký tự";
+		if (!formData.fullName.trim()) {
+			newErrors.fullName = "Vui lòng nhập tên khách hàng";
+		} else if (formData.fullName.trim().length < 2) {
+			newErrors.fullName = "Tên khách hàng phải có ít nhất 2 ký tự";
 		}
 
-		if (!formData.phone.trim()) {
-			newErrors.phone = "Vui lòng nhập số điện thoại";
-		} else if (!validatePhone(formData.phone)) {
-			newErrors.phone =
+		if (!formData.phoneNumber.trim()) {
+			newErrors.phoneNumber = "Vui lòng nhập số điện thoại";
+		} else if (!validatePhone(formData.phoneNumber)) {
+			newErrors.phoneNumber =
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
-		// Email validation (optional field)
-		if (formData.email.trim() && !validateEmail(formData.email)) {
-			newErrors.email = "Email không hợp lệ";
+		if (!formData.gender.trim()) {
+			newErrors.gender = "Vui lòng chọn giới tính";
+		}
+
+		if (!formData.dateOfBirth) {
+			newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
+		} else {
+			// Validate date is in the past
+			const dob = new Date(formData.dateOfBirth);
+			if (dob >= new Date()) {
+				newErrors.dateOfBirth = "Ngày sinh phải là ngày trong quá khứ";
+			}
 		}
 
 		setErrors(newErrors);
 
 		// If there are errors, don't submit
-		if (newErrors.name || newErrors.phone || newErrors.email) {
+		if (newErrors.fullName || newErrors.phoneNumber || newErrors.gender || newErrors.dateOfBirth) {
 			return;
 		}
 
 		setIsLoading(true);
 
 		try {
-			await onAdd(formData);
+			await onAdd({
+				fullName: formData.fullName,
+				phoneNumber: formData.phoneNumber,
+				gender: formData.gender,
+				dateOfBirth: formData.dateOfBirth,
+				registrationDate: null,
+				loyaltyPoints: formData.loyaltyPoints,
+			});
 			toast({
 				title: "Thành công",
 				description: "Thêm khách hàng thành công",
@@ -179,7 +190,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 						{/* Tên khách hàng */}
 						<FormControl
 							isRequired
-							isInvalid={!!errors.name}>
+							isInvalid={!!errors.fullName}>
 							<FormLabel
 								fontSize={{ base: "16px", md: "18px" }}
 								fontWeight="600"
@@ -189,39 +200,39 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 							</FormLabel>
 							<Input
 								placeholder="Nhập tên khách hàng"
-								value={formData.name}
+								value={formData.fullName}
 								onChange={(e) => {
 									setFormData({
 										...formData,
-										name: e.target.value,
+										fullName: e.target.value,
 									});
-									setErrors({ ...errors, name: "" });
+									setErrors({ ...errors, fullName: "" });
 								}}
 								size="lg"
 								fontSize={{ base: "14px", md: "16px" }}
 								borderColor={
-									errors.name ? "red.500" : "gray.300"
+									errors.fullName ? "red.500" : "gray.300"
 								}
 								_hover={{
-									borderColor: errors.name
+									borderColor: errors.fullName
 										? "red.600"
 										: "gray.400",
 								}}
 								_focus={{
-									borderColor: errors.name
+									borderColor: errors.fullName
 										? "red.500"
 										: "brand.500",
-									boxShadow: errors.name
+									boxShadow: errors.fullName
 										? "0 0 0 1px var(--chakra-colors-red-500)"
 										: "0 0 0 1px var(--chakra-colors-brand-500)",
 								}}
 							/>
-							{errors.name && (
+							{errors.fullName && (
 								<Text
 									color="red.500"
 									fontSize="14px"
 									mt={1}>
-									{errors.name}
+									{errors.fullName}
 								</Text>
 							)}
 						</FormControl>
@@ -229,7 +240,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 						{/* Số điện thoại */}
 						<FormControl
 							isRequired
-							isInvalid={!!errors.phone}>
+							isInvalid={!!errors.phoneNumber}>
 							<FormLabel
 								fontSize={{ base: "16px", md: "18px" }}
 								fontWeight="600"
@@ -239,126 +250,92 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 							</FormLabel>
 							<Input
 								placeholder="Nhập số điện thoại (10 chữ số)"
-								value={formData.phone}
+								value={formData.phoneNumber}
 								onChange={(e) => {
 									const value = e.target.value.replace(
 										/\D/g,
 										"",
 									); // Only allow digits
-									setFormData({ ...formData, phone: value });
-									setErrors({ ...errors, phone: "" });
+									setFormData({ ...formData, phoneNumber: value });
+									setErrors({ ...errors, phoneNumber: "" });
 								}}
 								maxLength={10}
 								size="lg"
 								fontSize={{ base: "14px", md: "16px" }}
 								borderColor={
-									errors.phone ? "red.500" : "gray.300"
+									errors.phoneNumber ? "red.500" : "gray.300"
 								}
 								_hover={{
-									borderColor: errors.phone
+									borderColor: errors.phoneNumber
 										? "red.600"
 										: "gray.400",
 								}}
 								_focus={{
-									borderColor: errors.phone
+									borderColor: errors.phoneNumber
 										? "red.500"
 										: "brand.500",
-									boxShadow: errors.phone
+									boxShadow: errors.phoneNumber
 										? "0 0 0 1px var(--chakra-colors-red-500)"
 										: "0 0 0 1px var(--chakra-colors-brand-500)",
 								}}
 							/>
-							{errors.phone && (
+							{errors.phoneNumber && (
 								<Text
 									color="red.500"
 									fontSize="14px"
 									mt={1}>
-									{errors.phone}
+									{errors.phoneNumber}
 								</Text>
 							)}
 						</FormControl>
 
-						{/* Email */}
-						<FormControl isInvalid={!!errors.email}>
+						{/* Ngày sinh */}
+						<FormControl isRequired isInvalid={!!errors.dateOfBirth}>
 							<FormLabel
 								fontSize={{ base: "16px", md: "18px" }}
 								fontWeight="600"
 								color="gray.700"
 								mb={2}>
-								Email
+								Ngày sinh
 							</FormLabel>
 							<Input
-								type="email"
-								placeholder="Nhập email (không bắt buộc)"
-								value={formData.email}
-								onChange={(e) => {
-									setFormData({
-										...formData,
-										email: e.target.value,
-									});
-									setErrors({ ...errors, email: "" });
-								}}
-								size="lg"
-								fontSize={{ base: "14px", md: "16px" }}
-								borderColor={
-									errors.email ? "red.500" : "gray.300"
-								}
-								_hover={{
-									borderColor: errors.email
-										? "red.600"
-										: "gray.400",
-								}}
-								_focus={{
-									borderColor: errors.email
-										? "red.500"
-										: "brand.500",
-									boxShadow: errors.email
-										? "0 0 0 1px var(--chakra-colors-red-500)"
-										: "0 0 0 1px var(--chakra-colors-brand-500)",
-								}}
-							/>
-							{errors.email && (
-								<Text
-									color="red.500"
-									fontSize="14px"
-									mt={1}>
-									{errors.email}
-								</Text>
-							)}
-						</FormControl>
-
-						{/* Địa chỉ */}
-						<FormControl>
-							<FormLabel
-								fontSize={{ base: "16px", md: "18px" }}
-								fontWeight="600"
-								color="gray.700"
-								mb={2}>
-								Địa chỉ
-							</FormLabel>
-							<Input
-								placeholder="Nhập địa chỉ (không bắt buộc)"
-								value={formData.address}
+								type="date"
+								value={formData.dateOfBirth}
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										address: e.target.value,
+										dateOfBirth: e.target.value,
 									})
 								}
 								size="lg"
 								fontSize={{ base: "14px", md: "16px" }}
-								borderColor="gray.300"
-								_hover={{ borderColor: "gray.400" }}
+								borderColor={errors.dateOfBirth ? "red.500" : "gray.300"}
+								_hover={{
+									borderColor: errors.dateOfBirth
+										? "red.600"
+										: "gray.400",
+								}}
 								_focus={{
-									borderColor: "brand.500",
-									boxShadow:
-										"0 0 0 1px var(--chakra-colors-brand-500)",
+									borderColor: errors.dateOfBirth
+										? "red.500"
+										: "brand.500",
+									boxShadow: errors.dateOfBirth
+										? "0 0 0 1px var(--chakra-colors-red-500)"
+										: "0 0 0 1px var(--chakra-colors-brand-500)",
 								}}
 							/>
+							{errors.dateOfBirth && (
+								<Text
+									color="red.500"
+									fontSize="14px"
+									mt={1}>
+									{errors.dateOfBirth}
+								</Text>
+							)}
 						</FormControl>
 
 						{/* Giới tính */}
-						<FormControl isRequired>
+						<FormControl isRequired isInvalid={!!errors.gender}>
 							<FormLabel
 								fontSize={{ base: "16px", md: "18px" }}
 								fontWeight="600"
@@ -371,25 +348,37 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										gender: e.target.value as
-											| "Nam"
-											| "Nữ"
-											| "Khác",
+										gender: e.target.value,
 									})
 								}
 								size="lg"
 								fontSize={{ base: "14px", md: "16px" }}
-								borderColor="gray.300"
-								_hover={{ borderColor: "gray.400" }}
+								borderColor={errors.gender ? "red.500" : "gray.300"}
+								_hover={{
+									borderColor: errors.gender
+										? "red.600"
+										: "gray.400",
+								}}
 								_focus={{
-									borderColor: "brand.500",
-									boxShadow:
-										"0 0 0 1px var(--chakra-colors-brand-500)",
+									borderColor: errors.gender
+										? "red.500"
+										: "brand.500",
+									boxShadow: errors.gender
+										? "0 0 0 1px var(--chakra-colors-red-500)"
+										: "0 0 0 1px var(--chakra-colors-brand-500)",
 								}}>
 								<option value="Nam">Nam</option>
 								<option value="Nữ">Nữ</option>
 								<option value="Khác">Khác</option>
 							</Select>
+							{errors.gender && (
+								<Text
+									color="red.500"
+									fontSize="14px"
+									mt={1}>
+									{errors.gender}
+								</Text>
+							)}
 						</FormControl>
 
 						{/* Điểm tích lũy */}

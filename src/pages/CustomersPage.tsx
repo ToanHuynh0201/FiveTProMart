@@ -112,8 +112,19 @@ const CustomersPage = () => {
 		await fetchCustomers(filters);
 	};
 
-	const handleAddCustomer = async (customer: Omit<Customer, "id">) => {
-		await customerService.createCustomer(customer);
+	const handleAddCustomer = async (customer: Omit<Customer, "customerId">) => {
+		// Transform to match CustomerRequest - ensure required fields are not null
+		// AddCustomerModal validates that these fields are never null before calling this
+		if (!customer.dateOfBirth || !customer.gender) {
+			throw new Error("Date of birth and gender are required");
+		}
+		const request = {
+			fullName: customer.fullName,
+			phoneNumber: customer.phoneNumber,
+			gender: customer.gender,
+			dateOfBirth: customer.dateOfBirth,
+		};
+		await customerService.createCustomer(request);
 		// Refresh data after adding
 		await fetchCustomers(filters);
 		onAddModalClose();
@@ -123,7 +134,18 @@ const CustomersPage = () => {
 		id: string,
 		updates: Partial<Customer>,
 	) => {
-		await customerService.updateCustomer(id, updates);
+		// Transform to match CustomerRequest
+		// EditCustomerModal validates that required fields are not null before calling this
+		if (!updates.dateOfBirth || !updates.gender) {
+			throw new Error("Date of birth and gender are required");
+		}
+		const request = {
+			fullName: updates.fullName ?? "",
+			phoneNumber: updates.phoneNumber ?? "",
+			gender: updates.gender,
+			dateOfBirth: updates.dateOfBirth,
+		};
+		await customerService.updateCustomer(id, request);
 		// Refresh data after updating
 		await fetchCustomers(filters);
 		onEditModalClose();

@@ -7,7 +7,6 @@ import {
 	MenuList,
 	Text,
 	HStack,
-	Icon,
 	useToast,
 	Badge,
 } from "@chakra-ui/react";

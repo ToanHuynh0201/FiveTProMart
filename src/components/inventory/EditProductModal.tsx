@@ -12,7 +12,6 @@ import {
 	FormLabel,
 	Input,
 	Select,
-	Textarea,
 	VStack,
 	HStack,
 	NumberInput,
@@ -82,7 +81,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 		if (!product) return;
 
 		// Validation
-		if (!product.name.trim()) {
+		if (!product.productName.trim()) {
 			toast({
 				title: "Lỗi",
 				description: "Vui lòng nhập tên hàng hóa",
@@ -92,7 +91,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 			return;
 		}
 
-		if (!product.category) {
+		if (!product.categoryId) {
 			toast({
 				title: "Lỗi",
 				description: "Vui lòng chọn danh mục",
@@ -102,7 +101,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 			return;
 		}
 
-		if (!product.unit.trim()) {
+		if (!product.unitOfMeasure.trim()) {
 			toast({
 				title: "Lỗi",
 				description: "Vui lòng nhập đơn vị tính",
@@ -112,7 +111,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 			return;
 		}
 
-		if (product.price <= 0) {
+		if (!product.sellingPrice || product.sellingPrice <= 0) {
 			toast({
 				title: "Lỗi",
 				description: "Giá bán phải lớn hơn 0",
@@ -125,7 +124,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 		setIsSaving(true);
 
 		try {
-			await onUpdate(product.id, product);
+			await onUpdate(product.productId, product);
 			toast({
 				title: "Thành công",
 				description: "Cập nhật hàng hóa thành công",
@@ -145,7 +144,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 		}
 	};
 
-	const updateField = (field: keyof InventoryProduct, value: any) => {
+	const updateField = (field: keyof InventoryProduct, value: unknown) => {
 		if (!product) return;
 		setProduct({ ...product, [field]: value });
 	};
@@ -183,45 +182,6 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 						<VStack
 							spacing={4}
 							align="stretch">
-							<HStack spacing={4}>
-								<FormControl>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Mã hàng
-									</FormLabel>
-									<Input
-										value={product.code}
-										onChange={(e) =>
-											updateField("code", e.target.value)
-										}
-										fontSize="15px"
-										h="48px"
-									/>
-								</FormControl>
-
-								<FormControl>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Mã Lô
-									</FormLabel>
-									<Input
-										value={product.barcode || ""}
-										onChange={(e) =>
-											updateField(
-												"barcode",
-												e.target.value,
-											)
-										}
-										fontSize="15px"
-										h="48px"
-									/>
-								</FormControl>
-							</HStack>
-
 							<FormControl isRequired>
 								<FormLabel
 									fontSize="15px"
@@ -230,9 +190,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 									Tên hàng hóa
 								</FormLabel>
 								<Input
-									value={product.name}
+									value={product.productName}
 									onChange={(e) =>
-										updateField("name", e.target.value)
+										updateField("productName", e.target.value)
 									}
 									fontSize="15px"
 									h="48px"
@@ -248,10 +208,10 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 										Danh mục
 									</FormLabel>
 									<Select
-										value={product.category}
+										value={product.categoryId}
 										onChange={(e) =>
 											updateField(
-												"category",
+												"categoryId",
 												e.target.value,
 											)
 										}
@@ -259,9 +219,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 										h="48px">
 										{categories.map((cat) => (
 											<option
-												key={cat.id}
-												value={cat.name}>
-												{cat.name}
+												key={cat.categoryId}
+												value={cat.categoryId}>
+												{cat.categoryName}
 											</option>
 										))}
 									</Select>
@@ -275,9 +235,9 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 										Đơn vị tính
 									</FormLabel>
 									<Input
-										value={product.unit}
+										value={product.unitOfMeasure}
 										onChange={(e) =>
-											updateField("unit", e.target.value)
+											updateField("unitOfMeasure", e.target.value)
 										}
 										fontSize="15px"
 										h="48px"
@@ -285,173 +245,28 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
 								</FormControl>
 							</HStack>
 
-							<HStack spacing={4}>
-								<FormControl isRequired>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Giá vốn (đ)
-									</FormLabel>
-									<NumberInput
-										min={0}
-										value={product.costPrice}
-										onChange={(_, value) =>
-											updateField("costPrice", value)
-										}>
-										<NumberInputField
-											fontSize="15px"
-											h="48px"
-										/>
-										<NumberInputStepper>
-											<NumberIncrementStepper />
-											<NumberDecrementStepper />
-										</NumberInputStepper>
-									</NumberInput>
-								</FormControl>
-
-								<FormControl isRequired>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Giá bán (đ)
-									</FormLabel>
-									<NumberInput
-										min={0}
-										value={product.price}
-										onChange={(_, value) =>
-											updateField("price", value)
-										}>
-										<NumberInputField
-											fontSize="15px"
-											h="48px"
-										/>
-										<NumberInputStepper>
-											<NumberIncrementStepper />
-											<NumberDecrementStepper />
-										</NumberInputStepper>
-									</NumberInput>
-								</FormControl>
-							</HStack>
-
-							<HStack spacing={4}>
-								<FormControl>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Tồn kho tối thiểu
-									</FormLabel>
-									<NumberInput
-										min={0}
-										value={product.minStock}
-										onChange={(_, value) =>
-											updateField("minStock", value)
-										}>
-										<NumberInputField
-											fontSize="15px"
-											h="48px"
-										/>
-										<NumberInputStepper>
-											<NumberIncrementStepper />
-											<NumberDecrementStepper />
-										</NumberInputStepper>
-									</NumberInput>
-								</FormControl>
-
-								<FormControl>
-									<FormLabel
-										fontSize="15px"
-										fontWeight="600"
-										color="gray.700">
-										Tồn kho tối đa
-									</FormLabel>
-									<NumberInput
-										min={0}
-										value={product.maxStock}
-										onChange={(_, value) =>
-											updateField("maxStock", value)
-										}>
-										<NumberInputField
-											fontSize="15px"
-											h="48px"
-										/>
-										<NumberInputStepper>
-											<NumberIncrementStepper />
-											<NumberDecrementStepper />
-										</NumberInputStepper>
-									</NumberInput>
-								</FormControl>
-							</HStack>
-
-							<FormControl>
+							<FormControl isRequired>
 								<FormLabel
 									fontSize="15px"
 									fontWeight="600"
 									color="gray.700">
-									Nhà cung cấp
+									Giá bán (đ)
 								</FormLabel>
-								<Input
-									value={product.supplier || ""}
-									onChange={(e) =>
-										updateField("supplier", e.target.value)
-									}
-									fontSize="15px"
-									h="48px"
-								/>
-							</FormControl>
-
-							<FormControl>
-								<FormLabel
-									fontSize="15px"
-									fontWeight="600"
-									color="gray.700">
-									Trạng thái
-								</FormLabel>
-								<Select
-									value={product.status}
-									onChange={(e) =>
-										updateField(
-											"status",
-											e.target.value as
-												| "active"
-												| "inactive"
-												| "out-of-stock",
-										)
-									}
-									fontSize="15px"
-									h="48px">
-									<option value="active">
-										Đang kinh doanh
-									</option>
-									<option value="inactive">
-										Ngừng kinh doanh
-									</option>
-									<option value="out-of-stock">
-										Hết hàng
-									</option>
-								</Select>
-							</FormControl>
-
-							<FormControl>
-								<FormLabel
-									fontSize="15px"
-									fontWeight="600"
-									color="gray.700">
-									Mô tả
-								</FormLabel>
-								<Textarea
-									value={product.description || ""}
-									onChange={(e) =>
-										updateField(
-											"description",
-											e.target.value,
-										)
-									}
-									fontSize="15px"
-									rows={3}
-								/>
+								<NumberInput
+									min={0}
+										value={product.sellingPrice ?? 0}
+									onChange={(_, value) =>
+										updateField("sellingPrice", value)
+									}>
+									<NumberInputField
+										fontSize="15px"
+										h="48px"
+									/>
+									<NumberInputStepper>
+										<NumberIncrementStepper />
+										<NumberDecrementStepper />
+									</NumberInputStepper>
+								</NumberInput>
 							</FormControl>
 						</VStack>
 					)}

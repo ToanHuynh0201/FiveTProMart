@@ -39,9 +39,9 @@ import type {
 	InventoryProduct,
 	InventoryCategory,
 	InventoryStats,
-	ProductBatch,
 	DisposalItem,
 } from "@/types";
+import type { ProductBatch } from "@/types/inventory";
 import type { InventoryFilters } from "@/types/filters";
 import { inventoryService } from "@/services/inventoryService";
 import { useAuthStore } from "@/store/authStore";
@@ -166,7 +166,14 @@ const InventoryPage = () => {
 		id: string,
 		updates: Partial<InventoryProduct>,
 	) => {
-		await inventoryService.updateProduct(id, updates);
+		// Transform to match ProductRequest - filter out null values
+		const request = {
+			...(updates.productName && { productName: updates.productName }),
+			...(updates.categoryId && { categoryId: updates.categoryId }),
+			...(updates.unitOfMeasure && { unitOfMeasure: updates.unitOfMeasure }),
+			...(updates.sellingPrice !== undefined && updates.sellingPrice !== null && { sellingPrice: updates.sellingPrice }),
+		};
+		await inventoryService.updateProduct(id, request);
 		// Refresh data after updating
 		await fetchProducts(filters);
 		onEditModalClose();
@@ -222,7 +229,7 @@ const InventoryPage = () => {
 	};
 
 	const handleManageBatches = (id: string) => {
-		const product = products.find((p) => p.id === id);
+		const product = products.find((p) => p.productId === id);
 		if (product) {
 			setSelectedProduct(product);
 			onBatchModalOpen();
@@ -237,11 +244,11 @@ const InventoryPage = () => {
 
 		try {
 			// Call API to update lot
-			if (updates.quantity !== undefined) {
+			if (updates.stockQuantity !== undefined || updates.status !== undefined) {
 				await inventoryService.updateLot(
 					batchId,
-					updates.quantity ?? 0,
-					"active",
+					updates.stockQuantity ?? 0,
+					updates.status ?? "AVAILABLE",
 				);
 			}
 
@@ -249,7 +256,7 @@ const InventoryPage = () => {
 
 			// Update selected product for the modal
 			const updatedProduct = products.find(
-				(p) => p.id === selectedProduct.id,
+				(p) => p.productId === selectedProduct.productId,
 			);
 			if (updatedProduct) {
 				setSelectedProduct(updatedProduct);
@@ -363,12 +370,12 @@ const InventoryPage = () => {
 				</Flex>
 
 				{/* Critical Alerts Banner - Shows when there are urgent issues */}
-				{stats && (stats.expiredBatches > 0 || stats.outOfStockProducts > 0 || stats.expiringSoonBatches > 0 || stats.lowStockProducts > 0) && (
+				{stats && (stats.expiredCount > 0 || stats.outOfStockCount > 0 || stats.expiringSoonCount > 0 || stats.lowStockCount > 0) && (
 					<CriticalAlertsBanner
-						expiredBatches={stats.expiredBatches}
-						expiringSoonBatches={stats.expiringSoonBatches}
-						outOfStockProducts={stats.outOfStockProducts}
-						lowStockProducts={stats.lowStockProducts}
+						expiredBatches={stats.expiredCount}
+						expiringSoonBatches={stats.expiringSoonCount}
+						outOfStockProducts={stats.outOfStockCount}
+						lowStockProducts={stats.lowStockCount}
 						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
 						onNavigateToPurchase={() => navigate("/purchase")}
 					/>
@@ -382,7 +389,7 @@ const InventoryPage = () => {
 						mb={6}>
 						<StatsCard
 							title="Sắp hết hàng"
-							value={stats.lowStockProducts}
+							value={stats.lowStockCount}
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
@@ -391,7 +398,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Hết hàng"
-							value={stats.outOfStockProducts}
+							value={stats.outOfStockCount}
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
@@ -400,7 +407,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
-							value={stats.expiringSoonBatches}
+							value={stats.expiringSoonCount}
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
@@ -409,7 +416,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
-							value={stats.expiredBatches}
+							value={stats.expiredCount}
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"

@@ -1,54 +1,51 @@
-// Lô hàng - mỗi lô có hạn sử dụng riêng
+/**
+ * StockInventory/Batch type matching backend StockInventoryResponse.java EXACTLY
+ * Backend is source of truth - DO NOT add fields the backend doesn't send
+ */
 export interface ProductBatch {
-	id: string;
-	productId: string; // ID sản phẩm
-	batchNumber: string; // Số lô
-	quantity: number; // Tổng số lượng trong lô (quantityInStock + quantityOnDisplay)
-	quantityInStock: number; // Số lượng trong kho
-	quantityOnDisplay: number; // Số lượng trưng bày
-	costPrice: number; // Giá vốn của lô này
-	expiryDate?: Date; // Hạn sử dụng
-	importDate: Date; // Ngày nhập
-	supplier?: string; // Nhà cung cấp của lô này
-	status: "active" | "expired" | "sold-out"; // Trạng thái lô
+	lotId: string;
+	productId: string;
+	productName: string;
+	manufactureDate: string | null; // ISO date string (LocalDate)
+	expirationDate: string | null; // ISO date string (LocalDate)
+	stockQuantity: number;
+	importPrice: number;
+	status: string; // Backend returns string, e.g., "AVAILABLE", "EXPIRED"
 }
 
+/**
+ * Product type matching backend ProductResponse.java EXACTLY
+ * Backend is source of truth - DO NOT add fields the backend doesn't send
+ */
 export interface InventoryProduct {
-	id: string;
-	code: string; // Mã hàng
-	name: string; // Tên hàng hóa
-	category: string; // Nhóm hàng
-	unit: string; // Đơn vị tính (kg, gói, thùng, ...)
-	price: number; // Giá bán
-	costPrice: number; // Giá vốn trung bình
-	stock: number; // Tổng tồn kho (tính từ tất cả các lô)
-	minStock: number; // Tồn kho tối thiểu (cảnh báo hết hàng)
-	maxStock: number; // Tồn kho tối đa
-	supplier?: string; // Nhà cung cấp chính
-	barcode?: string; // Mã vạch
-	image?: string; // Hình ảnh sản phẩm
-	description?: string; // Mô tả
-	batches?: ProductBatch[]; // Danh sách các lô hàng
-	status: "active" | "inactive" | "out-of-stock";
-	createdAt: Date;
-	updatedAt: Date;
+	productId: string;
+	productName: string;
+	categoryId: string;
+	unitOfMeasure: string;
+	sellingPrice: number | null;
+	totalStockQuantity: number | null;
 }
 
+/**
+ * Category type matching backend CategoryResponse.java EXACTLY
+ */
 export interface InventoryCategory {
-	id: string;
-	name: string;
-	description?: string;
-	productCount: number;
+	categoryId: string;
+	categoryName: string;
 }
 
+/**
+ * Stats type matching backend ProductStatsResponse.java EXACTLY
+ */
 export interface InventoryStats {
 	totalProducts: number;
-	totalValue: number; // Tổng giá trị hàng tồn kho
-	lowStockProducts: number; // Số sản phẩm sắp hết hàng
-	outOfStockProducts: number; // Số sản phẩm hết hàng
 	activeProducts: number;
-	expiredBatches: number; // Số lô đã hết hạn
-	expiringSoonBatches: number; // Số lô sắp hết hạn (trong 7 ngày)
+	inactiveProducts: number;
+	totalInventoryValue: number;
+	lowStockCount: number;
+	outOfStockCount: number;
+	expiringSoonCount: number;
+	expiredCount: number;
 }
 
 export interface StockMovement {

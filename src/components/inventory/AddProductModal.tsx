@@ -22,17 +22,28 @@ import {
 	NumberDecrementStepper,
 	useToast,
 } from "@chakra-ui/react";
-import type {
-	InventoryProduct,
-	InventoryCategory,
-} from "../../types/inventory";
+import type { InventoryCategory } from "../../types/inventory";
+
+interface AddProductFormData {
+	code: string;
+	name: string;
+	category: string;
+	unit: string;
+	price: number;
+	costPrice: number;
+	stock: number;
+	minStock: number;
+	maxStock: number;
+	supplier: string;
+	barcode: string;
+	description: string;
+	status: "active";
+}
 
 interface AddProductModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (
-		product: Omit<InventoryProduct, "id" | "createdAt" | "updatedAt">,
-	) => Promise<void>;
+	onAdd: (product: AddProductFormData) => Promise<void>;
 	categories: InventoryCategory[];
 }
 
@@ -251,9 +262,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 									h="48px">
 									{categories.map((cat) => (
 										<option
-											key={cat.id}
-											value={cat.name}>
-											{cat.name}
+											key={cat.categoryId}
+											value={cat.categoryName}>
+											{cat.categoryName}
 										</option>
 									))}
 								</Select>

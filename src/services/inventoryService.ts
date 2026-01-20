@@ -1,15 +1,19 @@
 import apiService from "@/lib/api";
 import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
+import type { ProductBatch } from "@/types/inventory";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
 
 /**
- * Category type from API
+ * Request type for creating/updating products
+ * Matches backend ProductRequest.java exactly
  */
-interface CategoryApiResponse {
+interface ProductRequest {
 	categoryId: string;
-	categoryName: string;
+	productName: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
 }
 
 /**
@@ -42,6 +46,7 @@ interface DisposeResponse {
 export const inventoryService = {
 	/**
 	 * Fetch products with server-side filtering and pagination
+	 * Returns InventoryProduct[] matching backend ProductResponse.java exactly
 	 */
 	async getProducts(
 		filters: InventoryFilters,
@@ -53,20 +58,33 @@ export const inventoryService = {
 	},
 
 	async getProductById(id: string): Promise<InventoryProduct> {
-		return apiService.get<InventoryProduct>(`/products/${id}`);
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>(`/products/${id}`);
+		return response.data;
 	},
 
-	async createProduct(
-		data: Omit<InventoryProduct, "id">,
-	): Promise<InventoryProduct> {
-		return apiService.post<InventoryProduct>("/products", data);
+	async createProduct(data: ProductRequest): Promise<InventoryProduct> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>("/products", data);
+		return response.data;
 	},
 
 	async updateProduct(
 		id: string,
-		data: Partial<InventoryProduct>,
+		data: Partial<ProductRequest>,
 	): Promise<InventoryProduct> {
-		return apiService.put<InventoryProduct>(`/products/${id}`, data);
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>(`/products/${id}`, data);
+		return response.data;
 	},
 
 	async deleteProduct(id: string): Promise<void> {
@@ -78,21 +96,15 @@ export const inventoryService = {
 	// ===================================================================
 	/**
 	 * Fetch all product categories
+	 * Returns InventoryCategory[] matching backend CategoryResponse.java exactly
 	 */
 	async getCategories(): Promise<InventoryCategory[]> {
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: CategoryApiResponse[];
+			data: InventoryCategory[];
 		}>("/product-categories");
-
-		// Map API response to frontend type
-		return response.data.map((cat) => ({
-			id: cat.categoryId,
-			name: cat.categoryName,
-			description: undefined,
-			productCount: 0, // API doesn't return this, would need separate query
-		}));
+		return response.data;
 	},
 
 	// ===================================================================
@@ -100,33 +112,32 @@ export const inventoryService = {
 	// ===================================================================
 	/**
 	 * Get product statistics for dashboard.
-	 * Fails gracefully if backend endpoint doesn't exist yet.
+	 * Returns InventoryStats matching backend ProductStatsResponse.java exactly
 	 */
 	async getStats(): Promise<InventoryStats> {
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: {
-				totalProducts: number;
-				activeProducts: number;
-				inactiveProducts: number;
-				totalInventoryValue: number;
-				lowStockCount: number;
-				outOfStockCount: number;
-				expiringSoonCount: number;
-				expiredCount: number;
-			};
+			data: InventoryStats;
 		}>("/products/stats");
+		return response.data;
+	},
 
-		return {
-			totalProducts: response.data.totalProducts,
-			totalValue: response.data.totalInventoryValue,
-			lowStockProducts: response.data.lowStockCount,
-			outOfStockProducts: response.data.outOfStockCount,
-			activeProducts: response.data.activeProducts,
-			expiredBatches: response.data.expiredCount,
-			expiringSoonBatches: response.data.expiringSoonCount,
-		};
+	// ===================================================================
+	// Batches/Lots - GET /api/stock_inventories?productId={id}
+	// (StockInventoryAPI.md §5.1)
+	// ===================================================================
+	/**
+	 * Fetch stock inventory batches for a specific product.
+	 * Returns ProductBatch[] matching backend StockInventoryResponse.java exactly
+	 */
+	async getBatchesByProductId(productId: string): Promise<ProductBatch[]> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: ProductBatch[];
+		}>(`/stock_inventories?productId=${encodeURIComponent(productId)}`);
+		return response.data;
 	},
 
 	// ===================================================================

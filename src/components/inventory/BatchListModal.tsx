@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	Modal,
 	ModalOverlay,
@@ -6,6 +6,8 @@ import {
 	ModalHeader,
 	ModalBody,
 	ModalCloseButton,
+	Text,
+	Box,
 	Table,
 	Thead,
 	Tbody,
@@ -13,16 +15,12 @@ import {
 	Th,
 	Td,
 	Badge,
-	IconButton,
-	HStack,
-	Text,
-	Box,
-	useDisclosure,
-	Tooltip,
+	Spinner,
+	Flex,
+	useToast,
 } from "@chakra-ui/react";
-import { EditIcon } from "@chakra-ui/icons";
 import type { InventoryProduct, ProductBatch } from "@/types/inventory";
-import EditBatchModal from "./EditBatchModal";
+import { inventoryService } from "@/services/inventoryService";
 
 interface BatchListModalProps {
 	isOpen: boolean;
@@ -34,228 +32,169 @@ interface BatchListModalProps {
 	) => Promise<void>;
 }
 
+/**
+ * Format date for display (Vietnamese format)
+ */
+const formatDate = (dateStr: string | null): string => {
+	if (!dateStr) return "—";
+	const date = new Date(dateStr);
+	return date.toLocaleDateString("vi-VN");
+};
+
+/**
+ * Check if a batch is expired or expiring soon
+ */
+const getExpiryStatus = (dateStr: string | null): "expired" | "expiring" | "ok" | null => {
+	if (!dateStr) return null;
+	const expiry = new Date(dateStr);
+	const now = new Date();
+	const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+	
+	if (daysUntilExpiry < 0) return "expired";
+	if (daysUntilExpiry <= 30) return "expiring";
+	return "ok";
+};
+
 const BatchListModal = ({
 	isOpen,
 	onClose,
 	product,
-	onUpdateBatch,
 }: BatchListModalProps) => {
-	const {
-		isOpen: isEditOpen,
-		onOpen: onEditOpen,
-		onClose: onEditClose,
-	} = useDisclosure();
-	const [selectedBatch, setSelectedBatch] = useState<ProductBatch | null>(
-		null,
-	);
+	const toast = useToast();
+	const [batches, setBatches] = useState<ProductBatch[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
 
-	const handleEditBatch = (batch: ProductBatch) => {
-		setSelectedBatch(batch);
-		onEditOpen();
-	};
+	useEffect(() => {
+		if (isOpen && product) {
+			fetchBatches();
+		}
+	}, [isOpen, product]);
 
-	const handleUpdateBatch = async (
-		batchId: string,
-		updates: Partial<ProductBatch>,
-	) => {
-		await onUpdateBatch(batchId, updates);
-		onEditClose();
+	const fetchBatches = async () => {
+		if (!product) return;
+		
+		setIsLoading(true);
+		try {
+			const data = await inventoryService.getBatchesByProductId(product.productId);
+			setBatches(data);
+		} catch (error) {
+			console.error("Error fetching batches:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể tải danh sách lô hàng",
+				status: "error",
+				duration: 3000,
+			});
+			setBatches([]);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	if (!product) return null;
 
-	const batches = product.batches || [];
-
-	const getStatusBadge = (status: string) => {
-		const statusConfig = {
-			active: { label: "Đang hoạt động", color: "green" },
-			expired: { label: "Hết hạn", color: "red" },
-			"sold-out": { label: "Đã bán hết", color: "gray" },
-		};
-		const config = statusConfig[status as keyof typeof statusConfig] || {
-			label: status,
-			color: "gray",
-		};
-		return <Badge colorScheme={config.color}>{config.label}</Badge>;
-	};
-
-	const formatDate = (date: Date | undefined) => {
-		if (!date) return "-";
-		return new Date(date).toLocaleDateString("vi-VN");
-	};
-
-	const formatCurrency = (value: number) => {
-		return new Intl.NumberFormat("vi-VN", {
-			style: "currency",
-			currency: "VND",
-		}).format(value);
-	};
-
-	const isExpiringSoon = (expiryDate: Date | undefined) => {
-		if (!expiryDate) return false;
-		const now = new Date();
-		const expiry = new Date(expiryDate);
-		const daysUntilExpiry = Math.ceil(
-			(expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-		);
-		return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
-	};
-
-	const isExpired = (expiryDate: Date | undefined) => {
-		if (!expiryDate) return false;
-		return new Date(expiryDate) < new Date();
-	};
-
 	return (
-		<>
-			<Modal
-				isOpen={isOpen}
-				onClose={onClose}
-				size="6xl">
-				<ModalOverlay />
-				<ModalContent>
-					<ModalHeader>
-						Quản lý lô hàng - {product.name}
-						<Text
-							fontSize="sm"
-							fontWeight="normal"
-							color="gray.600"
-							mt={1}>
-							Mã sản phẩm: {product.code} | Tổng tồn kho:{" "}
-							{product.stock} {product.unit}
-						</Text>
-					</ModalHeader>
-					<ModalCloseButton />
-					<ModalBody pb={6}>
-						{batches.length === 0 ? (
-							<Box
-								textAlign="center"
-								py={10}>
-								<Text color="gray.600">
-									Chưa có lô hàng nào
-								</Text>
-							</Box>
-						) : (
-							<Box overflowX="auto">
-								<Table
-									variant="simple"
-									size="sm">
-									<Thead bg="gray.50">
-										<Tr>
-											<Th>Số lô</Th>
-											<Th isNumeric>Số lượng</Th>
-											<Th isNumeric>Giá vốn</Th>
-											<Th>Ngày nhập</Th>
-											<Th>Hạn sử dụng</Th>
-											<Th>Nhà cung cấp</Th>
-											<Th>Trạng thái</Th>
-											<Th textAlign="center">Thao tác</Th>
-										</Tr>
-									</Thead>
-									<Tbody>
-										{batches.map((batch) => {
-											const expiringSoon = isExpiringSoon(
-												batch.expiryDate,
-											);
-											const expired = isExpired(
-												batch.expiryDate,
-											);
-
-											return (
-												<Tr
-													key={batch.id}
-													bg={
-														expired
-															? "red.50"
-															: expiringSoon
-															? "yellow.50"
-															: undefined
-													}>
-													<Td fontWeight="medium">
-														{batch.batchNumber}
-													</Td>
-													<Td isNumeric>
-														{batch.quantity}{" "}
-														{product.unit}
-													</Td>
-													<Td isNumeric>
-														{formatCurrency(
-															batch.costPrice,
+		<Modal
+			isOpen={isOpen}
+			onClose={onClose}
+			size="4xl">
+			<ModalOverlay />
+			<ModalContent>
+				<ModalHeader>
+					Quản lý lô hàng - {product.productName}
+					<Text
+						fontSize="sm"
+						fontWeight="normal"
+						color="gray.600"
+						mt={1}>
+						Mã sản phẩm: {product.productId} | Tổng tồn kho:{" "}
+						{product.totalStockQuantity ?? 0} {product.unitOfMeasure}
+					</Text>
+				</ModalHeader>
+				<ModalCloseButton />
+				<ModalBody pb={6}>
+					{isLoading ? (
+						<Flex justify="center" align="center" py={10}>
+							<Spinner size="xl" color="brand.500" thickness="4px" />
+						</Flex>
+					) : batches.length === 0 ? (
+						<Box textAlign="center" py={10}>
+							<Text color="gray.600" mb={2}>
+								Không có lô hàng nào
+							</Text>
+							<Text fontSize="sm" color="gray.500">
+								Sản phẩm này chưa có lô hàng trong kho.
+							</Text>
+						</Box>
+					) : (
+						<Box overflowX="auto">
+							<Table variant="simple" size="sm">
+								<Thead bg="gray.50">
+									<Tr>
+										<Th>Mã lô</Th>
+										<Th isNumeric>Số lượng</Th>
+										<Th isNumeric>Giá nhập</Th>
+										<Th>Ngày sản xuất</Th>
+										<Th>Hạn sử dụng</Th>
+										<Th>Trạng thái</Th>
+									</Tr>
+								</Thead>
+								<Tbody>
+									{batches.map((batch) => {
+										const expiryStatus = getExpiryStatus(batch.expirationDate);
+										return (
+											<Tr key={batch.lotId}>
+												<Td fontFamily="mono" fontSize="sm">
+													{batch.lotId}
+												</Td>
+												<Td isNumeric fontWeight="600">
+													{batch.stockQuantity.toLocaleString("vi-VN")}
+												</Td>
+												<Td isNumeric>
+													{batch.importPrice.toLocaleString("vi-VN")}đ
+												</Td>
+												<Td>{formatDate(batch.manufactureDate)}</Td>
+												<Td>
+													<Flex align="center" gap={2}>
+														{formatDate(batch.expirationDate)}
+														{expiryStatus === "expired" && (
+															<Badge colorScheme="red" fontSize="xs">
+																Hết hạn
+															</Badge>
 														)}
-													</Td>
-													<Td>
-														{formatDate(
-															batch.importDate,
+														{expiryStatus === "expiring" && (
+															<Badge colorScheme="orange" fontSize="xs">
+																Sắp hết hạn
+															</Badge>
 														)}
-													</Td>
-													<Td>
-														<HStack spacing={2}>
-															<Text>
-																{formatDate(
-																	batch.expiryDate,
-																)}
-															</Text>
-															{expiringSoon && (
-																<Badge
-																	colorScheme="yellow"
-																	fontSize="xs">
-																	Sắp hết hạn
-																</Badge>
-															)}
-															{expired && (
-																<Badge
-																	colorScheme="red"
-																	fontSize="xs">
-																	Đã hết hạn
-																</Badge>
-															)}
-														</HStack>
-													</Td>
-													<Td>
-														{batch.supplier || "-"}
-													</Td>
-													<Td>
-														{getStatusBadge(
-															batch.status,
-														)}
-													</Td>
-													<Td textAlign="center">
-														<Tooltip label="Chỉnh sửa lô hàng">
-															<IconButton
-																aria-label="Edit batch"
-																icon={
-																	<EditIcon />
-																}
-																size="sm"
-																colorScheme="blue"
-																variant="ghost"
-																onClick={() =>
-																	handleEditBatch(
-																		batch,
-																	)
-																}
-															/>
-														</Tooltip>
-													</Td>
-												</Tr>
-											);
-										})}
-									</Tbody>
-								</Table>
-							</Box>
-						)}
-					</ModalBody>
-				</ModalContent>
-			</Modal>
-
-			<EditBatchModal
-				isOpen={isEditOpen}
-				onClose={onEditClose}
-				batch={selectedBatch}
-				productName={product.name}
-				onUpdate={handleUpdateBatch}
-			/>
-		</>
+													</Flex>
+												</Td>
+												<Td>
+													<Badge
+														colorScheme={
+															batch.status === "AVAILABLE"
+																? "green"
+																: batch.status === "EXPIRED"
+																? "red"
+																: "gray"
+														}>
+														{batch.status === "AVAILABLE"
+															? "Còn hàng"
+															: batch.status === "EXPIRED"
+															? "Hết hạn"
+															: batch.status}
+													</Badge>
+												</Td>
+											</Tr>
+										);
+									})}
+								</Tbody>
+							</Table>
+						</Box>
+					)}
+				</ModalBody>
+			</ModalContent>
+		</Modal>
 	);
 };
 

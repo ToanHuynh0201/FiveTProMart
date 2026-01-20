@@ -4,45 +4,49 @@ import type { CustomerFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
 
+/**
+ * Request type for creating/updating customers
+ * Matches backend CustomerRequest.java exactly
+ * ALL fields are REQUIRED - backend has @NotNull/@NotBlank on all
+ */
+interface CustomerRequest {
+	fullName: string;
+	gender: string;
+	dateOfBirth: string; // ISO date string - REQUIRED by backend
+	phoneNumber: string;
+}
+
 export const customerService = {
 	/**
 	 * Fetch customers with server-side filtering and pagination
+	 * Returns Customer[] matching backend CustomerResponse.java exactly
 	 */
 	async getCustomers(
 		filters: CustomerFilters,
 	): Promise<ApiResponse<Customer>> {
-		const params = buildQueryParams(filters);
 		return apiService.get<ApiResponse<Customer>>(
-			`/customers?${params.toString()}`,
+			`/customers?${buildQueryParams(filters).toString()}`,
 		);
 	},
 
 	async getCustomerById(id: string): Promise<Customer> {
-		return apiService.get<Customer>(`/customers/${id}`);
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: Customer;
+		}>(`/customers/${id}`);
+		return response.data;
 	},
 
 	/**
 	 * Search for customer by phone number.
 	 * Returns null if no customer found.
-	 *
-	 * Uses general search API and filters client-side for exact phone match.
-	 * This approach works perfectly - the search param searches across all fields
-	 * including phoneNumber, so exact match filtering gives accurate results.
 	 */
 	async findByPhone(phone: string): Promise<Customer | null> {
 		try {
-			// Try search with phone number
 			const response = await apiService.get<{
 				success: boolean;
-				data: Array<{
-					customerId: string;
-					fullName: string;
-					phoneNumber: string;
-					loyaltyPoints: number;
-					gender?: string;
-					dateOfBirth?: string;
-					registrationDate?: string;
-				}>;
+				data: Customer[];
 			}>(`/customers?search=${encodeURIComponent(phone)}`);
 
 			if (response.success && response.data.length > 0) {
@@ -50,32 +54,33 @@ export const customerService = {
 				const match = response.data.find(
 					(c) => c.phoneNumber === phone,
 				);
-				if (match) {
-					return {
-						id: match.customerId,
-						name: match.fullName,
-						phone: match.phoneNumber,					gender: 'Khác' as const,						email: undefined,
-						address: undefined,
-						loyaltyPoints: match.loyaltyPoints,
-					};
-				}
+				return match || null;
 			}
 			return null;
 		} catch {
-			// API error or no results
 			return null;
 		}
 	},
 
-	async createCustomer(data: Omit<Customer, "id">): Promise<Customer> {
-		return apiService.post<Customer>("/customers", data);
+	async createCustomer(data: CustomerRequest): Promise<Customer> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: Customer;
+		}>("/customers", data);
+		return response.data;
 	},
 
 	async updateCustomer(
 		id: string,
-		data: Partial<Customer>,
+		data: Partial<CustomerRequest>,
 	): Promise<Customer> {
-		return apiService.put<Customer>(`/customers/${id}`, data);
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: Customer;
+		}>(`/customers/${id}`, data);
+		return response.data;
 	},
 
 	async deleteCustomer(id: string): Promise<void> {

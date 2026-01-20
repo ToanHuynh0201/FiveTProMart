@@ -19,7 +19,6 @@ import {
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import type { InventoryProduct } from "../../types/inventory";
-import { isExpired, isExpiringSoon } from "../../utils/date";
 import { EmptyState } from "../common";
 
 interface ProductTableProps {
@@ -36,7 +35,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	onDelete,
 }) => {
 	// Create a key based on products to trigger animation on filter changes
-	const tableKey = products.map((p) => p.id).join("-");
+	const tableKey = products.map((p) => p.productId).join("-");
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
 			active: { color: "green", label: "Đang kinh doanh" },
@@ -63,7 +62,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	};
 
 	const getStockWarning = (product: InventoryProduct) => {
-		if (product.stock === 0) {
+		const qty = product.totalStockQuantity ?? 0;
+		if (qty === 0) {
 			return (
 				<Text
 					color="red.500"
@@ -73,7 +73,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 				</Text>
 			);
 		}
-		if (product.stock <= product.minStock) {
+		// Low stock warning (threshold: 10 units)
+		if (qty <= 10) {
 			return (
 				<Text
 					color="orange.500"
@@ -86,62 +87,10 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 		return null;
 	};
 
-	// Kiểm tra lô hàng hết hạn
-	const getBatchExpiryWarning = (product: InventoryProduct) => {
-		if (!product.batches || product.batches.length === 0) return null;
-
-		let expiredCount = 0;
-		let expiringSoonCount = 0;
-
-		product.batches.forEach((batch) => {
-			if (batch.quantity > 0) {
-				if (isExpired(batch.expiryDate)) {
-					expiredCount++;
-				} else if (isExpiringSoon(batch.expiryDate, 7)) {
-					expiringSoonCount++;
-				}
-			}
-		});
-
-		if (expiredCount > 0) {
-			return (
-				<Tooltip
-					label={`${expiredCount} lô đã hết hạn`}
-					placement="top"
-					hasArrow>
-					<Badge
-						colorScheme="red"
-						fontSize="10px"
-						px={2}
-						py={0.5}
-						borderRadius="md"
-						cursor="help">
-						⚠️ {expiredCount} lô hết hạn
-					</Badge>
-				</Tooltip>
-			);
-		}
-
-		if (expiringSoonCount > 0) {
-			return (
-				<Tooltip
-					label={`${expiringSoonCount} lô sắp hết hạn trong 7 ngày`}
-					placement="top"
-					hasArrow>
-					<Badge
-						colorScheme="orange"
-						fontSize="10px"
-						px={2}
-						py={0.5}
-						borderRadius="md"
-						cursor="help">
-						🔔 {expiringSoonCount} lô sắp hết hạn
-					</Badge>
-				</Tooltip>
-			);
-		}
-
-		return null;
+	// Helper to derive status from stock quantity
+	const getProductStatus = (product: InventoryProduct): string => {
+		if (product.totalStockQuantity === 0) return "out-of-stock";
+		return "active";
 	};
 
 	return (
@@ -244,7 +193,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 					<Tbody>
 						{products.map((product) => (
 							<Tr
-								key={product.id}
+							key={product.productId}
 								_hover={{ bg: "gray.50" }}
 								transition="all 0.2s">
 								<Td
@@ -252,25 +201,20 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="gray.700"
 									fontWeight="500"
 									width="100px">
-									{product.code}
+									{product.productId}
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.800"
 									fontWeight="600"
 									width="200px">
-									<Flex
-										direction="column"
-										gap={1}>
-										<Text>{product.name}</Text>
-										{getBatchExpiryWarning(product)}
-									</Flex>
+									<Text>{product.productName}</Text>
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.600"
 									width="120px">
-									{product.category}
+									{product.categoryId}
 								</Td>
 								<Td
 									fontSize="14px"
@@ -282,7 +226,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 										align="flex-end"
 										gap={1}>
 										<Text color="gray.800">
-											{product.stock}
+											{product.totalStockQuantity}
 										</Text>
 										{getStockWarning(product)}
 									</Flex>
@@ -291,7 +235,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									fontSize="14px"
 									color="gray.600"
 									width="80px">
-									{product.unit}
+									{product.unitOfMeasure}
 								</Td>
 								<Td
 									fontSize="14px"
@@ -299,10 +243,10 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="brand.600"
 									width="120px"
 									isNumeric>
-									{product.price.toLocaleString("vi-VN")}đ
-								</Td>
-								<Td width="140px">
-									{getStatusBadge(product.status)}
+								{(product.sellingPrice ?? 0).toLocaleString("vi-VN")}đ
+							</Td>
+							<Td width="140px">
+								{getStatusBadge(getProductStatus(product))}
 								</Td>
 								<Td width="110px">
 									<Flex
@@ -318,7 +262,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												variant="ghost"
 												colorScheme="blue"
 												onClick={() =>
-													onViewDetail(product.id)
+													onViewDetail(product.productId)
 												}
 											/>
 										</Tooltip>
@@ -334,7 +278,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												<MenuItem
 													icon={<EditIcon />}
 													onClick={() =>
-														onEdit(product.id)
+														onEdit(product.productId)
 													}>
 													Chỉnh sửa
 												</MenuItem>
@@ -342,7 +286,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 													icon={<DeleteIcon />}
 													color="red.500"
 													onClick={() =>
-														onDelete(product.id)
+														onDelete(product.productId)
 													}>
 													Xóa
 												</MenuItem>

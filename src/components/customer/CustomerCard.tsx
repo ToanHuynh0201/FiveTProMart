@@ -44,7 +44,7 @@ const CustomerCard = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(customer.id);
+			await onDelete(customer.customerId);
 			onClose();
 			toast({
 				title: "Thành công",
@@ -80,7 +80,7 @@ const CustomerCard = ({
 			}}
 			cursor="pointer"
 			position="relative"
-			onClick={() => onViewDetails?.(customer.id)}
+			onClick={() => onViewDetails?.(customer.customerId)}
 			h="100%"
 			isolation="auto">
 			{/* Menu dropdown */}
@@ -115,7 +115,7 @@ const CustomerCard = ({
 							<MenuItem
 								onClick={(e) => {
 									e.stopPropagation();
-									onViewDetails?.(customer.id);
+									onViewDetails?.(customer.customerId);
 								}}>
 								Xem chi tiết
 							</MenuItem>
@@ -164,7 +164,7 @@ const CustomerCard = ({
 				color="brand.600"
 				mb={1}
 				lineHeight="1.2">
-				{customer.name}
+				{customer.fullName}
 			</Text>
 
 			{/* Gender Badge */}
@@ -202,7 +202,7 @@ const CustomerCard = ({
 					fontSize="15px"
 					fontWeight="500"
 					color="gray.700">
-					{customer.phone}
+					{customer.phoneNumber}
 				</Text>
 			</Flex>
 
@@ -252,7 +252,7 @@ const CustomerCard = ({
 					textDecoration: "underline",
 					color: "brand.500",
 				}}
-				onClick={() => onViewDetails?.(customer.id)}>
+				onClick={() => onViewDetails?.(customer.customerId)}>
 				Xem chi tiết
 			</Text>
 
@@ -280,7 +280,7 @@ const CustomerCard = ({
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa khách hàng{" "}
-							<strong>{customer.name}</strong>? Hành động này
+							<strong>{customer.fullName}</strong>? Hành động này
 							không thể hoàn tác.
 						</Text>
 					</ModalBody>

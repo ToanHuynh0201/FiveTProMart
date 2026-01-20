@@ -58,10 +58,10 @@ export function useInventoryAlerts(): UseInventoryAlertsResult {
 
 	// Calculate counts
 	const criticalCount = stats
-		? stats.expiredBatches + stats.outOfStockProducts
+		? stats.expiredCount + stats.outOfStockCount
 		: 0;
 	const warningCount = stats
-		? stats.expiringSoonBatches + stats.lowStockProducts
+		? stats.expiringSoonCount + stats.lowStockCount
 		: 0;
 	const totalIssues = criticalCount + warningCount;
 

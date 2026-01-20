@@ -67,22 +67,18 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					// Search products via inventoryService
 					const response = await inventoryService.getProducts({ page: 1, size: 50, searchQuery: query });
 					const products = response.data || [];
-					// Transform to Product format expected by sales
+					// Transform InventoryProduct (backend fields) to Sales Product (UI fields)
+					// InventoryProduct now matches backend exactly: productId, productName, sellingPrice, etc.
 					const results = products.map(p => ({
-						id: p.id,
-						barcode: p.barcode || '',
-						name: p.name || '',
-						category: p.category || '',
-						price: p.price || 0,
-						code: p.barcode || p.id,
-					stock: (p.batches || []).reduce((sum, b) => sum + (b.quantity || 0), 0),
-						unit: p.unit || 'cái',
-						batches: (p.batches || []).map(b => ({
-							id: b.id,
-							batchNumber: b.batchNumber,
-							expiryDate: b.expiryDate,
-							quantity: b.quantity,
-						})),
+						id: p.productId,
+						barcode: '', // Backend doesn't return barcode in ProductResponse
+						name: p.productName || '',
+						category: p.categoryId || '',
+						price: p.sellingPrice ?? 0,
+						code: p.productId, // Use productId as code
+						stock: p.totalStockQuantity ?? 0,
+						unit: p.unitOfMeasure || 'cÃ¡i',
+						batches: [], // Backend doesn't return batches in ProductResponse - use checkProduct for batch info
 					}));
 					setSearchResults(results as any);
 					setShowResults(true);
@@ -102,14 +98,14 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		batchId: string,
 		batchNumber: string,
 	) => {
-		// Thêm s?n ph?m v?i lô dã ch?n vào gi?
+		// Thï¿½m s?n ph?m v?i lï¿½ dï¿½ ch?n vï¿½o gi?
 		onProductSelect(product, batchId, batchNumber);
 		setSearchQuery("");
 		setSearchResults([]);
 		setShowResults(false);
 		toast({
-			title: "Ðã thêm vào gi? hàng",
-			description: `${product.name} - Lô ${batchNumber}`,
+			title: "ï¿½ï¿½ thï¿½m vï¿½o gi? hï¿½ng",
+			description: `${product.name} - Lï¿½ ${batchNumber}`,
 			status: "success",
 			duration: 2000,
 			position: "top",
@@ -135,7 +131,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="Tìm theo tên s?n ph?m ho?c mã lô (VD: Bánh, LOT001)..."
+					placeholder="Tï¿½m theo tï¿½n s?n ph?m ho?c mï¿½ lï¿½ (VD: Bï¿½nh, LOT001)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>
@@ -154,7 +150,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					h="48px"
 					w="50px">
 					<Tooltip
-						label="Quét mã v?ch (Ctrl+B)"
+						label="Quï¿½t mï¿½ v?ch (Ctrl+B)"
 						hasArrow
 						placement="top">
 						<IconButton
@@ -211,7 +207,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							borderBottom="1px solid"
 							borderColor="gray.100"
 							_last={{ borderBottom: "none" }}>
-							{/* Thông tin s?n ph?m */}
+							{/* Thï¿½ng tin s?n ph?m */}
 							<Box
 								p={3.5}
 								bg="gray.50"
@@ -233,16 +229,16 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									color="gray.600"
 									gap={4}
 									flexWrap="wrap">
-									<Text>Mã: {product.code}</Text>
+									<Text>Mï¿½: {product.code}</Text>
 									<Text>
-										Giá:{" "}
+										Giï¿½:{" "}
 										{product.price.toLocaleString("vi-VN")}d
 									</Text>
 									<Text>T?n: {product.stock}</Text>
 								</Flex>
 							</Box>
 
-							{/* Danh sách lô hàng */}
+							{/* Danh sï¿½ch lï¿½ hï¿½ng */}
 							{product.batches && product.batches.length > 0 ? (
 								<Box bg="white">
 									<Text
@@ -253,7 +249,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 										fontWeight="600"
 										color="gray.600"
 										textTransform="uppercase">
-										Ch?n lô hàng:
+										Ch?n lï¿½ hï¿½ng:
 									</Text>
 									{product.batches.map((batch) => {
 										const batchExpired = isExpired(
@@ -296,7 +292,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																fontSize="14px"
 																fontWeight="600"
 																color="gray.800">
-																Lô{" "}
+																Lï¿½{" "}
 																{
 																	batch.batchNumber
 																}
@@ -361,7 +357,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									fontSize="13px"
 									color="gray.600"
 									fontStyle="italic">
-									Không có lô hàng
+									Khï¿½ng cï¿½ lï¿½ hï¿½ng
 								</Box>
 							)}
 						</Box>

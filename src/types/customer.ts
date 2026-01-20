@@ -1,29 +1,26 @@
+/**
+ * Customer type matching backend CustomerResponse.java EXACTLY
+ * Backend is source of truth - DO NOT add fields the backend doesn't send
+ */
 export interface Customer {
-	id: string;
-	name: string;
-	phone: string;
-	gender: "Nam" | "Nữ" | "Khác";
+	customerId: string;
+	fullName: string;
+	gender: string | null;
+	dateOfBirth: string | null;
+	phoneNumber: string;
+	registrationDate: string | null;
 	loyaltyPoints: number;
-	// Extended details
-	email?: string;
-	address?: string;
-	dateOfBirth?: string;
-	registeredDate?: string;
-	totalSpent?: number;
-	purchaseCount?: number;
-	lastPurchaseDate?: string;
-	status?: "active" | "inactive";
 }
 
 export interface CustomerDetail extends Customer {}
 
+/**
+ * Request type for creating/updating customers
+ * Matches backend CreateCustomerRequest.java
+ */
 export interface UpdateCustomerData {
-	name?: string;
-	phone?: string;
-	email?: string;
-	address?: string;
-	gender?: "Nam" | "Nữ" | "Khác";
-	loyaltyPoints?: number;
-	dateOfBirth?: string;
-	status?: "active" | "inactive";
+	fullName?: string;
+	phoneNumber?: string;
+	gender?: string;
+	dateOfBirth?: string | null;
 }

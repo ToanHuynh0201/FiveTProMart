@@ -4,7 +4,8 @@
  */
 // API Configuration
 export const API_CONFIG = {
-	BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
+	BASE_URL:
+		import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1",
 	TIMEOUT: 10000, // 10 seconds
 	RETRY_ATTEMPTS: 3,
 	RETRY_DELAY: 1000,
@@ -13,7 +14,7 @@ export const API_CONFIG = {
 /**
  * Role constants - MUST match Keycloak realm roles exactly (PascalCase)
  * These are used for authorization checks in the frontend.
- * 
+ *
  * Role Hierarchy:
  * - Admin: Full system access, can manage everything
  * - Manager: Can view most things, limited write access
@@ -27,7 +28,7 @@ export const ROLES = {
 	WAREHOUSE_STAFF: "WarehouseStaff",
 } as const;
 
-export type Role = typeof ROLES[keyof typeof ROLES];
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 // Auth Configuration
 export const AUTH_CONFIG = {

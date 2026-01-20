@@ -4,7 +4,6 @@
  * Provides a unified keyboard shortcut system across the application.
  * Designed for power users and cashiers who need quick actions without mouse.
  * 
- * @author Tony Stark (The Futurist)
  */
 import { useEffect, useCallback, useRef } from "react";
 

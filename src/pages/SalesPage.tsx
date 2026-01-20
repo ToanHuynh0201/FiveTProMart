@@ -1005,22 +1005,27 @@ const SalesPage = () => {
 					<QuickActionsBar
 						itemCount={orderItems.length}
 						totalAmount={calculateTotal()}
-					onOpenBarcodeScanner={onBarcodeScannerOpen}
-					onFocusSearch={handleFocusSearch}
-					onPauseOrder={handlePauseOrder}
-					onClearCart={handleClearCart}
-					onShowShortcuts={onShortcutsHelpOpen}
-					isCartEmpty={orderItems.length === 0}
-					isOpen={isOpen}
-					onClose={onClose}
-					order={selectedOrder}
-				/>
+						onOpenBarcodeScanner={onBarcodeScannerOpen}
+						onFocusSearch={handleFocusSearch}
+						onPauseOrder={handlePauseOrder}
+						onClearCart={handleClearCart}
+						onShowShortcuts={onShortcutsHelpOpen}
+						isCartEmpty={orderItems.length === 0}
+					/>
+				)}
 
 				{/* Keyboard Shortcuts Help Modal */}
 				<KeyboardShortcutsModal
 					isOpen={isShortcutsHelpOpen}
 					onClose={onShortcutsHelpClose}
 					context="sales"
+				/>
+
+				{/* Order Detail Modal */}
+				<OrderDetailModal
+					isOpen={isOpen}
+					onClose={onClose}
+					order={selectedOrder}
 				/>
 
 				{/* Sale success notification */}

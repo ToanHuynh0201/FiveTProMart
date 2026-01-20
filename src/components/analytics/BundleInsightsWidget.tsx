@@ -32,7 +32,6 @@ export const BundleInsightsWidget: React.FC = () => {
 	const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
 	const fetchData = useCallback(async () => {
-const fetchData = useCallback(async () => {
 		setIsLoading(true);
 		try {
 			// First check data status

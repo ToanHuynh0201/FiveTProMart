@@ -1,16 +1,8 @@
 import apiService from "@/lib/api";
-import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
+import type { InventoryProduct, InventoryStats } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
-
-/**
- * Category type from API
- */
-interface CategoryApiResponse {
-	categoryId: string;
-	categoryName: string;
-}
 
 /**
  * Disposal request matching FRONTEND_API_REQUIREMENTS.md §4
@@ -39,6 +31,49 @@ interface DisposeResponse {
 	notes?: string;
 }
 
+/**
+ * Create product DTO matching product-api-spec.md §3.3
+ * Note: categoryId is string (matches CategoryDTO.categoryId)
+ */
+export interface CreateProductDTO {
+	productName: string;
+	categoryId: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
+}
+
+/**
+ * Category DTO matching category-api-spec.md
+ */
+export interface CategoryDTO {
+	categoryId: string;
+	categoryName: string;
+}
+
+/**
+ * Product DTO from API (product-api-spec.md §3.1)
+ * Note: API returns categoryId (UUID string), not categoryName
+ */
+interface ProductApiResponse {
+	productId: string;
+	productName: string;
+	categoryId: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
+	totalStockQuantity: number;
+}
+
+/**
+ * Create/Update category request
+ */
+export interface CreateCategoryDTO {
+	categoryName: string;
+}
+
+export interface UpdateCategoryDTO {
+	categoryName: string;
+}
+
 export const inventoryService = {
 	/**
 	 * Fetch products with server-side filtering and pagination
@@ -47,19 +82,83 @@ export const inventoryService = {
 		filters: InventoryFilters,
 	): Promise<ApiResponse<InventoryProduct>> {
 		const params = buildQueryParams(filters);
-		return apiService.get<ApiResponse<InventoryProduct>>(
+		const response = await apiService.get<ApiResponse<ProductApiResponse>>(
 			`/products?${params.toString()}`,
 		);
+		console.log(response);
+
+		// Fetch categories to create lookup map
+		const categoriesResponse = await this.getCategories();
+		const categoryMap = new Map<string, string>();
+		categoriesResponse.data.forEach((cat) => {
+			categoryMap.set(cat.categoryId, cat.categoryName);
+		});
+
+		// Map API response to frontend type with category names
+		const mappedData: InventoryProduct[] = response.data.map((product) => ({
+			id: product.productId,
+			code: product.productId, // Use productId as code
+			name: product.productName,
+			category: categoryMap.get(product.categoryId) || product.categoryId,
+			unit: product.unitOfMeasure,
+			price: product.sellingPrice,
+			costPrice: 0, // API doesn't return this
+			stock: product.totalStockQuantity,
+			minStock: 0, // API doesn't return this
+			maxStock: 0, // API doesn't return this
+			status: product.totalStockQuantity > 0 ? "active" : "out-of-stock" as const,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		}));
+
+		return {
+			...response,
+			data: mappedData,
+		};
 	},
 
 	async getProductById(id: string): Promise<InventoryProduct> {
-		return apiService.get<InventoryProduct>(`/products/${id}`);
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: ProductApiResponse;
+		}>(`/products/${id}`);
+
+		// Fetch category name using categoryId
+		const product = response.data;
+		let categoryName = product.categoryId;
+		try {
+			const categoryResponse = await this.getCategoryById(product.categoryId);
+			categoryName = categoryResponse.data.categoryName;
+		} catch (error) {
+			console.warn('Failed to fetch category name, using categoryId instead');
+		}
+
+		return {
+			id: product.productId,
+			code: product.productId,
+			name: product.productName,
+			category: categoryName,
+			unit: product.unitOfMeasure,
+			price: product.sellingPrice,
+			costPrice: 0,
+			stock: product.totalStockQuantity,
+			minStock: 0,
+			maxStock: 0,
+			status: product.totalStockQuantity > 0 ? "active" : "out-of-stock",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
 	},
 
 	async createProduct(
-		data: Omit<InventoryProduct, "id">,
-	): Promise<InventoryProduct> {
-		return apiService.post<InventoryProduct>("/products", data);
+		data: CreateProductDTO,
+	): Promise<{ success: boolean; message: string; data: any }> {
+		return apiService.post<{
+			success: boolean;
+			message: string;
+			data: any;
+		}>("/products", data);
 	},
 
 	async updateProduct(
@@ -74,25 +173,85 @@ export const inventoryService = {
 	},
 
 	// ===================================================================
-	// Categories - GET /api/product-categories (ProductCategoryAPI.md)
+	// Categories - category-api-spec.md
 	// ===================================================================
 	/**
-	 * Fetch all product categories
+	 * Get all categories - GET /api/product-categories
 	 */
-	async getCategories(): Promise<InventoryCategory[]> {
-		const response = await apiService.get<{
+	async getCategories(search?: string): Promise<{
+		success: boolean;
+		message: string;
+		data: CategoryDTO[];
+	}> {
+		const params = search ? `?search=${encodeURIComponent(search)}` : "";
+		return apiService.get<{
 			success: boolean;
 			message: string;
-			data: CategoryApiResponse[];
-		}>("/product-categories");
+			data: CategoryDTO[];
+		}>(`/product-categories${params}`);
+	},
 
-		// Map API response to frontend type
-		return response.data.map((cat) => ({
-			id: cat.categoryId,
-			name: cat.categoryName,
-			description: undefined,
-			productCount: 0, // API doesn't return this, would need separate query
-		}));
+	/**
+	 * Get category by ID - GET /api/product-categories/{id}
+	 */
+	async getCategoryById(id: string): Promise<{
+		success: boolean;
+		message: string;
+		data: CategoryDTO;
+	}> {
+		return apiService.get<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`);
+	},
+
+	/**
+	 * Create new category - POST /api/product-categories
+	 */
+	async createCategory(data: CreateCategoryDTO): Promise<{
+		success: boolean;
+		message: string;
+		data: CategoryDTO;
+	}> {
+		return apiService.post<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>("/product-categories", data);
+	},
+
+	/**
+	 * Update category - PUT /api/product-categories/{id}
+	 */
+	async updateCategory(
+		id: string,
+		data: UpdateCategoryDTO,
+	): Promise<{
+		success: boolean;
+		message: string;
+		data: CategoryDTO;
+	}> {
+		return apiService.put<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`, data);
+	},
+
+	/**
+	 * Delete category - DELETE /api/product-categories/{id}
+	 */
+	async deleteCategory(id: string): Promise<{
+		success: boolean;
+		message: string;
+		data: null;
+	}> {
+		return apiService.delete<{
+			success: boolean;
+			message: string;
+			data: null;
+		}>(`/product-categories/${id}`);
 	},
 
 	// ===================================================================

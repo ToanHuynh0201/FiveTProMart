@@ -55,6 +55,7 @@ export const ROUTES = {
 	SCHEDULE: "/schedule",
 	SALES: "/sales",
 	INVENTORY: "/inventory",
+	CATEGORIES: "/categories",
 	PURCHASE: "/purchase",
 	PROMOTIONS: "/promotions",
 	FINANCE: "/finance",

@@ -252,7 +252,19 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="gray.700"
 									fontWeight="500"
 									width="100px">
-									{product.code}
+									<Tooltip
+										label={product.code}
+										placement="top"
+										hasArrow>
+										<Text
+											overflow="hidden"
+											textOverflow="ellipsis"
+											whiteSpace="nowrap">
+											{product.code.length > 8
+												? `${product.code.substring(0, 8)}...`
+												: product.code}
+										</Text>
+									</Tooltip>
 								</Td>
 								<Td
 									fontSize="14px"

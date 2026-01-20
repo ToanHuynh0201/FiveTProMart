@@ -19,6 +19,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import CustomersPage from "./pages/CustomersPage";
 import SupplierPage from "./pages/SupplierPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import CategoryPage from "./pages/CategoryPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TokenRefreshProvider } from "./components/providers/TokenRefreshProvider";
 import { ErrorBoundary } from "./components/common";
@@ -57,6 +58,10 @@ function App() {
 					<Route
 						path={ROUTES.INVENTORY}
 						element={<InventoryPage />}
+					/>
+					<Route
+						path={ROUTES.CATEGORIES}
+						element={<CategoryPage />}
 					/>
 					<Route
 						path={ROUTES.PURCHASE}

@@ -28,6 +28,7 @@ import {
 	BatchListModal,
 	DisposalModal,
 	CriticalAlertsBanner,
+	AddProductModal,
 } from "@/components/inventory";
 import {
 	Pagination,
@@ -43,7 +44,10 @@ import type {
 	DisposalItem,
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
-import { inventoryService } from "@/services/inventoryService";
+import {
+	inventoryService,
+	type CreateProductDTO,
+} from "@/services/inventoryService";
 import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
@@ -85,6 +89,11 @@ const InventoryPage = () => {
 		onOpen: onDisposalModalOpen,
 		onClose: onDisposalModalClose,
 	} = useDisclosure();
+	const {
+		isOpen: isAddModalOpen,
+		onOpen: onAddModalOpen,
+		onClose: onAddModalClose,
+	} = useDisclosure();
 
 	// Delete confirmation dialog state
 	const [productToDelete, setProductToDelete] = useState<string | null>(null);
@@ -97,7 +106,13 @@ const InventoryPage = () => {
 
 	// Fetch function for API call
 	const fetchProducts = async (filters: InventoryFilters) => {
-		const response = await inventoryService.getProducts(filters);
+		// CRITICAL: Backend uses zero-based page indexing (page starts at 0)
+		// UI uses 1-based indexing for better UX
+		const apiFilters = {
+			...filters,
+			page: filters.page - 1, // Convert to 0-based
+		};
+		const response = await inventoryService.getProducts(apiFilters);
 		setProducts(response.data);
 		setTotalItems(response.pagination.totalItems);
 	};
@@ -113,7 +128,7 @@ const InventoryPage = () => {
 	} = useFilters<InventoryFilters>(
 		{
 			page: 1,
-			pageSize: ITEMS_PER_PAGE,
+			size: ITEMS_PER_PAGE,
 			searchQuery: "",
 			category: "all",
 			status: "all",
@@ -126,7 +141,7 @@ const InventoryPage = () => {
 	// usePagination for metadata only
 	const { currentPage, pageSize, pagination, goToPage } = usePagination({
 		initialPage: filters.page,
-		pageSize: filters.pageSize,
+		pageSize: filters.size,
 		initialTotal: totalItems,
 	});
 
@@ -142,7 +157,18 @@ const InventoryPage = () => {
 		const loadInitialData = async () => {
 			try {
 				// Load categories from API
-				const categoriesData = await inventoryService.getCategories();
+				const response = await inventoryService.getCategories();
+				// Map CategoryDTO to InventoryCategory
+
+				const categoriesData: InventoryCategory[] = response.data.map(
+					(cat) => ({
+						id: cat.categoryId,
+						name: cat.categoryName,
+						description: undefined,
+						productCount: 0,
+					}),
+				);
+
 				setCategories(categoriesData);
 			} catch (error) {
 				console.error("Error loading categories:", error);
@@ -218,6 +244,39 @@ const InventoryPage = () => {
 			await handleDeleteProduct(productToDelete);
 			setProductToDelete(null);
 			onDeleteAlertClose();
+		}
+	};
+
+	const handleAddProduct = async (productData: CreateProductDTO) => {
+		try {
+			await inventoryService.createProduct(productData);
+
+			// Refresh data after adding
+			await fetchProducts(filters);
+
+			// Reload stats after adding
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error reloading stats:", error);
+			}
+
+			toast({
+				title: "Thành công",
+				description: "Đã thêm sản phẩm mới",
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error creating product:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể thêm sản phẩm",
+				status: "error",
+				duration: 3000,
+			});
+			throw error;
 		}
 	};
 
@@ -351,28 +410,48 @@ const InventoryPage = () => {
 						color="brand.600">
 						Quản lý hàng hóa
 					</Text>
-					<Button
-						leftIcon={<BsTrash />}
-						colorScheme="red"
-						variant="outline"
-						onClick={handleDisposal}
-						size="md"
-						fontWeight="600">
-						Hủy hàng
-					</Button>
+					<Flex gap={3}>
+						<Button
+							bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
+							color="white"
+							onClick={onAddModalOpen}
+							size="md"
+							fontWeight="600"
+							_hover={{
+								bgGradient:
+									"linear(135deg, brand.600 0%, brand.500 100%)",
+							}}>
+							+ Thêm hàng hóa
+						</Button>
+						<Button
+							leftIcon={<BsTrash />}
+							colorScheme="red"
+							variant="outline"
+							onClick={handleDisposal}
+							size="md"
+							fontWeight="600">
+							Hủy hàng
+						</Button>
+					</Flex>
 				</Flex>
 
 				{/* Critical Alerts Banner - Shows when there are urgent issues */}
-				{stats && (stats.expiredBatches > 0 || stats.outOfStockProducts > 0 || stats.expiringSoonBatches > 0 || stats.lowStockProducts > 0) && (
-					<CriticalAlertsBanner
-						expiredBatches={stats.expiredBatches}
-						expiringSoonBatches={stats.expiringSoonBatches}
-						outOfStockProducts={stats.outOfStockProducts}
-						lowStockProducts={stats.lowStockProducts}
-						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
-						onNavigateToPurchase={() => navigate("/purchase")}
-					/>
-				)}
+				{stats &&
+					(stats.expiredBatches > 0 ||
+						stats.outOfStockProducts > 0 ||
+						stats.expiringSoonBatches > 0 ||
+						stats.lowStockProducts > 0) && (
+						<CriticalAlertsBanner
+							expiredBatches={stats.expiredBatches}
+							expiringSoonBatches={stats.expiringSoonBatches}
+							outOfStockProducts={stats.outOfStockProducts}
+							lowStockProducts={stats.lowStockProducts}
+							onFilterByIssue={(issue) =>
+								handleFilterChange("stockLevel", issue)
+							}
+							onNavigateToPurchase={() => navigate("/purchase")}
+						/>
+					)}
 
 				{/* Stats Cards */}
 				{stats && (
@@ -550,6 +629,14 @@ const InventoryPage = () => {
 					</Flex>
 				)}
 			</Box>
+
+			{/* Add Product Modal */}
+			<AddProductModal
+				isOpen={isAddModalOpen}
+				onClose={onAddModalClose}
+				onAdd={handleAddProduct}
+				categories={categories}
+			/>
 
 			{/* Edit Product Modal */}
 			<EditProductModal

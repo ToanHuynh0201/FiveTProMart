@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { CreateExpenseRequest } from "@/types/expense";
+import { useState, useEffect } from "react";
+import type { Expense, UpdateExpenseRequest } from "@/types/expense";
 import { EXPENSE_CATEGORIES } from "@/constants";
 import {
 	Modal,
@@ -21,22 +21,24 @@ import {
 } from "@chakra-ui/react";
 import { expenseService } from "@/services/expenseService";
 
-interface AddExpenseModalProps {
+interface EditExpenseModalProps {
 	isOpen: boolean;
 	onClose: () => void;
+	expense: Expense | null;
 	onSuccess?: () => void;
 }
 
-export const AddExpenseModal = ({
+export const EditExpenseModal = ({
 	isOpen,
 	onClose,
+	expense,
 	onSuccess,
-}: AddExpenseModalProps) => {
+}: EditExpenseModalProps) => {
 	const toast = useToast();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	const [formData, setFormData] = useState<CreateExpenseRequest>({
+	const [formData, setFormData] = useState<UpdateExpenseRequest>({
 		category: "",
 		description: "",
 		amount: 0,
@@ -44,18 +46,31 @@ export const AddExpenseModal = ({
 		image: "",
 	});
 
+	useEffect(() => {
+		if (isOpen && expense) {
+			setFormData({
+				category: expense.category,
+				description: expense.description,
+				amount: expense.amount,
+				payDate: expense.payDate,
+				image: expense.image || "",
+			});
+			setErrors({});
+		}
+	}, [isOpen, expense]);
+
 	const validateForm = (): boolean => {
 		const newErrors: Record<string, string> = {};
 
-		if (!formData.category.trim()) {
+		if (!formData.category?.trim()) {
 			newErrors.category = "Danh mục là bắt buộc";
 		}
 
-		if (!formData.description.trim()) {
+		if (!formData.description?.trim()) {
 			newErrors.description = "Mô tả là bắt buộc";
 		}
 
-		if (formData.amount <= 0) {
+		if (!formData.amount || formData.amount <= 0) {
 			newErrors.amount = "Số tiền phải lớn hơn 0";
 		}
 
@@ -111,7 +126,7 @@ export const AddExpenseModal = ({
 	};
 
 	const handleSubmit = async () => {
-		if (!validateForm()) return;
+		if (!validateForm() || !expense) return;
 
 		setIsSubmitting(true);
 		try {
@@ -119,22 +134,16 @@ export const AddExpenseModal = ({
 			const dataToSend = Object.fromEntries(
 				Object.entries(formData).filter(([, value]) => value !== "")
 			);
-			await expenseService.createExpense(dataToSend as CreateExpenseRequest);
+			await expenseService.updateExpense(expense.id, dataToSend as UpdateExpenseRequest);
 
 			toast({
 				title: "Thành công",
-				description: "Chi phí đã được tạo",
+				description: "Chi phí đã được cập nhật",
 				status: "success",
 				duration: 3,
 				isClosable: true,
 			});
 
-			setFormData({
-				category: "",
-				description: "",
-				amount: 0,
-				payDate: "",
-			});
 			onClose();
 			onSuccess?.();
 		} catch (error) {
@@ -143,7 +152,7 @@ export const AddExpenseModal = ({
 				description:
 					error instanceof Error
 						? error.message
-						: "Không thể tạo chi phí",
+						: "Không thể cập nhật chi phí",
 				status: "error",
 				duration: 3,
 				isClosable: true,
@@ -167,7 +176,7 @@ export const AddExpenseModal = ({
 		<Modal isOpen={isOpen} onClose={onClose} size="md">
 			<ModalOverlay />
 			<ModalContent>
-				<ModalHeader>Thêm chi phí mới</ModalHeader>
+				<ModalHeader>Chỉnh sửa chi phí</ModalHeader>
 				<ModalBody>
 					<VStack spacing={4}>
 						<FormControl isInvalid={!!errors.category}>
@@ -175,7 +184,7 @@ export const AddExpenseModal = ({
 							<Select
 								name="category"
 								placeholder="Chọn danh mục"
-								value={formData.category}
+								value={formData.category || ""}
 								onChange={handleInputChange}
 							>
 								{EXPENSE_CATEGORIES.map((cat) => (
@@ -194,7 +203,7 @@ export const AddExpenseModal = ({
 							<Textarea
 								name="description"
 								placeholder="Chi tiết về chi phí"
-								value={formData.description}
+								value={formData.description || ""}
 								onChange={handleInputChange}
 								rows={3}
 							/>
@@ -236,7 +245,7 @@ export const AddExpenseModal = ({
 							<Input
 								name="image"
 								placeholder="Tên tệp hoặc URL hình ảnh"
-								value={formData.image}
+								value={formData.image || ""}
 								onChange={handleInputChange}
 							/>
 						</FormControl>
@@ -252,7 +261,7 @@ export const AddExpenseModal = ({
 							onClick={handleSubmit}
 							isLoading={isSubmitting}
 						>
-							Tạo
+							Cập nhật
 						</Button>
 					</HStack>
 				</ModalFooter>

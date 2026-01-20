@@ -1,29 +1,36 @@
 export interface Customer {
-	id: string;
-	name: string;
-	phone: string;
-	gender: "Nam" | "Nữ" | "Khác";
+	customerId: string;
+	fullName: string;
+	gender: "Male" | "Female" | "Other";
+	dateOfBirth: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
+	phoneNumber: string;
+	registrationDate: string; // Format: DD-MM-YYYY (display from API)
 	loyaltyPoints: number;
-	// Extended details
+}
+
+export interface CustomerDetail extends Customer {
 	email?: string;
 	address?: string;
-	dateOfBirth?: string;
-	registeredDate?: string;
-	totalSpent?: number;
+	status?: "active" | "inactive";
+	registeredDate?: string; // Display format
 	purchaseCount?: number;
 	lastPurchaseDate?: string;
-	status?: "active" | "inactive";
+	totalSpent?: number;
 }
 
-export interface CustomerDetail extends Customer {}
-
-export interface UpdateCustomerData {
-	name?: string;
-	phone?: string;
-	email?: string;
-	address?: string;
-	gender?: "Nam" | "Nữ" | "Khác";
-	loyaltyPoints?: number;
-	dateOfBirth?: string;
-	status?: "active" | "inactive";
+export interface CreateCustomerRequest {
+	fullName: string;
+	gender: "Male" | "Female" | "Other";
+	dateOfBirth: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
+	phoneNumber: string;
 }
+
+export interface UpdateCustomerRequest {
+	fullName?: string;
+	gender?: "Male" | "Female" | "Other";
+	dateOfBirth?: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
+	phoneNumber?: string;
+}
+
+// Legacy support - kept for backward compatibility
+export interface UpdateCustomerData extends UpdateCustomerRequest {}

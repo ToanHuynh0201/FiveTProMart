@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { customerService } from "../../services";
 import type { CustomerDetail } from "@/types";
+import { getCustomerName, getCustomerPhone, getCustomerGender } from "@/utils";
 import {
 	FiPhone,
 	FiMail,
@@ -179,7 +180,7 @@ const CustomerDetailModal = ({
 									fontWeight="700"
 									color="brand.500"
 									flexShrink={0}>
-									{customerDetail.name.charAt(0)}
+									{getCustomerName(customerDetail).charAt(0)}
 								</Box>
 								{/* Basic Info */}
 								<VStack
@@ -190,16 +191,16 @@ const CustomerDetailModal = ({
 										fontSize="24px"
 										fontWeight="900"
 										color="brand.600">
-										{customerDetail.name}
+										{getCustomerName(customerDetail)}
 									</Text>
 									<Flex
 										gap={2}
 										align="center">
 										<Badge
 											colorScheme={
-												customerDetail.gender === "Nam"
+												getCustomerGender(customerDetail) === "Nam"
 													? "blue"
-													: customerDetail.gender ===
+													: getCustomerGender(customerDetail) ===
 													  "Nữ"
 													? "pink"
 													: "gray"
@@ -208,7 +209,7 @@ const CustomerDetailModal = ({
 											borderRadius="full"
 											px={3}
 											py={1}>
-											{customerDetail.gender}
+											{getCustomerGender(customerDetail)}
 										</Badge>
 										{customerDetail.status && (
 											<Badge
@@ -296,18 +297,22 @@ const CustomerDetailModal = ({
 										<InfoRow
 											icon={FiPhone}
 											label="Số điện thoại"
-											value={customerDetail.phone}
+											value={getCustomerPhone(customerDetail)}
 										/>
-										<InfoRow
-											icon={FiMail}
-											label="Email"
-											value={customerDetail.email}
-										/>
-										<InfoRow
-											icon={FiMapPin}
-											label="Địa chỉ"
-											value={customerDetail.address}
-										/>
+										{customerDetail.email && (
+											<InfoRow
+												icon={FiMail}
+												label="Email"
+												value={customerDetail.email}
+											/>
+										)}
+										{customerDetail.address && (
+											<InfoRow
+												icon={FiMapPin}
+												label="Địa chỉ"
+												value={customerDetail.address}
+											/>
+										)}
 									</VStack>
 								</GridItem>
 
@@ -327,7 +332,7 @@ const CustomerDetailModal = ({
 											icon={FiCalendar}
 											label="Ngày đăng ký"
 											value={
-												customerDetail.registeredDate
+												customerDetail.registrationDate || customerDetail.registeredDate
 											}
 										/>
 										<InfoRow
@@ -335,11 +340,13 @@ const CustomerDetailModal = ({
 											label="Ngày sinh"
 											value={customerDetail.dateOfBirth}
 										/>
-										<InfoRow
-											icon={FiShoppingBag}
-											label="Số lần mua hàng"
-											value={customerDetail.purchaseCount}
-										/>
+										{customerDetail.purchaseCount !== undefined && (
+											<InfoRow
+												icon={FiShoppingBag}
+												label="Số lần mua hàng"
+												value={customerDetail.purchaseCount}
+											/>
+										)}
 									</VStack>
 								</GridItem>
 
@@ -348,28 +355,32 @@ const CustomerDetailModal = ({
 									<Grid
 										templateColumns="repeat(2, 1fr)"
 										gap={2}>
-										<GridItem>
-											<InfoRow
-												icon={FiCalendar}
-												label="Lần mua gần nhất"
-												value={
-													customerDetail.lastPurchaseDate
-												}
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoRow
-												icon={FiDollarSign}
-												label="Tổng chi tiêu"
-												value={
-													customerDetail.totalSpent
-														? `${customerDetail.totalSpent.toLocaleString(
-																"vi-VN",
-														  )} VNĐ`
-														: undefined
-												}
-											/>
-										</GridItem>
+										{customerDetail.lastPurchaseDate && (
+											<GridItem>
+												<InfoRow
+													icon={FiCalendar}
+													label="Lần mua gần nhất"
+													value={
+														customerDetail.lastPurchaseDate
+													}
+												/>
+											</GridItem>
+										)}
+										{customerDetail.totalSpent !== undefined && (
+											<GridItem>
+												<InfoRow
+													icon={FiDollarSign}
+													label="Tổng chi tiêu"
+													value={
+														customerDetail.totalSpent
+															? `${customerDetail.totalSpent.toLocaleString(
+																	"vi-VN",
+															  )} VNĐ`
+															: undefined
+													}
+												/>
+											</GridItem>
+										)}
 									</Grid>
 								</GridItem>
 							</Grid>

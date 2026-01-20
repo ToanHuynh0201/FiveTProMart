@@ -23,3 +23,4 @@ export * from "./promotion";
 export * from "./reports";
 export * from "./customer";
 export * from "./supplier";
+export * from "./expense";

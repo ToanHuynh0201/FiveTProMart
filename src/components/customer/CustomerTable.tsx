@@ -24,6 +24,7 @@ import {
 import { ViewIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import type { Customer } from "@/types";
 import { useState } from "react";
+import { getCustomerId, getCustomerName, getCustomerPhone, getCustomerGender } from "@/utils";
 
 interface CustomerTableProps {
 	customerList: Customer[];
@@ -55,7 +56,7 @@ const CustomerTable = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(selectedCustomer.id);
+			await onDelete(getCustomerId(selectedCustomer));
 			onClose();
 			toast({
 				title: "Thành công",
@@ -163,7 +164,7 @@ const CustomerTable = ({
 							) : (
 								customerList.map((customer, index) => (
 									<Tr
-										key={customer.id}
+									key={getCustomerId(customer)}
 										_hover={{ bg: "gray.50" }}
 										transition="background 0.2s">
 										<Td
@@ -180,37 +181,37 @@ const CustomerTable = ({
 											cursor="pointer"
 											py={2}
 											onClick={() =>
-												onViewDetails?.(customer.id)
-											}
-											_hover={{
-												textDecoration: "underline",
-											}}>
-											{customer.name}
+											onViewDetails?.(getCustomerId(customer))
+										}
+										_hover={{
+											textDecoration: "underline",
+										}}>
+										{getCustomerName(customer)}
 										</Td>
 										<Td py={2}>
 											<Text
 												fontSize="14px"
 												fontWeight="500"
 												color="gray.800">
-												{customer.phone}
+											{getCustomerPhone(customer)}
 											</Text>
 										</Td>
 										<Td py={2}>
 											<Badge
 												colorScheme={
-													customer.gender === "Nam"
-														? "blue"
-														: customer.gender ===
-														  "Nữ"
-														? "pink"
-														: "gray"
-												}
-												px={3}
-												py={1}
-												borderRadius="full"
-												fontSize="12px"
-												fontWeight="600">
-												{customer.gender}
+												getCustomerGender(customer) === "Nam"
+													? "blue"
+													: getCustomerGender(customer) ===
+													  "Nữ"
+													? "pink"
+													: "gray"
+											}
+											px={3}
+											py={1}
+											borderRadius="full"
+											fontSize="12px"
+											fontWeight="600">
+											{getCustomerGender(customer)}
 											</Badge>
 										</Td>
 										<Td
@@ -237,7 +238,7 @@ const CustomerTable = ({
 														colorScheme="blue"
 														onClick={() =>
 															onViewDetails?.(
-																customer.id,
+																getCustomerId(customer),
 															)
 														}
 													/>
@@ -252,7 +253,7 @@ const CustomerTable = ({
 															variant="ghost"
 															colorScheme="orange"
 															onClick={() =>
-																onEdit(customer.id)
+																onEdit(getCustomerId(customer))
 															}
 														/>
 													</Tooltip>
@@ -308,7 +309,7 @@ const CustomerTable = ({
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa khách hàng{" "}
-							<strong>{selectedCustomer?.name}</strong>? Hành động
+							<strong>{selectedCustomer && getCustomerName(selectedCustomer)}</strong>? Hành động
 							này không thể hoàn tác.
 						</Text>
 					</ModalBody>

@@ -119,6 +119,8 @@ const PurchasePage = () => {
 				order: debouncedFilters.order,
 			});
 
+			console.log(result);
+
 			if (result.success) {
 				setPurchases(result.data || []);
 				setTotal(result.pagination?.totalItems || 0);

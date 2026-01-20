@@ -662,7 +662,6 @@ const InventoryPage = () => {
 				isOpen={isBatchModalOpen}
 				onClose={onBatchModalClose}
 				product={selectedProduct}
-				onUpdateBatch={handleUpdateBatch}
 			/>
 
 			{/* Disposal Modal */}

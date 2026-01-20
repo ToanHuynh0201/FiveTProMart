@@ -42,15 +42,7 @@ interface AddPromotionModalProps {
 	onAdd: (promotion: CreatePromotionRequest) => Promise<void>;
 }
 
-// Helper to format date to dd-MM-yyyy
-const formatDateToDDMMYYYY = (dateStr: string): string => {
-	if (!dateStr) return "";
-	const date = new Date(dateStr);
-	const day = String(date.getDate()).padStart(2, "0");
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const year = date.getFullYear();
-	return `${day}-${month}-${year}`;
-};
+// HTML date input already returns yyyy-MM-dd format which is what backend expects
 
 export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 	isOpen,
@@ -197,8 +189,8 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 					products: productIds,
 					promotionType: "Discount",
 					discountPercent: formData.discountPercent,
-					startDate: formatDateToDDMMYYYY(formData.startDate),
-					endDate: formatDateToDDMMYYYY(formData.endDate),
+					startDate: formData.startDate, // yyyy-MM-dd format from HTML input
+					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
 				};
 			} else {
 				requestData = {
@@ -208,8 +200,8 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 					promotionType: "Buy X Get Y",
 					buyQuantity: formData.buyQuantity,
 					getQuantity: formData.getQuantity,
-					startDate: formatDateToDDMMYYYY(formData.startDate),
-					endDate: formatDateToDDMMYYYY(formData.endDate),
+					startDate: formData.startDate, // yyyy-MM-dd format from HTML input
+					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
 				};
 			}
 

@@ -222,21 +222,39 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 		setIsSubmitting(true);
 
 		try {
+			// Helper function to convert date to backend format (dd-MM-yyyy)
+			const toBackendDateFormat = (date: Date | string): string => {
+				const d = typeof date === 'string' ? new Date(date) : date;
+				const day = String(d.getDate()).padStart(2, '0');
+				const month = String(d.getMonth() + 1).padStart(2, '0');
+				const year = d.getFullYear();
+				return `${day}-${month}-${year}`;
+			};
+
+			// Convert HTML date input (yyyy-MM-dd) to backend format (dd-MM-yyyy)
+			const convertInputDate = (dateString: string): string => {
+				if (!dateString) return '';
+				const [year, month, day] = dateString.split('-');
+				return `${day}-${month}-${year}`;
+			};
+
 			const requestData: ConfirmReceiptRequest = {
 				staffIdChecked: staffId,
-				checkDate: new Date().toISOString(),
+				checkDate: toBackendDateFormat(new Date()), // Convert to dd-MM-yyyy
 				notes: notes || undefined,
 				invoice: {
 					invoiceNumber: invoiceData.invoiceNumber,
-					invoiceDate: invoiceData.invoiceDate,
+					invoiceDate: convertInputDate(invoiceData.invoiceDate), // Convert yyyy-MM-dd to dd-MM-yyyy
 					images: invoiceData.images,
 				},
 				actualItems: actualItems.map((item) => ({
 					productId: item.productId,
 					quantityReceived: item.quantityReceived,
 					importPrice: item.importPrice,
-					manufactureDate: item.manufactureDate || new Date().toISOString(),
-					expirationDate: item.expirationDate,
+					manufactureDate: item.manufactureDate
+						? convertInputDate(item.manufactureDate)
+						: toBackendDateFormat(new Date()), // Convert to dd-MM-yyyy
+					expirationDate: convertInputDate(item.expirationDate), // Convert yyyy-MM-dd to dd-MM-yyyy
 					notes: item.notes || undefined,
 				})),
 			};

@@ -68,16 +68,6 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 		}).format(amount);
 	};
 
-	const formatDate = (dateString?: string) => {
-		if (!dateString) return "-";
-		try {
-			const date = new Date(dateString);
-			return date.toLocaleDateString("vi-VN");
-		} catch {
-			return dateString;
-		}
-	};
-
 	return (
 		<Box
 			key={tableKey}
@@ -110,13 +100,6 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 								color="gray.700"
 								textTransform="none">
 								Nhà cung cấp
-							</Th>
-							<Th
-								fontSize="13px"
-								fontWeight="700"
-								color="gray.700"
-								textTransform="none">
-								Người tạo
 							</Th>
 							<Th
 								fontSize="13px"
@@ -182,7 +165,9 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 										fontWeight="600"
 										color="brand.500"
 										cursor="pointer"
-										onClick={() => onViewDetail(purchase.id)}
+										onClick={() =>
+											onViewDetail(purchase.id)
+										}
 										_hover={{
 											textDecoration: "underline",
 										}}>
@@ -196,13 +181,6 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 											{purchase.supplierName}
 										</Text>
 									</Td>
-									<Td>
-										<Text
-											fontSize="14px"
-											color="gray.600">
-											{purchase.staffNameCreated}
-										</Text>
-									</Td>
 									<Td
 										isNumeric
 										fontSize="14px"
@@ -214,12 +192,12 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 									<Td
 										fontSize="14px"
 										color="gray.600">
-										{formatDate(purchase.purchaseDate)}
+										{purchase.purchaseDate}
 									</Td>
 									<Td
 										fontSize="14px"
 										color="gray.600">
-										{formatDate(purchase.checkDate)}
+										{purchase.checkDate}
 									</Td>
 									<Td>
 										<Flex
@@ -233,7 +211,9 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 														<Button
 															size="sm"
 															colorScheme="green"
-															leftIcon={<CheckIcon />}
+															leftIcon={
+																<CheckIcon />
+															}
 															onClick={() =>
 																onConfirmReceipt(
 																	purchase.id,
@@ -255,7 +235,9 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 														/>
 														<MenuList>
 															<MenuItem
-																icon={<ViewIcon />}
+																icon={
+																	<ViewIcon />
+																}
 																onClick={() =>
 																	onViewDetail(
 																		purchase.id,
@@ -264,7 +246,9 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 																Xem chi tiết
 															</MenuItem>
 															<MenuItem
-																icon={<CloseIcon />}
+																icon={
+																	<CloseIcon />
+																}
 																color="red.500"
 																onClick={() =>
 																	onCancelOrder(
@@ -279,7 +263,8 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 											)}
 
 											{/* Completed status actions */}
-											{purchase.status === "Completed" && (
+											{purchase.status ===
+												"Completed" && (
 												<>
 													<Tooltip label="Xem chi tiết">
 														<IconButton
@@ -313,7 +298,8 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 											)}
 
 											{/* Cancelled status actions */}
-											{purchase.status === "Cancelled" && (
+											{purchase.status ===
+												"Cancelled" && (
 												<Tooltip label="Xem chi tiết">
 													<IconButton
 														aria-label="View detail"

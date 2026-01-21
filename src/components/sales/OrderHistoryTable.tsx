@@ -8,10 +8,10 @@ import {
 	Badge,
 	Button,
 	Box,
-	Text,
 } from "@chakra-ui/react";
 import type { SalesOrder } from "@/types/sales";
 import { formatDate, formatTime } from "@/utils/date";
+import { EmptyState } from "../common";
 
 interface OrderHistoryTableProps {
 	orders: SalesOrder[];
@@ -52,17 +52,7 @@ const OrderHistoryTable = ({
 	};
 
 	if (orders.length === 0) {
-		return (
-			<Box
-				textAlign="center"
-				py={12}>
-				<Text
-					color="gray.500"
-					fontSize="lg">
-					Chưa có đơn hàng nào
-				</Text>
-			</Box>
-		);
+		return <EmptyState variant="no-orders" size="md" />;
 	}
 
 	return (

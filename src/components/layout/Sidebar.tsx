@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Flex, VStack, IconButton, Tooltip } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
@@ -10,25 +10,14 @@ import { UpcomingShifts } from "./UpcomingShifts";
 import { navItems } from "./sidebarConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { useInventoryAlerts } from "@/hooks";
+import { useSidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "@/contexts/SidebarContext";
 import type { NavItem } from "@/types/layout";
-
-const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
 function Sidebar() {
 	const location = useLocation();
 	const { user, logout } = useAuth();
 	const { criticalCount, warningCount } = useInventoryAlerts();
-	const [isCollapsed, setIsCollapsed] = useState(() => {
-		const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-		return saved ? JSON.parse(saved) : false;
-	});
-
-	useEffect(() => {
-		localStorage.setItem(
-			SIDEBAR_COLLAPSED_KEY,
-			JSON.stringify(isCollapsed),
-		);
-	}, [isCollapsed]);
+	const { isCollapsed, toggleSidebar } = useSidebar();
 
 	const isActivePath = (path: string) => location.pathname === path;
 
@@ -56,7 +45,7 @@ function Sidebar() {
 	return (
 		<Flex
 			direction="column"
-			w={isCollapsed ? "80px" : "254px"}
+			w={isCollapsed ? `${SIDEBAR_WIDTH_COLLAPSED}px` : `${SIDEBAR_WIDTH_EXPANDED}px`}
 			h="100vh"
 			bg="brand.500"
 			position="relative"
@@ -116,7 +105,7 @@ function Sidebar() {
 							bg: "rgba(255, 255, 255, 0.2)",
 						}}
 						transition="all 0.2s ease"
-						onClick={() => setIsCollapsed(!isCollapsed)}
+						onClick={toggleSidebar}
 					/>
 				</Tooltip>
 			</Flex>

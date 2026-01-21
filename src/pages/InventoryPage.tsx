@@ -14,6 +14,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogContent,
 	AlertDialogOverlay,
+	Tag,
+	TagLabel,
+	TagCloseButton,
+	HStack,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsTrash } from "react-icons/bs";
@@ -27,7 +31,6 @@ import {
 	ProductDetailModal,
 	BatchListModal,
 	DisposalModal,
-	CriticalAlertsBanner,
 } from "@/components/inventory";
 import {
 	Pagination,
@@ -288,6 +291,17 @@ const InventoryPage = () => {
 		}
 	};
 
+	// Get filter label for display
+	const getStockLevelLabel = (level: string) => {
+		const labels: Record<string, string> = {
+			"low": "Sắp hết hàng",
+			"out": "Hết hàng",
+			"expiring-soon": "Sắp hết hạn",
+			"expired": "Đã hết hạn",
+		};
+		return labels[level] || level;
+	};
+
 	// Stats card click handlers
 	const handleStatClick = (stockLevel: string) => {
 		if (filters.stockLevel === stockLevel) {
@@ -369,19 +383,7 @@ const InventoryPage = () => {
 					</Button>
 				</Flex>
 
-				{/* Critical Alerts Banner - Shows when there are urgent issues */}
-				{stats && (stats.expiredCount > 0 || stats.outOfStockCount > 0 || stats.expiringSoonCount > 0 || stats.lowStockCount > 0) && (
-					<CriticalAlertsBanner
-						expiredBatches={stats.expiredCount}
-						expiringSoonBatches={stats.expiringSoonCount}
-						outOfStockProducts={stats.outOfStockCount}
-						lowStockProducts={stats.lowStockCount}
-						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
-						onNavigateToPurchase={() => navigate("/purchase")}
-					/>
-				)}
-
-				{/* Stats Cards */}
+				{/* Stats Cards - Clickable to filter by issue type */}
 				{stats && (
 					<SimpleGrid
 						columns={{ base: 1, sm: 2, lg: 4 }}
@@ -488,7 +490,7 @@ const InventoryPage = () => {
 							<Flex
 								justify="space-between"
 								align="center"
-								mb={4}
+								mb={2}
 								px={2}
 								minH="40px">
 								<Text
@@ -513,8 +515,24 @@ const InventoryPage = () => {
 								)}
 							</Flex>
 
+							{/* Active Filter Chips */}
+							{filters.stockLevel !== "all" && (
+								<HStack spacing={2} mb={3} px={2}>
+									<Tag
+										size="md"
+										borderRadius="full"
+										variant="solid"
+										colorScheme={filters.stockLevel === "expired" || filters.stockLevel === "out" ? "red" : "orange"}
+									>
+										<TagLabel>{getStockLevelLabel(filters.stockLevel)}</TagLabel>
+										<TagCloseButton onClick={() => handleFilterChange("stockLevel", "all")} />
+									</Tag>
+								</HStack>
+							)}
+
 							<ProductTable
 								products={products}
+								categories={categories}
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}

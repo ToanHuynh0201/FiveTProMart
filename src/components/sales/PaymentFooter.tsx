@@ -15,6 +15,7 @@ import {
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import type { PaymentMethod, DiscountRequest } from "@/types/sales";
 import { customerService } from "@/services/customerService";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 interface Customer {
 	id: string;
@@ -54,6 +55,9 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	discount,
 	onDiscountChange,
 }) => {
+	// Get sidebar width for proper positioning
+	const { sidebarWidth } = useSidebar();
+
 	// Calculate final total after discount
 	const discountAmount = discount?.type === "LOYALTY_POINTS" 
 		? (discount.pointsToUse ?? 0) 
@@ -186,14 +190,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		<Box
 			position="fixed"
 			bottom={0}
-			left={{ base: 0, md: "254px" }}
+			left={{ base: 0, md: `${sidebarWidth}px` }}
 			right={0}
 			bg="white"
 			boxShadow="0 -2px 16px rgba(0, 0, 0, 0.08)"
 			borderTop="1px solid"
 			borderColor="gray.200"
 			zIndex={10}
-			backdropFilter="blur(8px)">
+			backdropFilter="blur(8px)"
+			transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)">
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
 				py={{ base: 4, md: 5 }}>
@@ -331,7 +336,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									total === 0 ||
 									(paymentMethod === "cash" && !hasEnoughCash)
 								}>
-								In hóa đơn (F)
+								In hóa đơn (P)
 							</Button>
 						</Grid>
 
@@ -682,7 +687,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									boxShadow:
 										"0 6px 16px rgba(22, 31, 112, 0.35)",
 								}}>
-								In hóa đơn (F)
+								In hóa đơn (P)
 							</Button>
 						</VStack>
 					</VStack>
@@ -871,7 +876,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								_active={{ transform: "scale(0.98)" }}>
 								<VStack spacing={0.5}>
 									<Text fontSize="xl">🖨️</Text>
-									<Text fontSize="xs">In hóa đơn (F)</Text>
+									<Text fontSize="xs">In hóa đơn (P)</Text>
 								</VStack>
 							</Button>
 						</Grid>

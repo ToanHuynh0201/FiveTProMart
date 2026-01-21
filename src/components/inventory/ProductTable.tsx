@@ -18,11 +18,12 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import type { InventoryProduct } from "../../types/inventory";
+import type { InventoryProduct, InventoryCategory } from "../../types/inventory";
 import { EmptyState } from "../common";
 
 interface ProductTableProps {
 	products: InventoryProduct[];
+	categories?: InventoryCategory[];
 	onViewDetail: (id: string) => void;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
@@ -30,12 +31,20 @@ interface ProductTableProps {
 
 export const ProductTable: React.FC<ProductTableProps> = ({
 	products,
+	categories = [],
 	onViewDetail,
 	onEdit,
 	onDelete,
 }) => {
 	// Create a key based on products to trigger animation on filter changes
 	const tableKey = products.map((p) => p.productId).join("-");
+
+	// Helper to get category name from id
+	const getCategoryName = (categoryId: string): string => {
+		const category = categories.find((c) => c.categoryId === categoryId);
+		return category?.categoryName || categoryId;
+	};
+
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
 			active: { color: "green", label: "Đang kinh doanh" },
@@ -214,7 +223,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									fontSize="14px"
 									color="gray.600"
 									width="120px">
-									{product.categoryId}
+									{getCategoryName(product.categoryId)}
 								</Td>
 								<Td
 									fontSize="14px"

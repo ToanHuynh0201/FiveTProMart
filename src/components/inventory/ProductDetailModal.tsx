@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
 	Modal,
 	ModalOverlay,
@@ -16,6 +16,13 @@ import {
 	Flex,
 	useToast,
 	Spinner,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
+	useDisclosure,
 } from "@chakra-ui/react";
 import { FiPackage } from "react-icons/fi";
 import type { InventoryProduct } from "../../types/inventory";
@@ -42,6 +49,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	const [product, setProduct] = useState<InventoryProduct | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	
+	// Delete confirmation dialog
+	const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+	const cancelRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (isOpen && productId) {
@@ -73,14 +84,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	const handleDelete = async () => {
 		if (!product) return;
 
-		if (
-			!window.confirm(
-				`Bạn có chắc chắn muốn xóa sản phẩm "${product.productName}"?`,
-			)
-		) {
-			return;
-		}
-
 		setIsDeleting(true);
 		try {
 			await onDelete(product.productId);
@@ -90,6 +93,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 				status: "success",
 				duration: 3000,
 			});
+			onDeleteClose();
 			onClose();
 		} catch (error) {
 			toast({
@@ -157,6 +161,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	);
 
 	return (
+		<>
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
@@ -300,9 +305,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 					<Button
 						variant="ghost"
 						colorScheme="red"
-						onClick={handleDelete}
-						isLoading={isDeleting}
-						isDisabled={isLoading}>
+						onClick={onDeleteOpen}
+						isDisabled={isLoading || !product}>
 						Xóa
 					</Button>
 					{onManageBatches && (
@@ -335,5 +339,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 				</ModalFooter>
 			</ModalContent>
 		</Modal>
+
+		{/* Delete Confirmation Dialog */}
+		<AlertDialog
+			isOpen={isDeleteOpen}
+			leastDestructiveRef={cancelRef}
+			onClose={onDeleteClose}
+			isCentered>
+			<AlertDialogOverlay>
+				<AlertDialogContent>
+					<AlertDialogHeader fontSize="lg" fontWeight="bold">
+						Xóa sản phẩm
+					</AlertDialogHeader>
+
+					<AlertDialogBody>
+						Bạn có chắc chắn muốn xóa sản phẩm "{product?.productName}"?
+						Hành động này không thể hoàn tác.
+					</AlertDialogBody>
+
+					<AlertDialogFooter>
+						<Button ref={cancelRef} onClick={onDeleteClose}>
+							Hủy
+						</Button>
+						<Button
+							colorScheme="red"
+							onClick={handleDelete}
+							isLoading={isDeleting}
+							ml={3}>
+							Xóa
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialogOverlay>
+		</AlertDialog>
+	</>
 	);
 };

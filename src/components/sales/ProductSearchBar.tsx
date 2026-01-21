@@ -67,20 +67,40 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					// Search products via inventoryService
 					const response = await inventoryService.getProducts({ page: 1, size: 50, searchQuery: query });
 					const products = response.data || [];
-					// Transform InventoryProduct (backend fields) to Sales Product (UI fields)
-					// InventoryProduct now matches backend exactly: productId, productName, sellingPrice, etc.
-					const results = products.map(p => ({
-						id: p.productId,
-						barcode: '', // Backend doesn't return barcode in ProductResponse
-						name: p.productName || '',
-						category: p.categoryId || '',
-						price: p.sellingPrice ?? 0,
-						code: p.productId, // Use productId as code
-						stock: p.totalStockQuantity ?? 0,
-						unit: p.unitOfMeasure || 'cái',
-						batches: [], // Backend doesn't return batches in ProductResponse - use checkProduct for batch info
-					}));
-					setSearchResults(results as any);
+					
+					// Fetch batches for each product in parallel
+					const productsWithBatches = await Promise.all(
+						products.map(async (p) => {
+							let batches: { id: string; batchNumber: string; quantity: number; expiryDate: string }[] = [];
+							try {
+								const batchData = await inventoryService.getBatchesByProductId(p.productId);
+								batches = batchData
+									.filter(b => b.status === 'ACTIVE' && b.quantity > 0)
+									.map(b => ({
+										id: b.batchId,
+										batchNumber: b.batchNumber,
+										quantity: b.quantity,
+										expiryDate: b.expiryDate,
+									}));
+							} catch {
+								// If batch fetch fails, continue with empty batches
+							}
+							
+							return {
+								id: p.productId,
+								barcode: '',
+								name: p.productName || '',
+								category: p.categoryId || '',
+								price: p.sellingPrice ?? 0,
+								code: p.productId,
+								stock: p.totalStockQuantity ?? 0,
+								unit: p.unitOfMeasure || 'cái',
+								batches,
+							};
+						})
+					);
+					
+					setSearchResults(productsWithBatches as any);
 					setShowResults(true);
 				} catch {
 					setSearchResults([]);
@@ -353,11 +373,28 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							) : (
 								<Box
 									px={3.5}
-									py={2}
+									py={2.5}
 									fontSize="13px"
-									color="gray.600"
-									fontStyle="italic">
-									Kh�ng c� l� h�ng
+									color="brand.500"
+									fontWeight="500"
+									cursor="pointer"
+									_hover={{ bg: "blue.50" }}
+									onMouseDown={(e) => {
+										e.preventDefault();
+										// Add product without specific batch
+										onProductSelect(product);
+										setSearchQuery("");
+										setSearchResults([]);
+										setShowResults(false);
+										toast({
+											title: "Đã thêm vào giỏ hàng",
+											description: product.name,
+											status: "success",
+											duration: 2000,
+											position: "top",
+										});
+									}}>
+									+ Thêm vào giỏ hàng
 								</Box>
 							)}
 						</Box>

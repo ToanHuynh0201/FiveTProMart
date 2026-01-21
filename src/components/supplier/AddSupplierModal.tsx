@@ -44,16 +44,14 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 		supplierType: "Doanh nghiệp",
 		phoneNumber: "",
 		address: "",
-		email: "",
-		taxCode: "",
-		bankAccount: "",
-		bankName: "",
 		representName: "",
 		representPhoneNumber: "",
 		suppliedProductType: [],
 	});
 
-	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+		[],
+	);
 
 	const [errors, setErrors] = useState({
 		supplierName: "",
@@ -196,27 +194,54 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 					_hover={{ color: "gray.700", bg: "gray.100" }}
 				/>
 
-				<ModalBody px={6} py={4}>
-					<VStack spacing={5} align="stretch">
-						<Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={5}>
+				<ModalBody
+					px={6}
+					py={4}>
+					<VStack
+						spacing={5}
+						align="stretch">
+						<Grid
+							templateColumns={{
+								base: "1fr",
+								md: "repeat(2, 1fr)",
+							}}
+							gap={5}>
 							{/* Tên nhà cung cấp */}
 							<GridItem colSpan={{ base: 1, md: 2 }}>
-								<FormControl isRequired isInvalid={!!errors.supplierName}>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+								<FormControl
+									isRequired
+									isInvalid={!!errors.supplierName}>
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Tên nhà cung cấp
 									</FormLabel>
 									<Input
 										placeholder="Công ty TNHH..."
 										value={formData.supplierName}
 										onChange={(e) => {
-											setFormData({ ...formData, supplierName: e.target.value });
-											setErrors({ ...errors, supplierName: "" });
+											setFormData({
+												...formData,
+												supplierName: e.target.value,
+											});
+											setErrors({
+												...errors,
+												supplierName: "",
+											});
 										}}
 										size="lg"
-										borderColor={errors.supplierName ? "red.500" : "gray.300"}
+										borderColor={
+											errors.supplierName
+												? "red.500"
+												: "gray.300"
+										}
 									/>
 									{errors.supplierName && (
-										<Text color="red.500" fontSize="sm" mt={1}>
+										<Text
+											color="red.500"
+											fontSize="sm"
+											mt={1}>
 											{errors.supplierName}
 										</Text>
 									)}
@@ -226,7 +251,10 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 							{/* Loại nhà cung cấp */}
 							<GridItem>
 								<FormControl isRequired>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Loại nhà cung cấp
 									</FormLabel>
 									<Select
@@ -234,11 +262,14 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												supplierType: e.target.value as SupplierType,
+												supplierType: e.target
+													.value as SupplierType,
 											})
 										}
 										size="lg">
-										<option value="Doanh nghiệp">Doanh nghiệp</option>
+										<option value="Doanh nghiệp">
+											Doanh nghiệp
+										</option>
 										<option value="Tư nhân">Tư nhân</option>
 									</Select>
 								</FormControl>
@@ -246,74 +277,53 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
 							{/* Số điện thoại */}
 							<GridItem>
-								<FormControl isRequired isInvalid={!!errors.phoneNumber}>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+								<FormControl
+									isRequired
+									isInvalid={!!errors.phoneNumber}>
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Số điện thoại
 									</FormLabel>
 									<Input
 										placeholder="0909123456"
 										value={formData.phoneNumber}
 										onChange={(e) => {
-											setFormData({ ...formData, phoneNumber: e.target.value });
-											setErrors({ ...errors, phoneNumber: "" });
+											setFormData({
+												...formData,
+												phoneNumber: e.target.value,
+											});
+											setErrors({
+												...errors,
+												phoneNumber: "",
+											});
 										}}
 										size="lg"
-										borderColor={errors.phoneNumber ? "red.500" : "gray.300"}
+										borderColor={
+											errors.phoneNumber
+												? "red.500"
+												: "gray.300"
+										}
 									/>
 									{errors.phoneNumber && (
-										<Text color="red.500" fontSize="sm" mt={1}>
+										<Text
+											color="red.500"
+											fontSize="sm"
+											mt={1}>
 											{errors.phoneNumber}
 										</Text>
 									)}
 								</FormControl>
 							</GridItem>
 
-							{/* Email */}
-							<GridItem>
-								<FormControl isInvalid={!!errors.email}>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
-										Email
-									</FormLabel>
-									<Input
-										type="email"
-										placeholder="contact@example.com"
-										value={formData.email || ""}
-										onChange={(e) => {
-											setFormData({ ...formData, email: e.target.value });
-											setErrors({ ...errors, email: "" });
-										}}
-										size="lg"
-										borderColor={errors.email ? "red.500" : "gray.300"}
-									/>
-									{errors.email && (
-										<Text color="red.500" fontSize="sm" mt={1}>
-											{errors.email}
-										</Text>
-									)}
-								</FormControl>
-							</GridItem>
-
-							{/* Mã số thuế */}
-							<GridItem>
-								<FormControl>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
-										Mã số thuế
-									</FormLabel>
-									<Input
-										placeholder="0123456789"
-										value={formData.taxCode || ""}
-										onChange={(e) =>
-											setFormData({ ...formData, taxCode: e.target.value })
-										}
-										size="lg"
-									/>
-								</FormControl>
-							</GridItem>
-
 							{/* Tên người đại diện */}
 							<GridItem>
 								<FormControl>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Người liên hệ
 									</FormLabel>
 									<Input
@@ -332,85 +342,84 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 
 							{/* SĐT người đại diện */}
 							<GridItem>
-								<FormControl isInvalid={!!errors.representPhoneNumber}>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+								<FormControl
+									isInvalid={!!errors.representPhoneNumber}>
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										SĐT người liên hệ
 									</FormLabel>
 									<Input
 										placeholder="0901234567"
-										value={formData.representPhoneNumber || ""}
+										value={
+											formData.representPhoneNumber || ""
+										}
 										onChange={(e) => {
 											setFormData({
 												...formData,
-												representPhoneNumber: e.target.value,
+												representPhoneNumber:
+													e.target.value,
 											});
-											setErrors({ ...errors, representPhoneNumber: "" });
+											setErrors({
+												...errors,
+												representPhoneNumber: "",
+											});
 										}}
 										size="lg"
 										borderColor={
-											errors.representPhoneNumber ? "red.500" : "gray.300"
+											errors.representPhoneNumber
+												? "red.500"
+												: "gray.300"
 										}
 									/>
 									{errors.representPhoneNumber && (
-										<Text color="red.500" fontSize="sm" mt={1}>
+										<Text
+											color="red.500"
+											fontSize="sm"
+											mt={1}>
 											{errors.representPhoneNumber}
 										</Text>
 									)}
 								</FormControl>
 							</GridItem>
 
-							{/* Số tài khoản */}
-							<GridItem>
-								<FormControl>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
-										Số tài khoản
-									</FormLabel>
-									<Input
-										placeholder="1234567890"
-										value={formData.bankAccount || ""}
-										onChange={(e) =>
-											setFormData({ ...formData, bankAccount: e.target.value })
-										}
-										size="lg"
-									/>
-								</FormControl>
-							</GridItem>
-
-							{/* Ngân hàng */}
-							<GridItem>
-								<FormControl>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
-										Ngân hàng
-									</FormLabel>
-									<Input
-										placeholder="Vietcombank"
-										value={formData.bankName || ""}
-										onChange={(e) =>
-											setFormData({ ...formData, bankName: e.target.value })
-										}
-										size="lg"
-									/>
-								</FormControl>
-							</GridItem>
-
 							{/* Địa chỉ */}
 							<GridItem colSpan={{ base: 1, md: 2 }}>
-								<FormControl isRequired isInvalid={!!errors.address}>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+								<FormControl
+									isRequired
+									isInvalid={!!errors.address}>
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Địa chỉ
 									</FormLabel>
 									<Input
 										placeholder="123 Đường Nguyễn Văn Linh, Quận 7, TP. HCM"
 										value={formData.address}
 										onChange={(e) => {
-											setFormData({ ...formData, address: e.target.value });
-											setErrors({ ...errors, address: "" });
+											setFormData({
+												...formData,
+												address: e.target.value,
+											});
+											setErrors({
+												...errors,
+												address: "",
+											});
 										}}
 										size="lg"
-										borderColor={errors.address ? "red.500" : "gray.300"}
+										borderColor={
+											errors.address
+												? "red.500"
+												: "gray.300"
+										}
 									/>
 									{errors.address && (
-										<Text color="red.500" fontSize="sm" mt={1}>
+										<Text
+											color="red.500"
+											fontSize="sm"
+											mt={1}>
 											{errors.address}
 										</Text>
 									)}
@@ -420,7 +429,10 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 							{/* Sản phẩm cung cấp */}
 							<GridItem colSpan={{ base: 1, md: 2 }}>
 								<FormControl>
-									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+									<FormLabel
+										fontSize="16px"
+										fontWeight="600"
+										color="gray.700">
 										Sản phẩm cung cấp
 									</FormLabel>
 									<Box
@@ -431,7 +443,9 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 										bg="gray.50">
 										<ProductSelector
 											selectedProducts={selectedProducts}
-											onProductsChange={handleProductsChange}
+											onProductsChange={
+												handleProductsChange
+											}
 										/>
 									</Box>
 								</FormControl>

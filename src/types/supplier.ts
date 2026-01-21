@@ -30,10 +30,6 @@ export interface SupplierDetail {
 	supplierName: string;
 	address: string;
 	phoneNumber: string;
-	email: string | null;
-	taxCode: string | null;
-	bankAccount: string | null;
-	bankName: string | null;
 	representName: string | null;
 	representPhoneNumber: string | null;
 	supplierType: SupplierType;

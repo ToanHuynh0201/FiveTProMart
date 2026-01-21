@@ -15,6 +15,7 @@ import {
 	MenuButton,
 	MenuList,
 	MenuItem,
+	useToast,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
@@ -39,7 +40,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	onEdit,
 	onDelete,
 }) => {
-	// Create a key based on products to trigger animation on filter changes
+	const toast = useToast();
+	// Create a key based o
+	// n products to trigger animation on filter changes
 	const tableKey = products.map((p) => p.productId).join("-");
 
 	// Helper to get category name from id
@@ -213,7 +216,24 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="gray.700"
 									fontWeight="500"
 									width="100px">
-									{product.productId}
+									<Text
+										overflow="hidden"
+										textOverflow="ellipsis"
+										whiteSpace="nowrap"
+										cursor="pointer"
+										onClick={() => {
+											navigator.clipboard.writeText(
+												product.productId,
+											);
+											toast({
+												title: "Đã copy",
+												description: `Đã copy mã lô: ${product.productId}`,
+												status: "success",
+												duration: 1500,
+											});
+										}}>
+										{product.productId}
+									</Text>
 								</Td>
 								<Td
 									fontSize="14px"

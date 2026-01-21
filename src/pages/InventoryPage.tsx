@@ -163,8 +163,6 @@ const InventoryPage = () => {
 			try {
 				// Load stats from API
 				const statsData = await inventoryService.getStats();
-				console.log(statsData);
-
 				setStats(statsData);
 			} catch (error) {
 				console.error("Error loading stats:", error);

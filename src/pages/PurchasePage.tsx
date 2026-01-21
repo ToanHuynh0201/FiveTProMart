@@ -37,6 +37,7 @@ import type { Supplier, SupplierProduct } from "@/types/supplier";
 import type { PurchaseFilters } from "@/types/filters";
 import { purchaseService } from "@/services/purchaseService";
 import { supplierService } from "@/services/supplierService";
+import { exportDraftPurchaseToExcel } from "@/utils/excelExport";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -237,6 +238,38 @@ const PurchasePage = () => {
 			toast({
 				title: "Lỗi",
 				description: result.error || "Không thể tải danh sách tem",
+				status: "error",
+				duration: 3000,
+			});
+		}
+	};
+
+	const handleExportExcel = async (id: string) => {
+		try {
+			const result = await purchaseService.getPurchaseOrderById(id);
+			if (result.success && result.data) {
+				// Xuất file Excel
+				exportDraftPurchaseToExcel(result.data);
+
+				toast({
+					title: "Thành công",
+					description: "Đã xuất file Excel thành công",
+					status: "success",
+					duration: 3000,
+				});
+			} else {
+				toast({
+					title: "Lỗi",
+					description:
+						result.error || "Không thể tải chi tiết đơn hàng",
+					status: "error",
+					duration: 3000,
+				});
+			}
+		} catch (error) {
+			toast({
+				title: "Lỗi",
+				description: "Có lỗi xảy ra khi xuất file Excel",
 				status: "error",
 				duration: 3000,
 			});
@@ -483,6 +516,7 @@ const PurchasePage = () => {
 							onConfirmReceipt={handleConfirmReceipt}
 							onCancelOrder={handleCancelOrder}
 							onReprintLabels={handleReprintLabels}
+							onExportExcel={handleExportExcel}
 						/>
 
 						{/* Pagination */}

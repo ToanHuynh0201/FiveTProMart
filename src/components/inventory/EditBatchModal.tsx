@@ -43,7 +43,8 @@ const EditBatchModal = ({
 
 	// Form state
 	const [formData, setFormData] = useState({
-		stockQuantity: 0,
+		quantityStorage: 0,
+		quantityShelf: 0,
 		status: "active" as "active" | "expired" | "sold-out",
 	});
 
@@ -51,7 +52,8 @@ const EditBatchModal = ({
 	useEffect(() => {
 		if (batch) {
 			setFormData({
-				stockQuantity: batch.stockQuantity,
+				quantityStorage: batch.quantityStorage ?? 0,
+				quantityShelf: batch.quantityShelf ?? 0,
 				status: batch.status,
 			});
 		}
@@ -63,7 +65,8 @@ const EditBatchModal = ({
 		setLoading(true);
 		try {
 			await onUpdate(batch.lotId, {
-				stockQuantity: formData.stockQuantity,
+				quantityStorage: formData.quantityStorage,
+				quantityShelf: formData.quantityShelf,
 				status: formData.status,
 			});
 		} finally {
@@ -102,21 +105,53 @@ const EditBatchModal = ({
 							/>
 						</FormControl>
 
-						<FormControl isRequired>
-							<FormLabel>Số lượng tồn kho</FormLabel>
-							<Input
-								type="number"
-								value={formData.stockQuantity}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										stockQuantity:
-											parseInt(e.target.value) || 0,
-									})
-								}
-								min={0}
-							/>
-						</FormControl>
+						<HStack
+							spacing={4}
+							width="full">
+							<FormControl
+								isRequired
+								flex={1}>
+								<FormLabel>Số lượng trong kho</FormLabel>
+								<Input
+									type="number"
+									value={formData.quantityStorage}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											quantityStorage:
+												parseInt(e.target.value) || 0,
+										})
+									}
+									min={0}
+								/>
+							</FormControl>
+
+							<FormControl
+								isRequired
+								flex={1}>
+								<FormLabel>Số lượng trưng bày</FormLabel>
+								<Input
+									type="number"
+									value={formData.quantityShelf}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											quantityShelf:
+												parseInt(e.target.value) || 0,
+										})
+									}
+									min={0}
+								/>
+							</FormControl>
+						</HStack>
+
+						<Text
+							fontSize="sm"
+							color="gray.600"
+							alignSelf="flex-start">
+							Tổng số lượng:{" "}
+							{formData.quantityStorage + formData.quantityShelf}
+						</Text>
 
 						<FormControl isRequired>
 							<FormLabel>Trạng thái</FormLabel>

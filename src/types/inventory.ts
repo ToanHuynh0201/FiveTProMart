@@ -24,6 +24,8 @@ export interface InventoryProduct {
 	unitOfMeasure: string;
 	sellingPrice: number | null;
 	totalStockQuantity: number | null;
+	quantityShelf?: number | null;
+	quantityStorage?: number | null;
 }
 
 /**

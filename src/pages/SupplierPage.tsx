@@ -8,7 +8,10 @@ import {
 	SupplierViewEditModal,
 } from "@/components/supplier";
 import { Pagination } from "@/components/common";
+import { PurchaseDetailModal } from "@/components/purchase/PurchaseDetailModal";
 import type { Supplier, CreateSupplierDTO } from "@/types/supplier";
+import type { PurchaseDetail } from "@/types/purchase";
+import { purchaseService } from "@/services/purchaseService";
 import { supplierService } from "@/services/supplierService";
 import {
 	Box,
@@ -44,6 +47,15 @@ const SupplierPage = () => {
 		null,
 	);
 	const [viewEditMode, setViewEditMode] = useState<"view" | "edit">("view");
+	const [purchaseDetail, setPurchaseDetail] = useState<PurchaseDetail | null>(
+		null,
+	);
+	const [isLoadingPurchaseDetail, setIsLoadingPurchaseDetail] =
+		useState(false);
+	const [returnToSupplier, setReturnToSupplier] = useState<{
+		supplierId: string;
+		mode: "view" | "edit";
+	} | null>(null);
 
 	// Use custom hooks for filters and pagination
 	const { filters, debouncedFilters, handleFilterChange, resetFilters } =
@@ -80,6 +92,11 @@ const SupplierPage = () => {
 		onOpen: onViewEditModalOpen,
 		onClose: onViewEditModalClose,
 	} = useDisclosure();
+	const {
+		isOpen: isPurchaseDetailModalOpen,
+		onOpen: onPurchaseDetailModalOpen,
+		onClose: onPurchaseDetailModalClose,
+	} = useDisclosure();
 
 	// Fetch suppliers with filters
 	const fetchSuppliers = useCallback(async () => {
@@ -93,6 +110,8 @@ const SupplierPage = () => {
 				sortBy: debouncedFilters.sortBy,
 				order: debouncedFilters.order,
 			});
+
+			console.log(result);
 
 			if (result.success) {
 				setSupplierList(result.data || []);
@@ -211,6 +230,62 @@ const SupplierPage = () => {
 
 	const handleViewEditSuccess = () => {
 		fetchSuppliers();
+	};
+
+	const handleViewPurchaseDetail = async (
+		purchaseId: string,
+		supplierData: { supplierId: string; mode: "view" | "edit" },
+	) => {
+		// Save supplier info to return to later
+		setReturnToSupplier(supplierData);
+
+		// Close supplier modal
+		onViewEditModalClose();
+
+		// Load and open purchase detail modal
+		setIsLoadingPurchaseDetail(true);
+		onPurchaseDetailModalOpen();
+
+		try {
+			const result =
+				await purchaseService.getPurchaseOrderById(purchaseId);
+			if (result.success && result.data) {
+				setPurchaseDetail(result.data);
+			} else {
+				toast({
+					title: "Lỗi",
+					description:
+						result.error || "Không thể tải chi tiết đơn nhập hàng",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
+				});
+			}
+		} catch (error) {
+			console.error("Error loading purchase detail:", error);
+			toast({
+				title: "Lỗi",
+				description: "Có lỗi xảy ra khi tải chi tiết đơn nhập hàng",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+		} finally {
+			setIsLoadingPurchaseDetail(false);
+		}
+	};
+
+	const handleClosePurchaseDetail = () => {
+		onPurchaseDetailModalClose();
+		setPurchaseDetail(null);
+
+		// Reopen supplier modal if we came from there
+		if (returnToSupplier) {
+			setSelectedSupplierId(returnToSupplier.supplierId);
+			setViewEditMode(returnToSupplier.mode);
+			onViewEditModalOpen();
+			setReturnToSupplier(null);
+		}
 	};
 
 	return (
@@ -338,6 +413,14 @@ const SupplierPage = () => {
 					supplierId={selectedSupplierId}
 					mode={viewEditMode}
 					onSuccess={handleViewEditSuccess}
+					onViewPurchaseDetail={handleViewPurchaseDetail}
+				/>
+
+				<PurchaseDetailModal
+					isOpen={isPurchaseDetailModalOpen}
+					onClose={handleClosePurchaseDetail}
+					purchase={purchaseDetail}
+					isLoading={isLoadingPurchaseDetail}
 				/>
 			</Box>
 		</MainLayout>

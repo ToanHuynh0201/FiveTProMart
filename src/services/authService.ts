@@ -15,6 +15,8 @@ import { useAuthStore } from "@/store/authStore";
 class AuthService {
 	/**
 	 * Login user with credentials
+	 * 
+	 * DEFENSIVE: Validates Content-Type, wraps JSON parsing, provides actionable errors
 	 */
 	async login(credentials: LoginCredentials): Promise<LoginResponse> {
 		try {
@@ -28,12 +30,29 @@ class AuthService {
 				body: JSON.stringify(credentials),
 			});
 
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || "Login failed");
+			// DEFENSIVE: Validate Content-Type before parsing
+			const contentType = response.headers.get("content-type");
+			if (!contentType?.includes("application/json")) {
+				throw new Error(
+					`Server returned unexpected format (${response.status} ${response.statusText}). Expected JSON but got ${contentType || "unknown type"}.`
+				);
 			}
 
-			const apiResponse = await response.json();
+			// DEFENSIVE: Parse JSON with try/catch
+			let apiResponse: any;
+			try {
+				apiResponse = await response.json();
+			} catch (parseError) {
+				throw new Error(
+					`Failed to parse server response (${response.status}). The server may be experiencing issues.`
+				);
+			}
+
+			// Handle error responses (4xx/5xx)
+			if (!response.ok) {
+				const errorMessage = apiResponse?.message || apiResponse?.error?.message || "Login failed";
+				throw new Error(errorMessage);
+			}
 
 			const data = apiResponse.data; // Extract from ApiResponse wrapper
 
@@ -49,7 +68,7 @@ class AuthService {
 
 			return apiResponse;
 		} catch (error) {
-			console.error("Login error:", error);
+			console.error("[authService] Login error:", error);
 			throw error;
 		}
 	}

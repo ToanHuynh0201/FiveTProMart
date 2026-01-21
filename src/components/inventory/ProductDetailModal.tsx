@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
 	Modal,
 	ModalOverlay,
@@ -16,22 +16,17 @@ import {
 	Flex,
 	useToast,
 	Spinner,
-	Table,
-	Thead,
-	Tbody,
-	Tr,
-	Th,
-	Td,
-	Tooltip,
-	Grid,
-	GridItem,
-	Input,
-	IconButton,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
+	useDisclosure,
 } from "@chakra-ui/react";
-import { FiPackage, FiEdit2, FiCheck, FiX } from "react-icons/fi";
-import type { InventoryProduct, ProductBatch } from "../../types/inventory";
+import { FiPackage } from "react-icons/fi";
+import type { InventoryProduct } from "../../types/inventory";
 import { inventoryService } from "../../services/inventoryService";
-import { getExpiryStatus, isExpired } from "../../utils/date";
 
 interface ProductDetailModalProps {
 	isOpen: boolean;
@@ -54,11 +49,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	const [product, setProduct] = useState<InventoryProduct | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
-	const [editValues, setEditValues] = useState<{
-		quantityInStock: number;
-		quantityOnDisplay: number;
-	}>({ quantityInStock: 0, quantityOnDisplay: 0 });
+	
+	// Delete confirmation dialog
+	const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+	const cancelRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (isOpen && productId) {
@@ -90,23 +84,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	const handleDelete = async () => {
 		if (!product) return;
 
-		if (
-			!window.confirm(
-				`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`,
-			)
-		) {
-			return;
-		}
-
 		setIsDeleting(true);
 		try {
-			await onDelete(product.id);
+			await onDelete(product.productId);
 			toast({
 				title: "Thành công",
 				description: "Đã xóa sản phẩm",
 				status: "success",
 				duration: 3000,
 			});
+			onDeleteClose();
 			onClose();
 		} catch (error) {
 			toast({
@@ -145,72 +132,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 		);
 	};
 
-	const handleStartEdit = (batch: ProductBatch) => {
-		setEditingBatchId(batch.id);
-		setEditValues({
-			quantityInStock: batch.quantityInStock || 0,
-			quantityOnDisplay: batch.quantityOnDisplay || 0,
-		});
-	};
 
-	const handleCancelEdit = () => {
-		setEditingBatchId(null);
-		setEditValues({ quantityInStock: 0, quantityOnDisplay: 0 });
-	};
-
-	const handleQuantityChange = (
-		field: "quantityInStock" | "quantityOnDisplay",
-		value: number,
-		currentBatch: ProductBatch,
-	) => {
-		const totalQuantity = currentBatch.quantity; // Tổng số lượng cố định
-		const newValue = Math.max(0, Math.min(value, totalQuantity)); // Giới hạn từ 0 đến tổng
-
-		if (field === "quantityInStock") {
-			setEditValues({
-				quantityInStock: newValue,
-				quantityOnDisplay: totalQuantity - newValue,
-			});
-		} else {
-			setEditValues({
-				quantityInStock: totalQuantity - newValue,
-				quantityOnDisplay: newValue,
-			});
-		}
-	};
-
-	const handleSaveEdit = async (batchId: string) => {
-		if (!product) return;
-
-		try {
-			// API currently supports updating total quantity and status
-			// For display/stock split, backend API extension needed
-			const totalQuantity = editValues.quantityInStock + editValues.quantityOnDisplay;
-			await inventoryService.updateLot(batchId, totalQuantity, "available");
-
-			// Reload product to get updated data
-			await loadProduct();
-
-			toast({
-				title: "Thành công",
-				description: "Đã cập nhật số lượng lô hàng",
-				status: "success",
-				duration: 3000,
-			});
-
-			setEditingBatchId(null);
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description:
-					error instanceof Error
-						? error.message
-						: "Không thể cập nhật số lượng",
-				status: "error",
-				duration: 3000,
-			});
-		}
-	};
 
 	const InfoRow = ({
 		label,
@@ -239,6 +161,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 	);
 
 	return (
+		<>
 		<Modal
 			isOpen={isOpen}
 			onClose={onClose}
@@ -280,9 +203,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 										fontSize="20px"
 										fontWeight="700"
 										color="gray.800">
-										{product.name}
+										{product.productName}
 									</Text>
-									{getStatusBadge(product.status)}
+										{getStatusBadge((product.totalStockQuantity ?? 0) > 0 ? "active" : "out-of-stock")}
 								</Flex>
 								<Flex
 									gap={4}
@@ -295,7 +218,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 											fontWeight="600">
 											Mã hàng:
 										</Text>{" "}
-										{product.code}
+										{product.productId}
 									</Text>
 									<Text
 										fontSize="14px"
@@ -305,7 +228,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 											fontWeight="600">
 											Danh mục:
 										</Text>{" "}
-										{product.category}
+										{product.categoryId}
 									</Text>
 									<Text
 										fontSize="14px"
@@ -319,7 +242,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 											as="span"
 											color="blue.600"
 											fontWeight="700">
-											{product.price.toLocaleString(
+											{(product.sellingPrice ?? 0).toLocaleString(
 												"vi-VN",
 											)}
 											đ
@@ -330,311 +253,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
 							<Divider />
 
-							<Box>
-								<Text
-									fontSize="18px"
-									fontWeight="700"
-									color="gray.700"
-									mb={3}>
-									Danh sách lô hàng (
-									{product.batches?.length || 0} lô)
-								</Text>
-
-								{product.batches &&
-								product.batches.length > 0 ? (
-									<Box
-										border="1px solid"
-										borderColor="gray.200"
-										borderRadius="8px"
-										overflow="hidden"
-										boxShadow="sm">
-										<Table size="md">
-											<Thead bg="gray.50">
-												<Tr>
-													<Th fontSize="12px">
-														Số lô
-													</Th>
-													<Th
-														fontSize="12px"
-														isNumeric>
-														Giá vốn
-													</Th>
-													<Th
-														fontSize="12px"
-														isNumeric>
-														SL trong kho
-													</Th>
-													<Th
-														fontSize="12px"
-														isNumeric>
-														SL trưng bày
-													</Th>
-													<Th fontSize="12px">
-														Hạn SD
-													</Th>
-													<Th fontSize="12px">
-														Trạng thái
-													</Th>
-													<Th fontSize="12px">
-														Thao tác
-													</Th>
-												</Tr>
-											</Thead>
-											<Tbody>
-												{product.batches.map(
-													(batch) => {
-														const expiryInfo =
-															getExpiryStatus(
-																batch.expiryDate,
-															);
-														const expired =
-															isExpired(
-																batch.expiryDate,
-															);
-														const isEditing =
-															editingBatchId ===
-															batch.id;
-
-														return (
-															<Tr
-																key={batch.id}
-																bg={
-																	expired
-																		? "red.50"
-																		: "white"
-																}>
-																<Td
-																	fontSize="13px"
-																	fontWeight="600">
-																	{
-																		batch.batchNumber
-																	}
-																</Td>
-																<Td
-																	fontSize="13px"
-																	isNumeric
-																	fontWeight="600"
-																	color="blue.600">
-																	{batch.costPrice?.toLocaleString(
-																		"vi-VN",
-																	)}
-																	đ
-																</Td>
-																<Td
-																	fontSize="13px"
-																	isNumeric>
-																	{isEditing ? (
-																		<Input
-																			type="number"
-																			size="sm"
-																			value={
-																				editValues.quantityInStock
-																			}
-																			onChange={(
-																				e,
-																			) =>
-																				handleQuantityChange(
-																					"quantityInStock",
-																					Number.parseInt(
-																						e
-																							.target
-																							.value,
-																					) ||
-																						0,
-																					batch,
-																				)
-																			}
-																			min={
-																				0
-																			}
-																			max={
-																				batch.quantity
-																			}
-																			w="80px"
-																		/>
-																	) : (
-																		<Text
-																			fontWeight="600">
-																			{batch.quantityInStock ||
-																				0}
-																		</Text>
-																	)}
-																</Td>
-																<Td
-																	fontSize="13px"
-																	isNumeric>
-																	{isEditing ? (
-																		<Input
-																			type="number"
-																			size="sm"
-																			value={
-																				editValues.quantityOnDisplay
-																			}
-																			onChange={(
-																				e,
-																			) =>
-																				handleQuantityChange(
-																					"quantityOnDisplay",
-																					Number.parseInt(
-																						e
-																							.target
-																							.value,
-																					) ||
-																						0,
-																					batch,
-																				)
-																			}
-																			min={
-																				0
-																			}
-																			max={
-																				batch.quantity
-																			}
-																			w="80px"
-																		/>
-																	) : (
-																		<Text
-																			fontWeight="600">
-																			{batch.quantityOnDisplay ||
-																				0}
-																		</Text>
-																	)}
-																</Td>
-																<Td fontSize="13px">
-																	{batch.expiryDate ? (
-																		<Tooltip
-																			label={
-																				expiryInfo.status ===
-																				"expired"
-																					? "Đã hết hạn"
-																					: `Còn ${expiryInfo.text}`
-																			}
-																			hasArrow>
-																			<Badge
-																				colorScheme={
-																					expired
-																						? "red"
-																						: expiryInfo.status ===
-																						  "critical"
-																						? "red"
-																						: expiryInfo.status ===
-																						  "warning"
-																						? "orange"
-																						: "green"
-																				}
-																				fontSize="11px">
-																				{
-																					expiryInfo.text
-																				}
-																			</Badge>
-																		</Tooltip>
-																	) : (
-																		<Text
-																			fontSize="12px"
-																			color="gray.600">
-																			Không
-																			có
-																			HSD
-																		</Text>
-																	)}
-																</Td>
-																<Td fontSize="13px">
-																	<Badge
-																		colorScheme={
-																			batch.status ===
-																			"active"
-																				? "green"
-																				: batch.status ===
-																				  "expired"
-																				? "red"
-																				: "gray"
-																		}
-																		fontSize="11px">
-																		{batch.status ===
-																		"active"
-																			? "Hoạt động"
-																			: batch.status ===
-																			  "expired"
-																			? "Hết hạn"
-																			: "Đã bán hết"}
-																	</Badge>
-																</Td>
-																<Td>
-																	{isEditing ? (
-																		<Flex
-																			gap={
-																				1
-																			}>
-																			<IconButton
-																				aria-label="Lưu"
-																				icon={
-																					<FiCheck />
-																				}
-																				size="sm"
-																				colorScheme="green"
-																				onClick={() =>
-																					handleSaveEdit(
-																						batch.id,
-																					)
-																				}
-																			/>
-																			<IconButton
-																				aria-label="Hủy"
-																				icon={
-																					<FiX />
-																				}
-																				size="sm"
-																				colorScheme="gray"
-																				onClick={
-																					handleCancelEdit
-																				}
-																			/>
-																		</Flex>
-																	) : (
-																		<IconButton
-																			aria-label="Chỉnh sửa"
-																			icon={
-																				<FiEdit2 />
-																			}
-																			size="sm"
-																			variant="ghost"
-																			colorScheme="blue"
-																			onClick={() =>
-																				handleStartEdit(
-																					batch,
-																				)
-																			}
-																		/>
-																	)}
-																</Td>
-															</Tr>
-														);
-													},
-												)}
-											</Tbody>
-										</Table>
-									</Box>
-								) : (
-									<Box
-										p={4}
-										bg="gray.50"
-										borderRadius="8px"
-										textAlign="center"
-										border="1px solid"
-										borderColor="gray.200">
-										<Text
-											fontSize="14px"
-											color="gray.600">
-											Chưa có lô hàng nào
-										</Text>
-									</Box>
-								)}
-							</Box>
-
-							<Divider />
-
 							{/* Stock warning */}
-							{product.stock === 0 && (
+							{product.totalStockQuantity === 0 && (
 								<Box
 									p={2}
 									bg="red.50"
@@ -649,111 +269,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 									</Text>
 								</Box>
 							)}
-							{product.stock > 0 &&
-								product.stock <= product.minStock && (
-									<Box
-										p={2}
-										bg="orange.50"
-										borderRadius="8px"
-										border="1px solid"
-										borderColor="orange.200">
-										<Text
-											fontSize="14px"
-											color="orange.600"
-											fontWeight="600">
-											⚠️ Sản phẩm sắp hết hàng
-										</Text>
-									</Box>
-								)}
 
-							{/* 2 cột thông tin chi tiết */}
-							<Grid
-								templateColumns="repeat(2, 1fr)"
-								gap={4}>
-								{/* Cột 1: Thông tin tồn kho */}
-								<GridItem
-									borderRight="1px solid"
-									borderColor="gray.200">
-									<Box pr={4}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Thông tin tồn kho
-										</Text>
-										<InfoRow
-											label="Tồn kho hiện tại"
-											value={product.stock}
-										/>
-										<InfoRow
-											label="Tồn kho tối thiểu"
-											value={product.minStock}
-										/>
-										<InfoRow
-											label="Tồn kho tối đa"
-											value={product.maxStock}
-										/>
-										<Divider my={2} />
-										<InfoRow
-											label="Đơn vị tính"
-											value={product.unit}
-										/>
-										{product.supplier && (
-											<InfoRow
-												label="Nhà cung cấp"
-												value={product.supplier}
-											/>
-										)}
-									</Box>
-								</GridItem>
-
-								{/* Cột 2: Thông tin khác */}
-								<GridItem>
-									<Box pl={4}>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Thông tin khác
-										</Text>
-										<InfoRow
-											label="Ngày tạo"
-											value={new Date(
-												product.createdAt,
-											).toLocaleDateString("vi-VN")}
-										/>
-										<InfoRow
-											label="Cập nhật lần cuối"
-											value={new Date(
-												product.updatedAt,
-											).toLocaleDateString("vi-VN")}
-										/>
-									</Box>
-								</GridItem>
-							</Grid>
-
-							{product.description && (
-								<>
-									<Divider />
-									<Box>
-										<Text
-											fontSize="16px"
-											fontWeight="700"
-											color="gray.700"
-											mb={2}>
-											Mô tả
-										</Text>
-										<Text
-											fontSize="14px"
-											color="gray.600"
-											lineHeight="1.6">
-											{product.description}
-										</Text>
-									</Box>
-								</>
-							)}
+							{/* Thông tin tồn kho */}
+							<Box>
+								<Text
+									fontSize="16px"
+									fontWeight="700"
+									color="gray.700"
+									mb={2}>
+									Thông tin tồn kho
+								</Text>
+								<InfoRow
+									label="Tồn kho hiện tại"
+									value={product.totalStockQuantity ?? 0}
+								/>
+								<InfoRow
+									label="Đơn vị tính"
+									value={product.unitOfMeasure}
+								/>
+							</Box>
 						</VStack>
 					)}
 
@@ -771,9 +305,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 					<Button
 						variant="ghost"
 						colorScheme="red"
-						onClick={handleDelete}
-						isLoading={isDeleting}
-						isDisabled={isLoading}>
+						onClick={onDeleteOpen}
+						isDisabled={isLoading || !product}>
 						Xóa
 					</Button>
 					{onManageBatches && (
@@ -783,7 +316,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 							variant="outline"
 							onClick={() => {
 								if (product) {
-									onManageBatches(product.id);
+									onManageBatches(product.productId);
 									onClose();
 								}
 							}}
@@ -794,7 +327,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 					<Button
 						variant="outline"
 						colorScheme="blue"
-						onClick={() => product && onEdit(product.id)}
+						onClick={() => product && onEdit(product.productId)}
 						isDisabled={isLoading || !product}>
 						Chỉnh sửa
 					</Button>
@@ -806,5 +339,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 				</ModalFooter>
 			</ModalContent>
 		</Modal>
+
+		{/* Delete Confirmation Dialog */}
+		<AlertDialog
+			isOpen={isDeleteOpen}
+			leastDestructiveRef={cancelRef}
+			onClose={onDeleteClose}
+			isCentered>
+			<AlertDialogOverlay>
+				<AlertDialogContent>
+					<AlertDialogHeader fontSize="lg" fontWeight="bold">
+						Xóa sản phẩm
+					</AlertDialogHeader>
+
+					<AlertDialogBody>
+						Bạn có chắc chắn muốn xóa sản phẩm "{product?.productName}"?
+						Hành động này không thể hoàn tác.
+					</AlertDialogBody>
+
+					<AlertDialogFooter>
+						<Button ref={cancelRef} onClick={onDeleteClose}>
+							Hủy
+						</Button>
+						<Button
+							colorScheme="red"
+							onClick={handleDelete}
+							isLoading={isDeleting}
+							ml={3}>
+							Xóa
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialogOverlay>
+		</AlertDialog>
+	</>
 	);
 };

@@ -67,24 +67,40 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					// Search products via inventoryService
 					const response = await inventoryService.getProducts({ page: 1, size: 50, searchQuery: query });
 					const products = response.data || [];
-					// Transform to Product format expected by sales
-					const results = products.map(p => ({
-						id: p.id,
-						barcode: p.barcode || '',
-						name: p.name || '',
-						category: p.category || '',
-						price: p.price || 0,
-						code: p.barcode || p.id,
-					stock: (p.batches || []).reduce((sum, b) => sum + (b.quantity || 0), 0),
-						unit: p.unit || 'c·i',
-						batches: (p.batches || []).map(b => ({
-							id: b.id,
-							batchNumber: b.batchNumber,
-							expiryDate: b.expiryDate,
-							quantity: b.quantity,
-						})),
-					}));
-					setSearchResults(results as any);
+					
+					// Fetch batches for each product in parallel
+					const productsWithBatches = await Promise.all(
+						products.map(async (p) => {
+							let batches: { id: string; batchNumber: string; quantity: number; expiryDate: string }[] = [];
+							try {
+								const batchData = await inventoryService.getBatchesByProductId(p.productId);
+								batches = batchData
+									.filter(b => b.status === 'ACTIVE' && b.quantity > 0)
+									.map(b => ({
+										id: b.batchId,
+										batchNumber: b.batchNumber,
+										quantity: b.quantity,
+										expiryDate: b.expiryDate,
+									}));
+							} catch {
+								// If batch fetch fails, continue with empty batches
+							}
+							
+							return {
+								id: p.productId,
+								barcode: '',
+								name: p.productName || '',
+								category: p.categoryId || '',
+								price: p.sellingPrice ?? 0,
+								code: p.productId,
+								stock: p.totalStockQuantity ?? 0,
+								unit: p.unitOfMeasure || 'c√°i',
+								batches,
+							};
+						})
+					);
+					
+					setSearchResults(productsWithBatches as any);
 					setShowResults(true);
 				} catch {
 					setSearchResults([]);
@@ -102,14 +118,14 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		batchId: string,
 		batchNumber: string,
 	) => {
-		// ThÍm s?n ph?m v?i lÙ d„ ch?n v‡o gi?
+		// ThÔøΩm s?n ph?m v?i lÔøΩ dÔøΩ ch?n vÔøΩo gi?
 		onProductSelect(product, batchId, batchNumber);
 		setSearchQuery("");
 		setSearchResults([]);
 		setShowResults(false);
 		toast({
-			title: "–„ thÍm v‡o gi? h‡ng",
-			description: `${product.name} - LÙ ${batchNumber}`,
+			title: "ÔøΩÔøΩ thÔøΩm vÔøΩo gi? hÔøΩng",
+			description: `${product.name} - LÔøΩ ${batchNumber}`,
 			status: "success",
 			duration: 2000,
 			position: "top",
@@ -135,7 +151,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="TÏm theo tÍn s?n ph?m ho?c m„ lÙ (VD: B·nh, LOT001)..."
+					placeholder="TÔøΩm theo tÔøΩn s?n ph?m ho?c mÔøΩ lÔøΩ (VD: BÔøΩnh, LOT001)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>
@@ -154,7 +170,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					h="48px"
 					w="50px">
 					<Tooltip
-						label="QuÈt m„ v?ch (Ctrl+B)"
+						label="QuÔøΩt mÔøΩ v?ch (Ctrl+B)"
 						hasArrow
 						placement="top">
 						<IconButton
@@ -211,7 +227,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							borderBottom="1px solid"
 							borderColor="gray.100"
 							_last={{ borderBottom: "none" }}>
-							{/* ThÙng tin s?n ph?m */}
+							{/* ThÔøΩng tin s?n ph?m */}
 							<Box
 								p={3.5}
 								bg="gray.50"
@@ -233,16 +249,16 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									color="gray.600"
 									gap={4}
 									flexWrap="wrap">
-									<Text>M„: {product.code}</Text>
+									<Text>MÔøΩ: {product.code}</Text>
 									<Text>
-										Gi·:{" "}
+										GiÔøΩ:{" "}
 										{product.price.toLocaleString("vi-VN")}d
 									</Text>
 									<Text>T?n: {product.stock}</Text>
 								</Flex>
 							</Box>
 
-							{/* Danh s·ch lÙ h‡ng */}
+							{/* Danh sÔøΩch lÔøΩ hÔøΩng */}
 							{product.batches && product.batches.length > 0 ? (
 								<Box bg="white">
 									<Text
@@ -253,7 +269,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 										fontWeight="600"
 										color="gray.600"
 										textTransform="uppercase">
-										Ch?n lÙ h‡ng:
+										Ch?n lÔøΩ hÔøΩng:
 									</Text>
 									{product.batches.map((batch) => {
 										const batchExpired = isExpired(
@@ -296,7 +312,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																fontSize="14px"
 																fontWeight="600"
 																color="gray.800">
-																LÙ{" "}
+																LÔøΩ{" "}
 																{
 																	batch.batchNumber
 																}
@@ -357,11 +373,28 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							) : (
 								<Box
 									px={3.5}
-									py={2}
+									py={2.5}
 									fontSize="13px"
-									color="gray.600"
-									fontStyle="italic">
-									KhÙng cÛ lÙ h‡ng
+									color="brand.500"
+									fontWeight="500"
+									cursor="pointer"
+									_hover={{ bg: "blue.50" }}
+									onMouseDown={(e) => {
+										e.preventDefault();
+										// Add product without specific batch
+										onProductSelect(product);
+										setSearchQuery("");
+										setSearchResults([]);
+										setShowResults(false);
+										toast({
+											title: "ƒê√£ th√™m v√†o gi·ªè h√†ng",
+											description: product.name,
+											status: "success",
+											duration: 2000,
+											position: "top",
+										});
+									}}>
+									+ Th√™m v√†o gi·ªè h√†ng
 								</Box>
 							)}
 						</Box>

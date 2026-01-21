@@ -55,7 +55,7 @@ const CustomerTable = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(selectedCustomer.id);
+			await onDelete(selectedCustomer.customerId);
 			onClose();
 			toast({
 				title: "Thành công",
@@ -163,7 +163,7 @@ const CustomerTable = ({
 							) : (
 								customerList.map((customer, index) => (
 									<Tr
-										key={customer.id}
+										key={customer.customerId}
 										_hover={{ bg: "gray.50" }}
 										transition="background 0.2s">
 										<Td
@@ -180,19 +180,19 @@ const CustomerTable = ({
 											cursor="pointer"
 											py={2}
 											onClick={() =>
-												onViewDetails?.(customer.id)
+												onViewDetails?.(customer.customerId)
 											}
 											_hover={{
 												textDecoration: "underline",
 											}}>
-											{customer.name}
+											{customer.fullName}
 										</Td>
 										<Td py={2}>
 											<Text
 												fontSize="14px"
 												fontWeight="500"
 												color="gray.800">
-												{customer.phone}
+												{customer.phoneNumber}
 											</Text>
 										</Td>
 										<Td py={2}>
@@ -237,31 +237,29 @@ const CustomerTable = ({
 														colorScheme="blue"
 														onClick={() =>
 															onViewDetails?.(
-																customer.id,
+																customer.customerId,
 															)
 														}
 													/>
 												</Tooltip>
-
 												{onEdit && (
 													<Tooltip label="Chỉnh sửa">
 														<IconButton
-															aria-label="Edit customer"
+															aria-label="Edit"
 															icon={<EditIcon />}
 															size="sm"
 															variant="ghost"
 															colorScheme="orange"
 															onClick={() =>
-																onEdit(customer.id)
+																onEdit(customer.customerId)
 															}
 														/>
 													</Tooltip>
 												)}
-
 												{onDelete && (
 													<Tooltip label="Xóa">
 														<IconButton
-															aria-label="Delete customer"
+															aria-label="Delete"
 															icon={<DeleteIcon />}
 															size="sm"
 															variant="ghost"
@@ -308,7 +306,7 @@ const CustomerTable = ({
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa khách hàng{" "}
-							<strong>{selectedCustomer?.name}</strong>? Hành động
+						<strong>{selectedCustomer?.fullName}</strong>? Hành động
 							này không thể hoàn tác.
 						</Text>
 					</ModalBody>

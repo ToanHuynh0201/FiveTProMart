@@ -23,7 +23,6 @@ import {
 	OrderFilterBar,
 	PendingOrdersList,
 	BarcodeScanner,
-	QuickActionsBar,
 } from "../components/sales";
 import type { ScannedPromotionInfo } from "../components/sales/BarcodeScanner";
 import { KeyboardShortcutsModal, SaleCelebration, useSaleCelebration } from "../components/common";
@@ -893,8 +892,16 @@ const SalesPage = () => {
 							<TabPanel px={0}>
 								<Box
 									pt={1}
-									pb="200px">
+									pb="180px">
 									{/* pb=200px to clear PaymentFooter (~180px) which is position:fixed at bottom */}
+
+									{/* Pending Orders - Show at top for visibility */}
+									<PendingOrdersList
+										pendingOrders={pendingOrders}
+										onRestore={handleRestoreOrder}
+										onDelete={handleDeletePendingOrder}
+									/>
+
 									<Box
 										mb={2}
 										flex={1}
@@ -930,13 +937,6 @@ const SalesPage = () => {
 											/>
 										</Box>
 									</Box>
-
-									{/* Danh sách hóa đơn tạm dừng */}
-									<PendingOrdersList
-										pendingOrders={pendingOrders}
-										onRestore={handleRestoreOrder}
-										onDelete={handleDeletePendingOrder}
-									/>
 
 									<BarcodeScanner
 										isOpen={isBarcodeScannerOpen}
@@ -1000,37 +1000,18 @@ const SalesPage = () => {
 					</Tabs>
 				</Box>
 
-				{/* Quick Actions Floating Bar - Only visible on Sales tab */}
-				{activeTabIndex === 0 && (
-					<QuickActionsBar
-						itemCount={orderItems.length}
-						totalAmount={calculateTotal()}
-					paymentMethod={paymentMethod === "card" ? undefined : paymentMethod}
-						onOpenBarcodeScanner={onBarcodeScannerOpen}
-						onFocusSearch={handleFocusSearch}
-						onSelectCash={handleSelectCash}
-						onSelectTransfer={handleSelectTransfer}
-						onPrint={handlePrint}
-						onPauseOrder={handlePauseOrder}
-						onClearCart={handleClearCart}
-						onShowShortcuts={onShortcutsHelpOpen}
-						isCartEmpty={orderItems.length === 0}
-						isPrintDisabled={orderItems.length === 0 || !paymentMethod}
-					/>
-				)}
+				{/* Keyboard Shortcuts Help Modal */}
+				<KeyboardShortcutsModal
+					isOpen={isShortcutsHelpOpen}
+					onClose={onShortcutsHelpClose}
+					context="sales"
+				/>
 
 				{/* Order Detail Modal */}
 				<OrderDetailModal
 					isOpen={isOpen}
 					onClose={onClose}
 					order={selectedOrder}
-				/>
-
-				{/* Keyboard Shortcuts Help Modal */}
-				<KeyboardShortcutsModal
-					isOpen={isShortcutsHelpOpen}
-					onClose={onShortcutsHelpClose}
-					context="sales"
 				/>
 
 				{/* Sale success notification */}

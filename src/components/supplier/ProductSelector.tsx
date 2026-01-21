@@ -75,7 +75,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 				// Filter out already selected products
 				const selectedIds = selectedProducts.map((p) => p.productId);
 				const filtered = (response.data as unknown as InventoryProduct[]).filter(
-					(p) => !selectedIds.includes(p.id),
+					(p) => !selectedIds.includes(p.productId),
 				);
 				setSearchResults(filtered);
 				setShowResults(true);
@@ -97,8 +97,8 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 	const handleAddProduct = useCallback(
 		(product: InventoryProduct) => {
 			const newProduct: SelectedProduct = {
-				productId: product.id,
-				productName: product.name,
+				productId: product.productId,
+				productName: product.productName,
 			};
 			onProductsChange([...selectedProducts, newProduct]);
 			setSearchQuery("");
@@ -157,7 +157,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 						<VStack align="stretch" spacing={0}>
 							{searchResults.map((product) => (
 								<Flex
-									key={product.id}
+									key={product.productId}
 									px={3}
 									py={2}
 									align="center"
@@ -167,18 +167,18 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 									onClick={() => handleAddProduct(product)}>
 									<Box>
 										<Text fontSize="13px" fontWeight="600" color="gray.800">
-											{product.name}
+											{product.productName}
 										</Text>
 										<HStack spacing={2}>
 											<Text fontSize="11px" color="gray.500">
-												{product.code}
+												{product.productId}
 											</Text>
 											<Badge
 												colorScheme="purple"
 												fontSize="10px"
 												px={1.5}
 												borderRadius="sm">
-												{product.category}
+												{product.categoryId}
 											</Badge>
 										</HStack>
 									</Box>

@@ -273,16 +273,58 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			// TODO: Call update API when available
-			// const result = await promotionService.updatePromotion(promotionId, {...});
-			toast({
-				title: "Thông báo",
-				description:
-					"Chức năng cập nhật khuyến mãi đang được phát triển",
-				status: "info",
-				duration: 3000,
-				isClosable: true,
-			});
+			const productIds = selectedProducts.map((p) => p.productId);
+
+			let requestData;
+
+			if (formData.promotionType === "Discount") {
+				requestData = {
+					promotionName: formData.promotionName,
+					promotionDescription: formData.promotionDescription || undefined,
+					products: productIds,
+					promotionType: "Discount" as const,
+					discountPercent: formData.discountPercent,
+					startDate: formData.startDate, // yyyy-MM-dd format from HTML input
+					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
+				};
+			} else {
+				requestData = {
+					promotionName: formData.promotionName,
+					promotionDescription: formData.promotionDescription || undefined,
+					products: productIds,
+					promotionType: "Buy X Get Y" as const,
+					buyQuantity: formData.buyQuantity,
+					getQuantity: formData.getQuantity,
+					startDate: formData.startDate, // yyyy-MM-dd format from HTML input
+					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
+				};
+			}
+
+			const result = await promotionService.updatePromotion(
+				promotionId,
+				requestData,
+			);
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã cập nhật khuyến mãi thành công",
+					status: "success",
+					duration: 3000,
+					isClosable: true,
+				});
+				onSuccess?.();
+				setMode("view");
+				await loadPromotionData(); // Reload data
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể cập nhật khuyến mãi",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
+				});
+			}
 		} catch (error) {
 			console.error("Error updating promotion:", error);
 			toast({
@@ -392,8 +434,9 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 	};
 
 	// Check if promotion can be cancelled or edited
+	// Only Upcoming promotions can be cancelled or edited (not Active)
 	const canCancel = (status: PromotionStatus) => {
-		return status === "Active" || status === "Upcoming";
+		return status === "Upcoming";
 	};
 
 	const canEdit = (status: PromotionStatus) => {

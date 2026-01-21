@@ -22,7 +22,7 @@ export interface PromotionProductDetail {
 // Interface cho list promotions (GET /promotions)
 export interface Promotion {
 	promotionId: string;
-	name: string;
+	promotionName: string;
 	promotionType: PromotionType;
 	products: PromotionProductSummary[];
 	// Cho loại Discount
@@ -82,8 +82,46 @@ export type CreatePromotionRequest =
 	| CreateDiscountPromotion
 	| CreateBuyXGetYPromotion;
 
+// Interface cho update promotion - Discount type
+export interface UpdateDiscountPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Discount";
+	discountPercent: number; // 1-100
+	startDate: string; // Format: yyyy-MM-dd
+	endDate: string; // Format: yyyy-MM-dd
+}
+
+// Interface cho update promotion - Buy X Get Y type
+export interface UpdateBuyXGetYPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Buy X Get Y";
+	buyQuantity: number; // > 0
+	getQuantity: number; // > 0
+	startDate: string; // Format: yyyy-MM-dd
+	endDate: string; // Format: yyyy-MM-dd
+}
+
+// Union type cho update promotion
+export type UpdatePromotionRequest =
+	| UpdateDiscountPromotion
+	| UpdateBuyXGetYPromotion;
+
 // Response khi tạo promotion thành công
 export interface CreatePromotionResponse {
+	promotionId: string;
+	promotionName: string;
+	promotionDescription: string;
+	status: PromotionStatus;
+	startDate: string;
+	endDate: string;
+}
+
+// Response khi update promotion thành công
+export interface UpdatePromotionResponse {
 	promotionId: string;
 	promotionName: string;
 	promotionDescription: string;

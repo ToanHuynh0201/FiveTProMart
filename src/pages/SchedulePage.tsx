@@ -111,6 +111,24 @@ const SchedulePage = () => {
 		return `${day}-${month}-${year}`;
 	};
 
+	// Helper: Parse dd-MM-yyyy to yyyy-MM-dd
+	const parseDateFromAPI = (dateStr: string): string => {
+		// Check if already in ISO format (yyyy-MM-dd)
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+			return dateStr;
+		}
+
+		// Parse dd-MM-yyyy format
+		const parts = dateStr.split("-");
+		if (parts.length === 3) {
+			const [day, month, year] = parts;
+			return `${year}-${month}-${day}`;
+		}
+
+		// Fallback: return as is
+		return dateStr;
+	};
+
 	// Helper: Convert WorkScheduleResponse[] to DaySchedule[]
 	const convertToWeekData = (
 		schedules: WorkScheduleResponse[],
@@ -133,9 +151,7 @@ const SchedulePage = () => {
 
 			// Group schedules by shift for this date
 			const daySchedules_api = schedules.filter((schedule) => {
-				const scheduleDate = new Date(schedule.workDate)
-					.toISOString()
-					.split("T")[0];
+				const scheduleDate = parseDateFromAPI(schedule.workDate);
 				return scheduleDate === dateStr;
 			});
 

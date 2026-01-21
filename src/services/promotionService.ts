@@ -1,6 +1,9 @@
 import apiService from "@/lib/api";
 import { withErrorHandling } from "@/utils/error";
-import type { CreatePromotionRequest } from "@/types/promotion";
+import type {
+	CreatePromotionRequest,
+	UpdatePromotionRequest,
+} from "@/types/promotion";
 
 // API Query Parameters theo spec
 export interface PromotionQueryParams {
@@ -62,8 +65,18 @@ class PromotionService {
 	);
 
 	/**
+	 * PUT /api/v1/promotions/{id}
+	 * Update promotion (only for Upcoming promotions)
+	 */
+	updatePromotion = withErrorHandling(
+		async (id: string, data: UpdatePromotionRequest) => {
+			return await apiService.put(`/promotions/${id}`, data);
+		},
+	);
+
+	/**
 	 * PUT /api/v1/promotions/{id}/cancel
-	 * Cancel a promotion
+	 * Cancel a promotion (only for Active or Upcoming promotions)
 	 */
 	cancelPromotion = withErrorHandling(async (id: string) => {
 		return await apiService.put(`/promotions/${id}/cancel`, {});

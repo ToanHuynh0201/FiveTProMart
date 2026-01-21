@@ -190,6 +190,12 @@ const PromotionPage = () => {
 		onViewEditModalOpen();
 	};
 
+	const handleEdit = (id: string) => {
+		setSelectedPromotionId(id);
+		setModalMode("edit");
+		onViewEditModalOpen();
+	};
+
 	const handleCancel = async (id: string) => {
 		if (window.confirm("Bạn có chắc chắn muốn hủy khuyến mãi này?")) {
 			const result = await promotionService.cancelPromotion(id);
@@ -329,6 +335,7 @@ const PromotionPage = () => {
 							<PromotionTable
 								promotions={promotions}
 								onViewDetail={handleViewDetail}
+								onEdit={handleEdit}
 								onCancel={handleCancel}
 								searchQuery={filters.search || ""}
 							/>

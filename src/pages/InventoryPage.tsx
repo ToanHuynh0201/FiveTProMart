@@ -156,19 +156,8 @@ const InventoryPage = () => {
 	useEffect(() => {
 		const loadInitialData = async () => {
 			try {
-				// Load categories from API
-				const response = await inventoryService.getCategories();
-				// Map CategoryDTO to InventoryCategory
-
-				const categoriesData: InventoryCategory[] = response.data.map(
-					(cat) => ({
-						id: cat.categoryId,
-						name: cat.categoryName,
-						description: undefined,
-						productCount: 0,
-					}),
-				);
-
+				// Load categories from API - use directly, no transformation
+				const categoriesData = await inventoryService.getCategories();
 				setCategories(categoriesData);
 			} catch (error) {
 				console.error("Error loading categories:", error);
@@ -587,6 +576,7 @@ const InventoryPage = () => {
 
 							<ProductTable
 								products={products}
+								categories={categories}
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}

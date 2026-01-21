@@ -1,11 +1,23 @@
 import apiService from "@/lib/api";
-import type { InventoryProduct, InventoryStats } from "@/types";
+import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
+import type { ProductBatch } from "@/types/inventory";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
 
 /**
- * Disposal request matching FRONTEND_API_REQUIREMENTS.md §4
+ * Request type for creating/updating products
+ * Matches backend ProductRequest.java exactly
+ */
+interface ProductRequest {
+	categoryId: string;
+	productName: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
+}
+
+/**
+ * Disposal request matching FRONTEND_API_REQUIREMENTS.md ┬º4
  */
 interface DisposeRequest {
 	quantity: number;
@@ -15,7 +27,7 @@ interface DisposeRequest {
 }
 
 /**
- * Disposal response matching FRONTEND_API_REQUIREMENTS.md §4
+ * Disposal response matching FRONTEND_API_REQUIREMENTS.md ┬º4
  */
 interface DisposeResponse {
 	disposalId: string;
@@ -31,141 +43,48 @@ interface DisposeResponse {
 	notes?: string;
 }
 
-/**
- * Create product DTO matching product-api-spec.md §3.3
- * Note: categoryId is string (matches CategoryDTO.categoryId)
- */
-export interface CreateProductDTO {
-	productName: string;
-	categoryId: string;
-	unitOfMeasure: string;
-	sellingPrice: number;
-}
-
-/**
- * Category DTO matching category-api-spec.md
- */
-export interface CategoryDTO {
-	categoryId: string;
-	categoryName: string;
-}
-
-/**
- * Product DTO from API (product-api-spec.md §3.1)
- * Note: API returns categoryId (UUID string), not categoryName
- */
-interface ProductApiResponse {
-	productId: string;
-	productName: string;
-	categoryId: string;
-	unitOfMeasure: string;
-	sellingPrice: number;
-	totalStockQuantity: number;
-}
-
-/**
- * Create/Update category request
- */
-export interface CreateCategoryDTO {
-	categoryName: string;
-}
-
-export interface UpdateCategoryDTO {
-	categoryName: string;
-}
-
 export const inventoryService = {
 	/**
 	 * Fetch products with server-side filtering and pagination
+	 * Returns InventoryProduct[] matching backend ProductResponse.java exactly
 	 */
 	async getProducts(
 		filters: InventoryFilters,
 	): Promise<ApiResponse<InventoryProduct>> {
 		const params = buildQueryParams(filters);
-		const response = await apiService.get<ApiResponse<ProductApiResponse>>(
+		return apiService.get<ApiResponse<InventoryProduct>>(
 			`/products?${params.toString()}`,
 		);
-		console.log(response);
-
-		// Fetch categories to create lookup map
-		const categoriesResponse = await this.getCategories();
-		const categoryMap = new Map<string, string>();
-		categoriesResponse.data.forEach((cat) => {
-			categoryMap.set(cat.categoryId, cat.categoryName);
-		});
-
-		// Map API response to frontend type with category names
-		const mappedData: InventoryProduct[] = response.data.map((product) => ({
-			id: product.productId,
-			code: product.productId, // Use productId as code
-			name: product.productName,
-			category: categoryMap.get(product.categoryId) || product.categoryId,
-			unit: product.unitOfMeasure,
-			price: product.sellingPrice,
-			costPrice: 0, // API doesn't return this
-			stock: product.totalStockQuantity,
-			minStock: 0, // API doesn't return this
-			maxStock: 0, // API doesn't return this
-			status: product.totalStockQuantity > 0 ? "active" : "out-of-stock" as const,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		}));
-
-		return {
-			...response,
-			data: mappedData,
-		};
 	},
 
 	async getProductById(id: string): Promise<InventoryProduct> {
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: ProductApiResponse;
+			data: InventoryProduct;
 		}>(`/products/${id}`);
-
-		// Fetch category name using categoryId
-		const product = response.data;
-		let categoryName = product.categoryId;
-		try {
-			const categoryResponse = await this.getCategoryById(product.categoryId);
-			categoryName = categoryResponse.data.categoryName;
-		} catch (error) {
-			console.warn('Failed to fetch category name, using categoryId instead');
-		}
-
-		return {
-			id: product.productId,
-			code: product.productId,
-			name: product.productName,
-			category: categoryName,
-			unit: product.unitOfMeasure,
-			price: product.sellingPrice,
-			costPrice: 0,
-			stock: product.totalStockQuantity,
-			minStock: 0,
-			maxStock: 0,
-			status: product.totalStockQuantity > 0 ? "active" : "out-of-stock",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		};
+		return response.data;
 	},
 
-	async createProduct(
-		data: CreateProductDTO,
-	): Promise<{ success: boolean; message: string; data: any }> {
-		return apiService.post<{
+	async createProduct(data: ProductRequest): Promise<InventoryProduct> {
+		const response = await apiService.post<{
 			success: boolean;
 			message: string;
-			data: any;
+			data: InventoryProduct;
 		}>("/products", data);
+		return response.data;
 	},
 
 	async updateProduct(
 		id: string,
-		data: Partial<InventoryProduct>,
+		data: Partial<ProductRequest>,
 	): Promise<InventoryProduct> {
-		return apiService.put<InventoryProduct>(`/products/${id}`, data);
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>(`/products/${id}`, data);
+		return response.data;
 	},
 
 	async deleteProduct(id: string): Promise<void> {
@@ -173,124 +92,57 @@ export const inventoryService = {
 	},
 
 	// ===================================================================
-	// Categories - category-api-spec.md
+	// Categories - GET /api/product-categories (ProductCategoryAPI.md)
 	// ===================================================================
 	/**
-	 * Get all categories - GET /api/product-categories
+	 * Fetch all product categories
+	 * Returns InventoryCategory[] matching backend CategoryResponse.java exactly
 	 */
-	async getCategories(search?: string): Promise<{
-		success: boolean;
-		message: string;
-		data: CategoryDTO[];
-	}> {
-		const params = search ? `?search=${encodeURIComponent(search)}` : "";
-		return apiService.get<{
+	async getCategories(): Promise<InventoryCategory[]> {
+		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: CategoryDTO[];
-		}>(`/product-categories${params}`);
-	},
-
-	/**
-	 * Get category by ID - GET /api/product-categories/{id}
-	 */
-	async getCategoryById(id: string): Promise<{
-		success: boolean;
-		message: string;
-		data: CategoryDTO;
-	}> {
-		return apiService.get<{
-			success: boolean;
-			message: string;
-			data: CategoryDTO;
-		}>(`/product-categories/${id}`);
-	},
-
-	/**
-	 * Create new category - POST /api/product-categories
-	 */
-	async createCategory(data: CreateCategoryDTO): Promise<{
-		success: boolean;
-		message: string;
-		data: CategoryDTO;
-	}> {
-		return apiService.post<{
-			success: boolean;
-			message: string;
-			data: CategoryDTO;
-		}>("/product-categories", data);
-	},
-
-	/**
-	 * Update category - PUT /api/product-categories/{id}
-	 */
-	async updateCategory(
-		id: string,
-		data: UpdateCategoryDTO,
-	): Promise<{
-		success: boolean;
-		message: string;
-		data: CategoryDTO;
-	}> {
-		return apiService.put<{
-			success: boolean;
-			message: string;
-			data: CategoryDTO;
-		}>(`/product-categories/${id}`, data);
-	},
-
-	/**
-	 * Delete category - DELETE /api/product-categories/{id}
-	 */
-	async deleteCategory(id: string): Promise<{
-		success: boolean;
-		message: string;
-		data: null;
-	}> {
-		return apiService.delete<{
-			success: boolean;
-			message: string;
-			data: null;
-		}>(`/product-categories/${id}`);
+			data: InventoryCategory[];
+		}>("/product-categories");
+		return response.data;
 	},
 
 	// ===================================================================
-	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md §5)
+	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md ┬º5)
 	// ===================================================================
 	/**
 	 * Get product statistics for dashboard.
-	 * Fails gracefully if backend endpoint doesn't exist yet.
+	 * Returns InventoryStats matching backend ProductStatsResponse.java exactly
 	 */
 	async getStats(): Promise<InventoryStats> {
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: {
-				totalProducts: number;
-				activeProducts: number;
-				inactiveProducts: number;
-				totalInventoryValue: number;
-				lowStockCount: number;
-				outOfStockCount: number;
-				expiringSoonCount: number;
-				expiredCount: number;
-			};
+			data: InventoryStats;
 		}>("/products/stats");
+		return response.data;
+	},
 
-		return {
-			totalProducts: response.data.totalProducts,
-			totalValue: response.data.totalInventoryValue,
-			lowStockProducts: response.data.lowStockCount,
-			outOfStockProducts: response.data.outOfStockCount,
-			activeProducts: response.data.activeProducts,
-			expiredBatches: response.data.expiredCount,
-			expiringSoonBatches: response.data.expiringSoonCount,
-		};
+	// ===================================================================
+	// Batches/Lots - GET /api/stock_inventories?productId={id}
+	// (StockInventoryAPI.md ┬º5.1)
+	// ===================================================================
+	/**
+	 * Fetch stock inventory batches for a specific product.
+	 * Returns ProductBatch[] matching backend StockInventoryResponse.java exactly
+	 */
+	async getBatchesByProductId(productId: string): Promise<ProductBatch[]> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: ProductBatch[];
+		}>(`/stock_inventories?productId=${encodeURIComponent(productId)}`);
+		return response.data;
 	},
 
 	// ===================================================================
 	// Dispose - POST /api/stock_inventories/{lotId}/dispose
-	// (FRONTEND_API_REQUIREMENTS.md §4)
+	// (FRONTEND_API_REQUIREMENTS.md ┬º4)
 	// ===================================================================
 	/**
 	 * Dispose a lot of stock (expired/damaged).
@@ -325,7 +177,7 @@ export const inventoryService = {
 
 	// ===================================================================
 	// Update Lot - PUT /api/v1/stock_inventories/{lot_id}
-	// (StockInventoryAPI.md §5.4)
+	// (StockInventoryAPI.md ┬º5.4)
 	// ===================================================================
 	/**
 	 * Update a stock inventory lot (quantity and status)

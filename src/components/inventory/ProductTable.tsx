@@ -18,12 +18,12 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import type { InventoryProduct } from "../../types/inventory";
-import { isExpired, isExpiringSoon } from "../../utils/date";
+import type { InventoryProduct, InventoryCategory } from "../../types/inventory";
 import { EmptyState } from "../common";
 
 interface ProductTableProps {
 	products: InventoryProduct[];
+	categories?: InventoryCategory[];
 	onViewDetail: (id: string) => void;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
@@ -31,17 +31,25 @@ interface ProductTableProps {
 
 export const ProductTable: React.FC<ProductTableProps> = ({
 	products,
+	categories = [],
 	onViewDetail,
 	onEdit,
 	onDelete,
 }) => {
 	// Create a key based on products to trigger animation on filter changes
-	const tableKey = products.map((p) => p.id).join("-");
+	const tableKey = products.map((p) => p.productId).join("-");
+
+	// Helper to get category name from id
+	const getCategoryName = (categoryId: string): string => {
+		const category = categories.find((c) => c.categoryId === categoryId);
+		return category?.categoryName || categoryId;
+	};
+
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
-			active: { color: "green", label: "Đang kinh doanh" },
-			inactive: { color: "gray", label: "Ngừng kinh doanh" },
-			"out-of-stock": { color: "red", label: "Hết hàng" },
+			active: { color: "green", label: "─Éang kinh doanh" },
+			inactive: { color: "gray", label: "Ngß╗½ng kinh doanh" },
+			"out-of-stock": { color: "red", label: "Hß║┐t h├áng" },
 		};
 
 		const config = statusConfig[status as keyof typeof statusConfig] || {
@@ -63,85 +71,35 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	};
 
 	const getStockWarning = (product: InventoryProduct) => {
-		if (product.stock === 0) {
+		const qty = product.totalStockQuantity ?? 0;
+		if (qty === 0) {
 			return (
 				<Text
 					color="red.500"
 					fontSize="13px"
 					fontWeight="600">
-					Hết hàng
+					Hß║┐t h├áng
 				</Text>
 			);
 		}
-		if (product.stock <= product.minStock) {
+		// Low stock warning (threshold: 10 units)
+		if (qty <= 10) {
 			return (
 				<Text
 					color="orange.500"
 					fontSize="13px"
 					fontWeight="600">
-					Sắp hết
+					Sß║»p hß║┐t
 				</Text>
 			);
 		}
 		return null;
 	};
 
-	// Kiểm tra lô hàng hết hạn
-	const getBatchExpiryWarning = (product: InventoryProduct) => {
-		if (!product.batches || product.batches.length === 0) return null;
-
-		let expiredCount = 0;
-		let expiringSoonCount = 0;
-
-		product.batches.forEach((batch) => {
-			if (batch.quantity > 0) {
-				if (isExpired(batch.expiryDate)) {
-					expiredCount++;
-				} else if (isExpiringSoon(batch.expiryDate, 7)) {
-					expiringSoonCount++;
-				}
-			}
-		});
-
-		if (expiredCount > 0) {
-			return (
-				<Tooltip
-					label={`${expiredCount} lô đã hết hạn`}
-					placement="top"
-					hasArrow>
-					<Badge
-						colorScheme="red"
-						fontSize="10px"
-						px={2}
-						py={0.5}
-						borderRadius="md"
-						cursor="help">
-						⚠️ {expiredCount} lô hết hạn
-					</Badge>
-				</Tooltip>
-			);
-		}
-
-		if (expiringSoonCount > 0) {
-			return (
-				<Tooltip
-					label={`${expiringSoonCount} lô sắp hết hạn trong 7 ngày`}
-					placement="top"
-					hasArrow>
-					<Badge
-						colorScheme="orange"
-						fontSize="10px"
-						px={2}
-						py={0.5}
-						borderRadius="md"
-						cursor="help">
-						🔔 {expiringSoonCount} lô sắp hết hạn
-					</Badge>
-				</Tooltip>
-			);
-		}
-
-		return null;
+	// Helper to derive status from stock quantity
+	const getProductStatus = (product: InventoryProduct): string => {
+		if (product.totalStockQuantity === 0) return "out-of-stock";
+		return "active";
 	};
 
 	return (
@@ -171,7 +129,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="100px">
-								Mã hàng
+								M├ú h├áng
 							</Th>
 							<Th
 								fontSize="13px"
@@ -180,7 +138,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="200px">
-								Tên hàng hóa
+								T├¬n h├áng h├│a
 							</Th>
 							<Th
 								fontSize="13px"
@@ -189,7 +147,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="120px">
-								Danh mục
+								Danh mß╗Ñc
 							</Th>
 							<Th
 								fontSize="13px"
@@ -199,7 +157,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="100px"
 								isNumeric>
-								Tồn kho
+								Tß╗ôn kho
 							</Th>
 							<Th
 								fontSize="13px"
@@ -208,7 +166,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="80px">
-								Đơn vị
+								─É╞ín vß╗ï
 							</Th>
 							<Th
 								fontSize="13px"
@@ -218,7 +176,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="120px"
 								isNumeric>
-								Giá bán
+								Gi├í b├ín
 							</Th>
 							<Th
 								fontSize="13px"
@@ -227,7 +185,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="140px">
-								Trạng thái
+								Trß║íng th├íi
 							</Th>
 							<Th
 								fontSize="13px"
@@ -237,14 +195,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="110px"
 								textAlign="center">
-								Thao tác
+								Thao t├íc
 							</Th>
 						</Tr>
 					</Thead>
 					<Tbody>
 						{products.map((product) => (
 							<Tr
-								key={product.id}
+							key={product.productId}
 								_hover={{ bg: "gray.50" }}
 								transition="all 0.2s">
 								<Td
@@ -252,37 +210,20 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="gray.700"
 									fontWeight="500"
 									width="100px">
-									<Tooltip
-										label={product.code}
-										placement="top"
-										hasArrow>
-										<Text
-											overflow="hidden"
-											textOverflow="ellipsis"
-											whiteSpace="nowrap">
-											{product.code.length > 8
-												? `${product.code.substring(0, 8)}...`
-												: product.code}
-										</Text>
-									</Tooltip>
+									{product.productId}
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.800"
 									fontWeight="600"
 									width="200px">
-									<Flex
-										direction="column"
-										gap={1}>
-										<Text>{product.name}</Text>
-										{getBatchExpiryWarning(product)}
-									</Flex>
+									<Text>{product.productName}</Text>
 								</Td>
 								<Td
 									fontSize="14px"
 									color="gray.600"
 									width="120px">
-									{product.category}
+									{getCategoryName(product.categoryId)}
 								</Td>
 								<Td
 									fontSize="14px"
@@ -294,7 +235,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 										align="flex-end"
 										gap={1}>
 										<Text color="gray.800">
-											{product.stock}
+											{product.totalStockQuantity}
 										</Text>
 										{getStockWarning(product)}
 									</Flex>
@@ -303,7 +244,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									fontSize="14px"
 									color="gray.600"
 									width="80px">
-									{product.unit}
+									{product.unitOfMeasure}
 								</Td>
 								<Td
 									fontSize="14px"
@@ -311,33 +252,33 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="brand.600"
 									width="120px"
 									isNumeric>
-									{product.price.toLocaleString("vi-VN")}đ
-								</Td>
-								<Td width="140px">
-									{getStatusBadge(product.status)}
+								{(product.sellingPrice ?? 0).toLocaleString("vi-VN")}─æ
+							</Td>
+							<Td width="140px">
+								{getStatusBadge(getProductStatus(product))}
 								</Td>
 								<Td width="110px">
 									<Flex
 										justify="center"
 										gap={1}>
 										<Tooltip
-											label="Xem chi tiết"
+											label="Xem chi tiß║┐t"
 											fontSize="xs">
 											<IconButton
-												aria-label="Xem chi tiết"
+												aria-label="Xem chi tiß║┐t"
 												icon={<ViewIcon />}
 												size="sm"
 												variant="ghost"
 												colorScheme="blue"
 												onClick={() =>
-													onViewDetail(product.id)
+													onViewDetail(product.productId)
 												}
 											/>
 										</Tooltip>
 										<Menu>
 											<MenuButton
 												as={IconButton}
-												aria-label="Thao tác khác"
+												aria-label="Thao t├íc kh├íc"
 												icon={<BsThreeDotsVertical />}
 												size="sm"
 												variant="ghost"
@@ -346,17 +287,17 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												<MenuItem
 													icon={<EditIcon />}
 													onClick={() =>
-														onEdit(product.id)
+														onEdit(product.productId)
 													}>
-													Chỉnh sửa
+													Chß╗ënh sß╗¡a
 												</MenuItem>
 												<MenuItem
 													icon={<DeleteIcon />}
 													color="red.500"
 													onClick={() =>
-														onDelete(product.id)
+														onDelete(product.productId)
 													}>
-													Xóa
+													X├│a
 												</MenuItem>
 											</MenuList>
 										</Menu>
@@ -372,8 +313,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 				<EmptyState 
 					variant="no-search-results" 
 					size="md"
-					title="Không tìm thấy sản phẩm"
-					description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
+					title="Kh├┤ng t├¼m thß║Ñy sß║ún phß║⌐m"
+					description="Thß╗¡ thay ─æß╗òi bß╗Ö lß╗ìc hoß║╖c tß╗½ kh├│a t├¼m kiß║┐m"
 				/>
 			)}
 		</Box>

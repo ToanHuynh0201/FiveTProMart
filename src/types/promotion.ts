@@ -65,11 +65,17 @@ export interface CreateDiscountPromotion {
 	endDate: string; // Format: dd-MM-yyyy
 }
 
+// Product pair cho Buy X Get Y promotion
+export interface BuyXGetYProductPair {
+	productBuy: string; // productId to buy
+	productGet: string; // productId to get for free
+}
+
 // Interface cho tạo promotion mới - Buy X Get Y type
 export interface CreateBuyXGetYPromotion {
 	promotionName: string;
 	promotionDescription?: string;
-	products: string[]; // Array of productId
+	products: BuyXGetYProductPair[]; // Array of product pairs
 	promotionType: "Buy X Get Y";
 	buyQuantity: number; // > 0
 	getQuantity: number; // > 0
@@ -97,7 +103,7 @@ export interface UpdateDiscountPromotion {
 export interface UpdateBuyXGetYPromotion {
 	promotionName: string;
 	promotionDescription?: string;
-	products: string[]; // Array of productId
+	products: BuyXGetYProductPair[]; // Array of product pairs
 	promotionType: "Buy X Get Y";
 	buyQuantity: number; // > 0
 	getQuantity: number; // > 0

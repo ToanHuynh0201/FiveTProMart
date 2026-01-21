@@ -60,18 +60,18 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 
 	// Fetch batches when modal opens or product changes or page changes
 	useEffect(() => {
-		if (isOpen && product?.id) {
+		if (isOpen && product?.productId) {
 			fetchBatches();
 		}
-	}, [isOpen, product?.id, currentPage]);
+	}, [isOpen, product?.productId, currentPage]);
 
 	const fetchBatches = async () => {
-		if (!product?.id) return;
+		if (!product?.productId) return;
 
 		setIsLoading(true);
 		try {
 			const result = await stockInventoryService.getStockInventories({
-				productId: product.id,
+				productId: product.productId,
 				sortBy: "expirationDate",
 				order: "asc",
 				page: currentPage - 1, // Convert to zero-based
@@ -185,14 +185,14 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 				<ModalOverlay />
 				<ModalContent>
 					<ModalHeader>
-						Quản lý lô hàng - {product.name}
+						Quản lý lô hàng - {product.productName}
 						<Text
 							fontSize="sm"
 							fontWeight="normal"
 							color="gray.600"
 							mt={1}>
-							Mã sản phẩm: {product.code} | Tổng tồn kho:{" "}
-							{product.stock} {product.unit}
+							Mã sản phẩm: {product.productId} | Tổng tồn kho:{" "}
+							{product.totalStockQuantity ?? 0} {product.unitOfMeasure}
 						</Text>
 					</ModalHeader>
 					<ModalCloseButton />
@@ -276,7 +276,7 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 													</Td>
 													<Td isNumeric>
 														{batch.stockQuantity}{" "}
-														{product.unit}
+														{product.unitOfMeasure}
 													</Td>
 													<Td isNumeric>
 														{formatCurrency(
@@ -418,7 +418,7 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 				isOpen={isEditOpen}
 				onClose={onEditClose}
 				batch={selectedBatch}
-				productName={product.name}
+				productName={product.productName}
 				onUpdate={handleUpdateBatch}
 			/>
 		</>

@@ -270,7 +270,7 @@ const InventoryPage = () => {
 	};
 
 	const handleManageBatches = (id: string) => {
-		const product = products.find((p) => p.id === id);
+		const product = products.find((p) => p.productId === id);
 		if (product) {
 			setSelectedProduct(product);
 			onBatchModalOpen();
@@ -297,7 +297,7 @@ const InventoryPage = () => {
 
 			// Update selected product for the modal
 			const updatedProduct = products.find(
-				(p) => p.id === selectedProduct.id,
+				(p) => p.productId === selectedProduct.productId,
 			);
 			if (updatedProduct) {
 				setSelectedProduct(updatedProduct);

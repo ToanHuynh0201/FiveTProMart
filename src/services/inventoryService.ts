@@ -1,5 +1,5 @@
 import apiService from "@/lib/api";
-import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
+import type { InventoryProduct, InventoryStats } from "@/types";
 import type { ProductBatch } from "@/types/inventory";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
@@ -41,6 +41,26 @@ interface DisposeResponse {
 	disposedBy: string;
 	reason: string;
 	notes?: string;
+}
+
+/**
+ * Category DTO types
+ */
+export interface CategoryDTO {
+	categoryId: string;
+	categoryCode: string;
+	categoryName: string;
+	description?: string;
+}
+
+export interface CreateCategoryDTO {
+	categoryName: string;
+}
+
+export interface UpdateCategoryDTO {
+	categoryCode?: string;
+	categoryName?: string;
+	description?: string;
 }
 
 export const inventoryService = {
@@ -96,15 +116,64 @@ export const inventoryService = {
 	// ===================================================================
 	/**
 	 * Fetch all product categories
-	 * Returns InventoryCategory[] matching backend CategoryResponse.java exactly
+	 * Returns CategoryDTO[] matching backend CategoryResponse.java exactly
 	 */
-	async getCategories(): Promise<InventoryCategory[]> {
+	async getCategories(search?: string): Promise<CategoryDTO[]> {
+		const url = search
+			? `/product-categories?search=${encodeURIComponent(search)}`
+			: "/product-categories";
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: InventoryCategory[];
-		}>("/product-categories");
+			data: CategoryDTO[];
+		}>(url);
 		return response.data;
+	},
+
+	/**
+	 * Get a single category by ID
+	 */
+	async getCategoryById(id: string): Promise<CategoryDTO> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`);
+		return response.data;
+	},
+
+	/**
+	 * Create a new product category
+	 */
+	async createCategory(data: CreateCategoryDTO): Promise<CategoryDTO> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>("/product-categories", data);
+		return response.data;
+	},
+
+	/**
+	 * Update an existing product category
+	 */
+	async updateCategory(
+		id: string,
+		data: UpdateCategoryDTO,
+	): Promise<CategoryDTO> {
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`, data);
+		return response.data;
+	},
+
+	/**
+	 * Delete a product category
+	 */
+	async deleteCategory(id: string): Promise<void> {
+		await apiService.delete(`/product-categories/${id}`);
 	},
 
 	// ===================================================================

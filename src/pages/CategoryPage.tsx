@@ -67,8 +67,10 @@ const CategoryPage = () => {
 	const fetchCategories = async (search?: string) => {
 		setIsLoading(true);
 		try {
-			const response = await inventoryService.getCategories(search);
-			setCategories(response.data);
+			const categories = await inventoryService.getCategories(search);
+			console.log(categories);
+
+			setCategories(categories);
 		} catch (error) {
 			console.error("Error fetching categories:", error);
 			toast({
@@ -107,10 +109,7 @@ const CategoryPage = () => {
 		}
 	};
 
-	const handleEditCategory = async (
-		id: string,
-		data: UpdateCategoryDTO,
-	) => {
+	const handleEditCategory = async (id: string, data: UpdateCategoryDTO) => {
 		try {
 			await inventoryService.updateCategory(id, data);
 			await fetchCategories(searchQuery);
@@ -219,7 +218,7 @@ const CategoryPage = () => {
 				)}
 
 				{/* Category Table */}
-				{!isLoading && categories.length > 0 && (
+				{!isLoading && categories?.length > 0 && (
 					<Box mb={6}>
 						<Flex
 							justify="space-between"
@@ -242,7 +241,7 @@ const CategoryPage = () => {
 				)}
 
 				{/* Empty State */}
-				{!isLoading && categories.length === 0 && (
+				{!isLoading && categories?.length === 0 && (
 					<Flex
 						direction="column"
 						justify="center"
@@ -290,8 +289,8 @@ const CategoryPage = () => {
 						</AlertDialogHeader>
 
 						<AlertDialogBody>
-							Bạn có chắc chắn muốn xóa danh mục này? Hành động này
-							không thể hoàn tác.
+							Bạn có chắc chắn muốn xóa danh mục này? Hành động
+							này không thể hoàn tác.
 						</AlertDialogBody>
 
 						<AlertDialogFooter>

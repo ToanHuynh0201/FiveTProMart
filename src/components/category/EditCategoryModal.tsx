@@ -15,7 +15,10 @@ import {
 	Spinner,
 	Flex,
 } from "@chakra-ui/react";
-import { inventoryService, type UpdateCategoryDTO } from "@/services/inventoryService";
+import {
+	inventoryService,
+	type UpdateCategoryDTO,
+} from "@/services/inventoryService";
 
 interface EditCategoryModalProps {
 	isOpen: boolean;
@@ -33,6 +36,7 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [categoryCode, setCategoryCode] = useState("");
 	const [categoryName, setCategoryName] = useState("");
 
 	useEffect(() => {
@@ -40,8 +44,10 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 			if (isOpen && categoryId) {
 				setIsLoading(true);
 				try {
-					const response = await inventoryService.getCategoryById(categoryId);
-					setCategoryName(response.data.categoryName);
+					const category =
+						await inventoryService.getCategoryById(categoryId);
+					setCategoryCode(category.categoryCode);
+					setCategoryName(category.categoryName);
 				} catch (error) {
 					console.error("Error loading category:", error);
 					toast({
@@ -76,7 +82,10 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 		setIsSaving(true);
 
 		try {
-			await onUpdate(categoryId, { categoryName: categoryName.trim() });
+			await onUpdate(categoryId, {
+				categoryCode: categoryCode.trim(),
+				categoryName: categoryName.trim(),
+			});
 			toast({
 				title: "Thành công",
 				description: "Cập nhật danh mục thành công",
@@ -122,22 +131,45 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 							/>
 						</Flex>
 					) : (
-						<FormControl isRequired>
-							<FormLabel
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.700">
-								Tên danh mục
-							</FormLabel>
-							<Input
-								placeholder="Nhập tên danh mục"
-								value={categoryName}
-								onChange={(e) => setCategoryName(e.target.value)}
-								fontSize="15px"
-								h="48px"
-								autoFocus
-							/>
-						</FormControl>
+						<>
+							<FormControl mb={4}>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Mã danh mục
+								</FormLabel>
+								<Input
+									value={categoryId as string}
+									fontSize="15px"
+									h="48px"
+									isReadOnly
+									bg="gray.50"
+									cursor="not-allowed"
+									fontWeight="600"
+									color="gray.600"
+								/>
+							</FormControl>
+
+							<FormControl isRequired>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Tên danh mục
+								</FormLabel>
+								<Input
+									placeholder="Nhập tên danh mục"
+									value={categoryName}
+									onChange={(e) =>
+										setCategoryName(e.target.value)
+									}
+									fontSize="15px"
+									h="48px"
+									autoFocus
+								/>
+							</FormControl>
+						</>
 					)}
 				</ModalBody>
 

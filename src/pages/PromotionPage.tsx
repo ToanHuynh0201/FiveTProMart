@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
 	Box,
 	Text,
@@ -37,6 +37,7 @@ const PromotionPage = () => {
 	const [promotions, setPromotions] = useState<Promotion[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [stats, setStats] = useState<PromotionStats | null>(null);
+	const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
 	// Modal states
 	const [selectedPromotionId, setSelectedPromotionId] = useState<
@@ -75,7 +76,7 @@ const PromotionPage = () => {
 		});
 
 	// Fetch promotions
-	const fetchPromotions = useCallback(async () => {
+	const fetchPromotions = async () => {
 		setIsLoading(true);
 		try {
 			const result = await promotionService.getPromotions({
@@ -134,12 +135,18 @@ const PromotionPage = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [currentPage, debouncedFilters, setTotal, toast]);
+	};
 
 	// Fetch data when filters or page change
 	useEffect(() => {
+		// Skip first render if filters haven't changed yet
+		if (!hasInitialLoad && debouncedFilters === filters) {
+			setHasInitialLoad(true);
+			return;
+		}
 		fetchPromotions();
-	}, [fetchPromotions]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentPage, debouncedFilters]);
 
 	// Event handlers
 	const handleSearch = (value: string) => {

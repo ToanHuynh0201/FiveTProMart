@@ -50,7 +50,9 @@ export const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			await onAdd({ categoryName: categoryName.trim() });
+			await onAdd({
+				categoryName: categoryName.trim(),
+			});
 			toast({
 				title: "Thành công",
 				description: "Thêm danh mục thành công",

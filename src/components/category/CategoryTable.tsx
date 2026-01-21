@@ -9,6 +9,8 @@ import {
 	HStack,
 	Tooltip,
 	Box,
+	Text,
+	useToast,
 } from "@chakra-ui/react";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
 import type { CategoryDTO } from "@/services/inventoryService";
@@ -24,6 +26,20 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
 	onEdit,
 	onDelete,
 }) => {
+	const toast = useToast();
+
+	const handleCopyId = (categoryId: string) => {
+		navigator.clipboard.writeText(categoryId);
+		toast({
+			title: "Đã copy mã danh mục",
+			description: categoryId,
+			status: "success",
+			duration: 2000,
+			isClosable: true,
+			position: "top",
+		});
+	};
+
 	return (
 		<Box
 			borderWidth="1px"
@@ -67,8 +83,25 @@ export const CategoryTable: React.FC<CategoryTableProps> = ({
 							<Td
 								fontSize="15px"
 								color="gray.800"
-								fontWeight="500">
-								{category.categoryId}
+								fontWeight="500"
+								maxW="120px">
+								<Tooltip
+									label={category.categoryId}
+									placement="top"
+									hasArrow>
+									<Text
+										isTruncated
+										cursor="pointer"
+										onClick={() =>
+											handleCopyId(category.categoryId)
+										}
+										_hover={{
+											color: "blue.600",
+											textDecoration: "underline",
+										}}>
+										{category.categoryId}
+									</Text>
+								</Tooltip>
 							</Td>
 							<Td
 								fontSize="15px"

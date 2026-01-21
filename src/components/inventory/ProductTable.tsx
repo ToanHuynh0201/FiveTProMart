@@ -18,7 +18,10 @@ import {
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import type { InventoryProduct, InventoryCategory } from "../../types/inventory";
+import type {
+	InventoryProduct,
+	InventoryCategory,
+} from "../../types/inventory";
 import { EmptyState } from "../common";
 
 interface ProductTableProps {
@@ -47,9 +50,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
-			active: { color: "green", label: "─Éang kinh doanh" },
-			inactive: { color: "gray", label: "Ngß╗½ng kinh doanh" },
-			"out-of-stock": { color: "red", label: "Hß║┐t h├áng" },
+			active: { color: "green", label: "Đang kinh doanh" },
+			inactive: { color: "gray", label: "Ngừng kinh doanh" },
+			"out-of-stock": { color: "red", label: "Hết hàng" },
 		};
 
 		const config = statusConfig[status as keyof typeof statusConfig] || {
@@ -78,7 +81,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 					color="red.500"
 					fontSize="13px"
 					fontWeight="600">
-					Hß║┐t h├áng
+					Hết hàng
 				</Text>
 			);
 		}
@@ -89,7 +92,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 					color="orange.500"
 					fontSize="13px"
 					fontWeight="600">
-					Sß║»p hß║┐t
+					Sắp hết
 				</Text>
 			);
 		}
@@ -129,7 +132,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="100px">
-								M├ú h├áng
+								Mã hàng
 							</Th>
 							<Th
 								fontSize="13px"
@@ -138,7 +141,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="200px">
-								T├¬n h├áng h├│a
+								Thêm hàng hóa
 							</Th>
 							<Th
 								fontSize="13px"
@@ -147,7 +150,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="120px">
-								Danh mß╗Ñc
+								Danh mục
 							</Th>
 							<Th
 								fontSize="13px"
@@ -157,7 +160,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="100px"
 								isNumeric>
-								Tß╗ôn kho
+								Tồn kho
 							</Th>
 							<Th
 								fontSize="13px"
@@ -166,7 +169,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="80px">
-								─É╞ín vß╗ï
+								Đơn vị
 							</Th>
 							<Th
 								fontSize="13px"
@@ -176,7 +179,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="120px"
 								isNumeric>
-								Gi├í b├ín
+								Giá bán
 							</Th>
 							<Th
 								fontSize="13px"
@@ -185,7 +188,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="140px">
-								Trß║íng th├íi
+								Trạng thái
 							</Th>
 							<Th
 								fontSize="13px"
@@ -195,14 +198,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								py={4}
 								width="110px"
 								textAlign="center">
-								Thao t├íc
+								Thao tác
 							</Th>
 						</Tr>
 					</Thead>
 					<Tbody>
 						{products.map((product) => (
 							<Tr
-							key={product.productId}
+								key={product.productId}
 								_hover={{ bg: "gray.50" }}
 								transition="all 0.2s">
 								<Td
@@ -252,10 +255,13 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 									color="brand.600"
 									width="120px"
 									isNumeric>
-								{(product.sellingPrice ?? 0).toLocaleString("vi-VN")}─æ
-							</Td>
-							<Td width="140px">
-								{getStatusBadge(getProductStatus(product))}
+									{(product.sellingPrice ?? 0).toLocaleString(
+										"vi-VN",
+									)}
+									đ
+								</Td>
+								<Td width="140px">
+									{getStatusBadge(getProductStatus(product))}
 								</Td>
 								<Td width="110px">
 									<Flex
@@ -271,7 +277,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												variant="ghost"
 												colorScheme="blue"
 												onClick={() =>
-													onViewDetail(product.productId)
+													onViewDetail(
+														product.productId,
+													)
 												}
 											/>
 										</Tooltip>
@@ -287,17 +295,21 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 												<MenuItem
 													icon={<EditIcon />}
 													onClick={() =>
-														onEdit(product.productId)
+														onEdit(
+															product.productId,
+														)
 													}>
-													Chß╗ënh sß╗¡a
+													Chỉnh sửa
 												</MenuItem>
 												<MenuItem
 													icon={<DeleteIcon />}
 													color="red.500"
 													onClick={() =>
-														onDelete(product.productId)
+														onDelete(
+															product.productId,
+														)
 													}>
-													X├│a
+													Xóa
 												</MenuItem>
 											</MenuList>
 										</Menu>
@@ -310,10 +322,10 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 			</Box>
 
 			{products.length === 0 && (
-				<EmptyState 
-					variant="no-search-results" 
+				<EmptyState
+					variant="no-search-results"
 					size="md"
-					title="Kh├┤ng t├¼m thß║Ñy sß║ún phß║⌐m"
+					title="Không tìm thấy sản phẩm"
 					description="Thß╗¡ thay ─æß╗òi bß╗Ö lß╗ìc hoß║╖c tß╗½ kh├│a t├¼m kiß║┐m"
 				/>
 			)}

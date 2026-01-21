@@ -18,7 +18,10 @@ import {
 	Textarea,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import type { PurchaseDetail, CancelPurchaseOrderRequest } from "@/types/purchase";
+import type {
+	PurchaseDetail,
+	CancelPurchaseOrderRequest,
+} from "@/types/purchase";
 
 interface CancelOrderModalProps {
 	isOpen: boolean;
@@ -60,9 +63,16 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 		setIsSubmitting(true);
 
 		try {
+			// Format date as dd-MM-yyyy to match backend LocalDate format
+			const now = new Date();
+			const day = String(now.getDate()).padStart(2, "0");
+			const month = String(now.getMonth() + 1).padStart(2, "0");
+			const year = now.getFullYear();
+			const formattedDate = `${day}-${month}-${year}`;
+
 			const requestData: CancelPurchaseOrderRequest = {
 				staffIdChecked: staffId,
-				checkDate: new Date().toISOString(),
+				checkDate: formattedDate,
 				cancelNotesReason: cancelReason,
 			};
 
@@ -123,8 +133,8 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 							<Text
 								fontSize="14px"
 								color="gray.600">
-								Hành động này không thể hoàn tác. Đơn hàng sẽ được
-								chuyển sang trạng thái "Đã hủy".
+								Hành động này không thể hoàn tác. Đơn hàng sẽ
+								được chuyển sang trạng thái "Đã hủy".
 							</Text>
 						</Box>
 
@@ -181,7 +191,9 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 							<FormLabel fontSize="14px">Lý do hủy đơn</FormLabel>
 							<Textarea
 								value={cancelReason}
-								onChange={(e) => setCancelReason(e.target.value)}
+								onChange={(e) =>
+									setCancelReason(e.target.value)
+								}
 								placeholder="VD: Nhà cung cấp báo hết hàng, sai thông tin đơn hàng..."
 								rows={3}
 							/>
@@ -189,7 +201,9 @@ export const CancelOrderModal: React.FC<CancelOrderModalProps> = ({
 					</VStack>
 				</ModalBody>
 
-				<ModalFooter borderTop="1px solid" borderColor="gray.200">
+				<ModalFooter
+					borderTop="1px solid"
+					borderColor="gray.200">
 					<Button
 						variant="ghost"
 						mr={3}

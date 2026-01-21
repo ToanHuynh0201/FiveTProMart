@@ -3,8 +3,10 @@ import { withErrorHandling } from "@/utils/error";
 import type {
 	ShiftRoleConfig,
 	CreateShiftRoleConfigDTO,
+	UpdateShiftRoleConfigDTO,
 	WorkShift,
 	CreateWorkShiftDTO,
+	UpdateWorkShiftDTO,
 	WorkScheduleResponse,
 	GetWorkSchedulesFilters,
 	AssignStaffDTO,
@@ -45,6 +47,25 @@ class ScheduleService {
 		},
 	);
 
+	/**
+	 * Update an existing role config
+	 * @param id - Role config ID
+	 * @param data - Updated role config data
+	 */
+	updateRoleConfig = withErrorHandling(
+		async (id: string, data: UpdateShiftRoleConfigDTO) => {
+			return await apiService.put(`/shift-role-configs/${id}`, data);
+		},
+	);
+
+	/**
+	 * Delete a role config (soft delete - sets isActive to false)
+	 * @param id - Role config ID
+	 */
+	deleteRoleConfig = withErrorHandling(async (id: string) => {
+		return await apiService.delete(`/shift-role-configs/${id}`);
+	});
+
 	// ==================== Work Shifts ====================
 
 	/**
@@ -70,6 +91,25 @@ class ScheduleService {
 	 */
 	createWorkShift = withErrorHandling(async (data: CreateWorkShiftDTO) => {
 		return await apiService.post("/work-shift-templates", data);
+	});
+
+	/**
+	 * Update a shift template
+	 * @param id - Work shift ID
+	 * @param data - Updated shift data
+	 */
+	updateWorkShift = withErrorHandling(
+		async (id: string, data: UpdateWorkShiftDTO) => {
+			return await apiService.put(`/work-shift-templates/${id}`, data);
+		},
+	);
+
+	/**
+	 * Delete a shift template (soft delete)
+	 * @param id - Work shift ID
+	 */
+	deleteWorkShift = withErrorHandling(async (id: string) => {
+		return await apiService.delete(`/work-shift-templates/${id}`);
 	});
 
 	// ==================== Work Schedules ====================

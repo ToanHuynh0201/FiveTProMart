@@ -91,6 +91,12 @@ export interface CreateShiftRoleConfigDTO {
 	requirements: RoleRequirement[];
 }
 
+export interface UpdateShiftRoleConfigDTO {
+	configName: string;
+	requirements: RoleRequirement[];
+	isActive: boolean;
+}
+
 export interface WorkShift {
 	id: string;
 	shiftName: string;
@@ -108,6 +114,14 @@ export interface CreateWorkShiftDTO {
 	startTime: string; // "HH:mm"
 	endTime: string; // "HH:mm"
 	roleConfigId: string;
+}
+
+export interface UpdateWorkShiftDTO {
+	shiftName: string;
+	startTime: string; // "HH:mm"
+	endTime: string; // "HH:mm"
+	roleConfigId: string;
+	isActive: boolean;
 }
 
 // API Response Types

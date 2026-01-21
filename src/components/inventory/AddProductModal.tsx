@@ -22,12 +22,11 @@ import {
 	FormHelperText,
 } from "@chakra-ui/react";
 import type { InventoryCategory } from "@/types/inventory";
-import type { CreateProductDTO } from "@/services/inventoryService";
 
 interface AddProductModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (product: CreateProductDTO) => Promise<void>;
+	onAdd: (product: any) => Promise<void>;
 	categories: InventoryCategory[];
 }
 
@@ -39,7 +38,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 }) => {
 	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
-	const [formData, setFormData] = useState<CreateProductDTO>({
+	const [formData, setFormData] = useState({
 		productName: "",
 		categoryId: "",
 		unitOfMeasure: "",
@@ -183,9 +182,9 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 								h="48px">
 								{categories.map((cat) => (
 									<option
-										key={cat.id}
-										value={cat.id}>
-										{cat.name}
+										key={cat.categoryId}
+										value={cat.categoryId}>
+										{cat.categoryName}
 									</option>
 								))}
 							</Select>

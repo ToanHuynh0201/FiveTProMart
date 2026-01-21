@@ -1,17 +1,26 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Box, Container, VStack, Heading, Text, Link, useDisclosure, useToast } from "@chakra-ui/react";
+import {
+	Box,
+	Container,
+	VStack,
+	Heading,
+	Text,
+	Link,
+	useDisclosure,
+	useToast,
+} from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "../components/common/Input";
 import { Button } from "../components/common/Button";
 import { LoadingSpinner } from "../components/common";
 import { PersonIcon, LockIcon } from "../components/icons/AuthIcons";
-import { ForgotPasswordModal } from "../components/auth";
+import { ForgotPasswordModal, TestAccountsHelper } from "../components/auth";
 import { ROUTES } from "../constants";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
-	const [email, setEmail] = useState("");
+	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
@@ -19,13 +28,18 @@ export default function LoginPage() {
 	const { login } = useAuth();
 	const toast = useToast();
 
+	const handleTestAccountSelect = (testUsername: string, testPassword: string) => {
+		setUsername(testUsername);
+		setPassword(testPassword);
+	};
+
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsLoading(true);
 
 		try {
 			// Call authentication service
-			await login({ email, password });
+			await login({ username, password });
 
 			// Show success message
 			toast({
@@ -38,12 +52,13 @@ export default function LoginPage() {
 			});
 
 			// Navigate to home page
-			navigate(ROUTES.STAFF);
+			navigate(ROUTES.SALES);
 		} catch (error: any) {
 			// Show error message
 			toast({
 				title: "Đăng nhập thất bại",
-				description: error?.message || "Tên đăng nhập hoặc mật khẩu không đúng",
+				description:
+					error?.message || "Tên đăng nhập hoặc mật khẩu không đúng",
 				status: "error",
 				duration: 5000,
 				isClosable: true,
@@ -173,15 +188,13 @@ export default function LoginPage() {
 							<VStack
 								spacing={{ base: 4, md: 5 }}
 								align="stretch">
-								{/* Email Input */}
-								<Input
-									label="Email"
-									type="email"
-									placeholder="example@gmail.com"
-									value={email}
-									onChange={(e) =>
-										setEmail(e.target.value)
-									}
+{/* Username Input */}
+							<Input
+								label="Tên đăng nhập"
+								type="text"
+								placeholder="admin"
+								value={username}
+								onChange={(e) => setUsername(e.target.value)}
 									leftIcon={<PersonIcon />}
 									required
 								/>
@@ -236,8 +249,14 @@ export default function LoginPage() {
 				</Box>
 			</Container>
 
+			{/* Test Accounts Helper (Dev Mode Only) */}
+			<TestAccountsHelper onSelectAccount={handleTestAccountSelect} />
+
 			{/* Forgot Password Modal */}
-			<ForgotPasswordModal isOpen={isOpen} onClose={onClose} />
+			<ForgotPasswordModal
+				isOpen={isOpen}
+				onClose={onClose}
+			/>
 		</Box>
 	);
 }

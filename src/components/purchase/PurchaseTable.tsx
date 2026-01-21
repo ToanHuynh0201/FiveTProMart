@@ -15,83 +15,38 @@ import {
 	MenuButton,
 	MenuList,
 	MenuItem,
-	useToast,
+	Button,
 } from "@chakra-ui/react";
-import { EditIcon, DeleteIcon, ViewIcon } from "@chakra-ui/icons";
-import { BsThreeDotsVertical } from "react-icons/bs";
-import type { Purchase } from "../../types/purchase";
-import { formatDate } from "../../utils/date";
-import { purchaseService } from "@/services/purchaseService";
+import { ViewIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
+import { BsThreeDotsVertical, BsPrinter } from "react-icons/bs";
+import type { PurchaseListItem, PurchaseStatus } from "@/types/purchase";
 
 interface PurchaseTableProps {
-	purchases: Purchase[];
+	purchases: PurchaseListItem[];
 	onViewDetail: (id: string) => void;
-	onEdit: (id: string) => void;
-	onDelete: (id: string) => void;
-	onRefresh?: () => void;
+	onConfirmReceipt: (id: string) => void;
+	onCancelOrder: (id: string) => void;
+	onReprintLabels: (id: string) => void;
 }
 
 export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 	purchases,
 	onViewDetail,
-	onEdit,
-	onDelete,
-	onRefresh,
+	onConfirmReceipt,
+	onCancelOrder,
+	onReprintLabels,
 }) => {
-	const toast = useToast();
-	// Create a key based on purchases to trigger animation on filter changes
 	const tableKey = purchases.map((p) => p.id).join("-");
 
-	const handleCancelPurchase = async (id: string) => {
-		try {
-			await purchaseService.cancelPurchase(id);
-			toast({
-				title: "Đã hủy đơn hàng",
-				status: "success",
-				duration: 2000,
-			});
-			onRefresh?.();
-		} catch {
-			toast({
-				title: "Không thể hủy đơn hàng",
-				status: "error",
-				duration: 3000,
-			});
-		}
-	};
-
-	const getStatusBadge = (status: Purchase["status"]) => {
+	const getStatusBadge = (status: PurchaseStatus) => {
 		const statusConfig = {
-			draft: { color: "gray", label: "Nháp" },
-			ordered: { color: "blue", label: "Đã đặt" },
-			received: { color: "green", label: "Đã nhận" },
-			cancelled: { color: "red", label: "Đã hủy" },
+			Draft: { color: "gray", label: "Nháp" },
+			Completed: { color: "green", label: "Hoàn thành" },
+			Cancelled: { color: "red", label: "Đã hủy" },
 		};
 
 		const config = statusConfig[status];
-
-		return (
-			<Badge
-				colorScheme={config.color}
-				px={3}
-				py={1}
-				borderRadius="full"
-				fontSize="12px"
-				fontWeight="600">
-				{config.label}
-			</Badge>
-		);
-	};
-
-	const getPaymentStatusBadge = (
-		paymentStatus: Purchase["paymentStatus"],
-	) => {
-		const statusConfig = {
-			unpaid: { color: "red", label: "Chưa trả" },
-			paid: { color: "green", label: "Đã trả" },
-		};
-
-		const config = statusConfig[paymentStatus];
+		if (!config) return null;
 
 		return (
 			<Badge
@@ -137,7 +92,7 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 								color="gray.700"
 								textTransform="none"
 								py={4}>
-								Mã phiếu nhập
+								Mã đơn
 							</Th>
 							<Th
 								fontSize="13px"
@@ -145,14 +100,6 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 								color="gray.700"
 								textTransform="none">
 								Nhà cung cấp
-							</Th>
-							<Th
-								fontSize="13px"
-								fontWeight="700"
-								color="gray.700"
-								textTransform="none"
-								isNumeric>
-								Số mặt hàng
 							</Th>
 							<Th
 								fontSize="13px"
@@ -174,14 +121,14 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none">
-								Thanh toán
+								Ngày tạo
 							</Th>
 							<Th
 								fontSize="13px"
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none">
-								Ngày tạo
+								Ngày kiểm
 							</Th>
 							<Th
 								fontSize="13px"
@@ -203,7 +150,7 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 									<Text
 										fontSize="15px"
 										color="gray.500">
-										Không có phiếu nhập hàng nào
+										Không có đơn nhập hàng nào
 									</Text>
 								</Td>
 							</Tr>
@@ -224,126 +171,150 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 										_hover={{
 											textDecoration: "underline",
 										}}>
-										{purchase.purchaseNumber}
+										{purchase.poCode}
 									</Td>
 									<Td>
 										<Text
 											fontSize="14px"
 											fontWeight="500"
 											color="gray.800">
-											{purchase.supplier.name}
+											{purchase.supplierName}
 										</Text>
-										{purchase.supplier.phone && (
-											<Text
-												fontSize="12px"
-												color="gray.500">
-												{purchase.supplier.phone}
-											</Text>
-										)}
-									</Td>
-									<Td
-										isNumeric
-										fontSize="14px"
-										fontWeight="600"
-										color="gray.700">
-										{purchase.items.length}
 									</Td>
 									<Td
 										isNumeric
 										fontSize="14px"
 										fontWeight="700"
 										color="gray.800">
-										{formatCurrency(purchase.total)}
+										{formatCurrency(purchase.totalAmount)}
 									</Td>
 									<Td>{getStatusBadge(purchase.status)}</Td>
-									<Td>
-										{getPaymentStatusBadge(
-											purchase.paymentStatus,
-										)}
+									<Td
+										fontSize="14px"
+										color="gray.600">
+										{purchase.purchaseDate}
 									</Td>
 									<Td
 										fontSize="14px"
 										color="gray.600">
-										{formatDate(purchase.createdAt)}
+										{purchase.checkDate}
 									</Td>
 									<Td>
 										<Flex
 											justify="center"
-											gap={1}>
-											<Tooltip label="Xem chi tiết">
-												<IconButton
-													aria-label="View detail"
-													icon={<ViewIcon />}
-													size="sm"
-													variant="ghost"
-													colorScheme="blue"
-													onClick={() =>
-														onViewDetail(
-															purchase.id,
-														)
-													}
-												/>
-											</Tooltip>
-
-											{purchase.status !== "cancelled" &&
-												purchase.status !==
-													"received" && (
-													<Tooltip label="Chỉnh sửa">
-														<IconButton
-															aria-label="Edit"
-															icon={<EditIcon />}
+											gap={1}
+											align="center">
+											{/* Draft status actions */}
+											{purchase.status === "Draft" && (
+												<>
+													<Tooltip label="Xác nhận nhận hàng">
+														<Button
+															size="sm"
+															colorScheme="green"
+															leftIcon={
+																<CheckIcon />
+															}
+															onClick={() =>
+																onConfirmReceipt(
+																	purchase.id,
+																)
+															}>
+															Nhận hàng
+														</Button>
+													</Tooltip>
+													<Menu>
+														<MenuButton
+															as={IconButton}
+															aria-label="More actions"
+															icon={
+																<BsThreeDotsVertical />
+															}
 															size="sm"
 															variant="ghost"
-															colorScheme="green"
+															colorScheme="gray"
+														/>
+														<MenuList>
+															<MenuItem
+																icon={
+																	<ViewIcon />
+																}
+																onClick={() =>
+																	onViewDetail(
+																		purchase.id,
+																	)
+																}>
+																Xem chi tiết
+															</MenuItem>
+															<MenuItem
+																icon={
+																	<CloseIcon />
+																}
+																color="red.500"
+																onClick={() =>
+																	onCancelOrder(
+																		purchase.id,
+																	)
+																}>
+																Hủy đơn hàng
+															</MenuItem>
+														</MenuList>
+													</Menu>
+												</>
+											)}
+
+											{/* Completed status actions */}
+											{purchase.status ===
+												"Completed" && (
+												<>
+													<Tooltip label="Xem chi tiết">
+														<IconButton
+															aria-label="View detail"
+															icon={<ViewIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="blue"
 															onClick={() =>
-																onEdit(
+																onViewDetail(
 																	purchase.id,
 																)
 															}
 														/>
 													</Tooltip>
-												)}
-
-											<Menu>
-												<MenuButton
-													as={IconButton}
-													aria-label="More actions"
-													icon={
-														<BsThreeDotsVertical />
-													}
-													size="sm"
-													variant="ghost"
-													colorScheme="gray"
-												/>
-												<MenuList>
-													{purchase.status ===
-														"draft" && (
-														<MenuItem
-															icon={
-																<DeleteIcon />
+													<Tooltip label="In lại tem">
+														<IconButton
+															aria-label="Reprint labels"
+															icon={<BsPrinter />}
+															size="sm"
+															variant="ghost"
+															colorScheme="green"
+															onClick={() =>
+																onReprintLabels(
+																	purchase.id,
+																)
 															}
-															color="red.500"
-															onClick={() =>
-																onDelete(
-																	purchase.id,
-																)
-															}>
-															Xóa phiếu nhập
-														</MenuItem>
-													)}
-													{purchase.status ===
-														"ordered" && (
-														<MenuItem
-															onClick={() =>
-																handleCancelPurchase(
-																	purchase.id,
-																)
-															}>
-															Hủy đơn hàng
-														</MenuItem>
-													)}
-												</MenuList>
-											</Menu>
+														/>
+													</Tooltip>
+												</>
+											)}
+
+											{/* Cancelled status actions */}
+											{purchase.status ===
+												"Cancelled" && (
+												<Tooltip label="Xem chi tiết">
+													<IconButton
+														aria-label="View detail"
+														icon={<ViewIcon />}
+														size="sm"
+														variant="ghost"
+														colorScheme="blue"
+														onClick={() =>
+															onViewDetail(
+																purchase.id,
+															)
+														}
+													/>
+												</Tooltip>
+											)}
 										</Flex>
 									</Td>
 								</Tr>

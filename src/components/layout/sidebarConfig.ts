@@ -10,6 +10,7 @@ import {
 	FiGift,
 	FiBox,
 	FiAlertCircle,
+	FiGrid,
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
@@ -22,6 +23,11 @@ export const navItems: NavItem[] = [
 		label: "Hàng hóa",
 		path: "/inventory",
 		icon: FiPackage,
+	},
+	{
+		label: "Danh mục",
+		path: "/categories",
+		icon: FiGrid,
 	},
 	{
 		label: "Nhập hàng",

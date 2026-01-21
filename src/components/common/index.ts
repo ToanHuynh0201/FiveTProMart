@@ -7,3 +7,6 @@ export { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 export { EmptyState } from "./EmptyState";
 export type { EmptyStateVariant } from "./EmptyState";
 export { SaleCelebration, useSaleCelebration } from "./SaleCelebration";
+export { TableSkeleton } from "./TableSkeleton";
+export { StatsCardSkeleton, StatsGridSkeleton } from "./StatsCardSkeleton";
+export { ErrorBoundary } from "./ErrorBoundary";

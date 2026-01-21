@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Flex, VStack, IconButton, Tooltip } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
@@ -9,30 +9,43 @@ import { SidebarUserProfile } from "./SidebarUserProfile";
 import { UpcomingShifts } from "./UpcomingShifts";
 import { navItems } from "./sidebarConfig";
 import { useAuth } from "@/hooks/useAuth";
-
-const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
+import { useInventoryAlerts } from "@/hooks";
+import { useSidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "@/contexts/SidebarContext";
+import type { NavItem } from "@/types/layout";
 
 function Sidebar() {
 	const location = useLocation();
 	const { user, logout } = useAuth();
-	const [isCollapsed, setIsCollapsed] = useState(() => {
-		const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-		return saved ? JSON.parse(saved) : false;
-	});
-
-	useEffect(() => {
-		localStorage.setItem(
-			SIDEBAR_COLLAPSED_KEY,
-			JSON.stringify(isCollapsed),
-		);
-	}, [isCollapsed]);
+	const { criticalCount, warningCount } = useInventoryAlerts();
+	const { isCollapsed, toggleSidebar } = useSidebar();
 
 	const isActivePath = (path: string) => location.pathname === path;
+
+	// Inject dynamic badges into nav items
+	const navItemsWithBadges: NavItem[] = useMemo(() => {
+		return navItems.map((item) => {
+			// Add badge to inventory page for critical/warning alerts
+			if (item.path === "/inventory") {
+				const totalAlerts = criticalCount + warningCount;
+				if (totalAlerts > 0) {
+					return {
+						...item,
+						badge: {
+							count: totalAlerts,
+							// Red for critical, orange if only warnings
+							colorScheme: criticalCount > 0 ? "red" : "orange",
+						},
+					};
+				}
+			}
+			return item;
+		});
+	}, [criticalCount, warningCount]);
 
 	return (
 		<Flex
 			direction="column"
-			w={isCollapsed ? "80px" : "254px"}
+			w={isCollapsed ? `${SIDEBAR_WIDTH_COLLAPSED}px` : `${SIDEBAR_WIDTH_EXPANDED}px`}
 			h="100vh"
 			bg="brand.500"
 			position="relative"
@@ -92,7 +105,7 @@ function Sidebar() {
 							bg: "rgba(255, 255, 255, 0.2)",
 						}}
 						transition="all 0.2s ease"
-						onClick={() => setIsCollapsed(!isCollapsed)}
+						onClick={toggleSidebar}
 					/>
 				</Tooltip>
 			</Flex>
@@ -118,7 +131,7 @@ function Sidebar() {
 					},
 				}}>
 				{/* Navigation Items */}
-				{navItems.map((item) => (
+				{navItemsWithBadges.map((item) => (
 					<SidebarItem
 						key={item.path}
 						item={item}

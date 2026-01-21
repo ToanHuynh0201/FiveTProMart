@@ -72,9 +72,9 @@ export const CustomerInfoInline: React.FC<CustomerInfoInlineProps> = ({
 
 			if (foundCustomer) {
 				onCustomerChange({
-					id: foundCustomer.id,
-					name: foundCustomer.name,
-					phone: foundCustomer.phone || phoneNumber.trim(),
+					id: foundCustomer.customerId,
+					name: foundCustomer.fullName,
+					phone: foundCustomer.phoneNumber || phoneNumber.trim(),
 					points: foundCustomer.loyaltyPoints,
 				});
 				setError("");

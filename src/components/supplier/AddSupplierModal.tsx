@@ -14,20 +14,23 @@ import {
 	Select,
 	VStack,
 	HStack,
-	Textarea,
-	useToast,
 	Text,
 	Grid,
 	GridItem,
+	Box,
 } from "@chakra-ui/react";
-import type { Supplier } from "@/types/supplier";
+import type { CreateSupplierDTO, SupplierType } from "@/types/supplier";
+import { ProductSelector } from "./ProductSelector";
 
 interface AddSupplierModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (
-		supplier: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
-	) => Promise<void>;
+	onAdd: (supplier: CreateSupplierDTO) => Promise<void>;
+}
+
+interface SelectedProduct {
+	productId: string;
+	productName: string;
 }
 
 export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
@@ -35,135 +38,132 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 	onClose,
 	onAdd,
 }) => {
-	const toast = useToast();
 	const [isLoading, setIsLoading] = useState(false);
-	const [formData, setFormData] = useState({
-		code: "",
-		name: "",
-		phone: "",
-		email: "",
+	const [formData, setFormData] = useState<CreateSupplierDTO>({
+		supplierName: "",
+		supplierType: "Doanh nghiệp",
+		phoneNumber: "",
 		address: "",
+		email: "",
 		taxCode: "",
-		contactPerson: "",
-		contactPhone: "",
 		bankAccount: "",
 		bankName: "",
-		status: "active" as "active" | "inactive",
-		notes: "",
+		representName: "",
+		representPhoneNumber: "",
+		suppliedProductType: [],
 	});
 
+	const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+
 	const [errors, setErrors] = useState({
-		code: "",
-		name: "",
-		phone: "",
+		supplierName: "",
+		phoneNumber: "",
+		address: "",
 		email: "",
+		representPhoneNumber: "",
 	});
 
 	useEffect(() => {
 		if (!isOpen) {
 			// Reset form when modal closes
 			setFormData({
-				code: "",
-				name: "",
-				phone: "",
-				email: "",
+				supplierName: "",
+				supplierType: "Doanh nghiệp",
+				phoneNumber: "",
 				address: "",
+				email: "",
 				taxCode: "",
-				contactPerson: "",
-				contactPhone: "",
 				bankAccount: "",
 				bankName: "",
-				status: "active",
-				notes: "",
+				representName: "",
+				representPhoneNumber: "",
+				suppliedProductType: [],
 			});
+			setSelectedProducts([]);
 			setErrors({
-				code: "",
-				name: "",
-				phone: "",
+				supplierName: "",
+				phoneNumber: "",
+				address: "",
 				email: "",
+				representPhoneNumber: "",
 			});
-		} else {
-			// Auto-generate code when modal opens
-			const newCode = `NCC${String(Date.now()).slice(-6)}`;
-			setFormData((prev) => ({ ...prev, code: newCode }));
 		}
 	}, [isOpen]);
 
+	const handleProductsChange = (products: SelectedProduct[]) => {
+		setSelectedProducts(products);
+		setFormData({
+			...formData,
+			suppliedProductType: products.map((p) => p.productId),
+		});
+	};
+
 	const validatePhone = (phone: string): boolean => {
+		if (!phone) return true;
 		const phoneRegex = /^0[0-9]{9}$/;
 		return phoneRegex.test(phone);
 	};
 
 	const validateEmail = (email: string): boolean => {
-		if (!email) return true; // Email is optional
+		if (!email) return true;
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		return emailRegex.test(email);
 	};
 
 	const handleSubmit = async () => {
 		const newErrors = {
-			code: "",
-			name: "",
-			phone: "",
+			supplierName: "",
+			phoneNumber: "",
+			address: "",
 			email: "",
+			representPhoneNumber: "",
 		};
 
 		// Validation
-		if (!formData.code.trim()) {
-			newErrors.code = "Vui lòng nhập mã nhà cung cấp";
+		if (!formData.supplierName.trim()) {
+			newErrors.supplierName = "Vui lòng nhập tên nhà cung cấp";
+		} else if (formData.supplierName.trim().length < 3) {
+			newErrors.supplierName = "Tên nhà cung cấp phải có ít nhất 3 ký tự";
 		}
 
-		if (!formData.name.trim()) {
-			newErrors.name = "Vui lòng nhập tên nhà cung cấp";
-		} else if (formData.name.trim().length < 3) {
-			newErrors.name = "Tên nhà cung cấp phải có ít nhất 3 ký tự";
-		}
-
-		if (!formData.phone.trim()) {
-			newErrors.phone = "Vui lòng nhập số điện thoại";
-		} else if (!validatePhone(formData.phone)) {
-			newErrors.phone =
+		if (!formData.phoneNumber.trim()) {
+			newErrors.phoneNumber = "Vui lòng nhập số điện thoại";
+		} else if (!validatePhone(formData.phoneNumber)) {
+			newErrors.phoneNumber =
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
+		}
+
+		if (!formData.address.trim()) {
+			newErrors.address = "Vui lòng nhập địa chỉ";
 		}
 
 		if (formData.email && !validateEmail(formData.email)) {
 			newErrors.email = "Email không hợp lệ";
 		}
 
+		if (
+			formData.representPhoneNumber &&
+			!validatePhone(formData.representPhoneNumber)
+		) {
+			newErrors.representPhoneNumber =
+				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
+		}
+
 		setErrors(newErrors);
 
 		if (
-			newErrors.code ||
-			newErrors.name ||
-			newErrors.phone ||
-			newErrors.email
+			newErrors.supplierName ||
+			newErrors.phoneNumber ||
+			newErrors.address ||
+			newErrors.email ||
+			newErrors.representPhoneNumber
 		) {
 			return;
 		}
 
 		setIsLoading(true);
-
-		try {
-			await onAdd(formData);
-			toast({
-				title: "Thành công",
-				description: "Thêm nhà cung cấp thành công",
-				status: "success",
-				duration: 3000,
-				isClosable: true,
-			});
-			onClose();
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Có lỗi xảy ra khi thêm nhà cung cấp",
-				status: "error",
-				duration: 3000,
-				isClosable: true,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+		await onAdd(formData);
+		setIsLoading(false);
 	};
 
 	return (
@@ -196,126 +196,73 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 					_hover={{ color: "gray.700", bg: "gray.100" }}
 				/>
 
-				<ModalBody
-					px={6}
-					py={4}>
-					<VStack
-						spacing={5}
-						align="stretch">
-						<Grid
-							templateColumns={{
-								base: "1fr",
-								md: "repeat(2, 1fr)",
-							}}
-							gap={5}>
-							{/* Mã nhà cung cấp */}
-							<GridItem>
-								<FormControl
-									isRequired
-									isInvalid={!!errors.code}>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
-										Mã nhà cung cấp
+				<ModalBody px={6} py={4}>
+					<VStack spacing={5} align="stretch">
+						<Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={5}>
+							{/* Tên nhà cung cấp */}
+							<GridItem colSpan={{ base: 1, md: 2 }}>
+								<FormControl isRequired isInvalid={!!errors.supplierName}>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+										Tên nhà cung cấp
 									</FormLabel>
 									<Input
-										placeholder="Mã tự động"
-										value={formData.code}
+										placeholder="Công ty TNHH..."
+										value={formData.supplierName}
 										onChange={(e) => {
-											setFormData({
-												...formData,
-												code: e.target.value,
-											});
-											setErrors({ ...errors, code: "" });
+											setFormData({ ...formData, supplierName: e.target.value });
+											setErrors({ ...errors, supplierName: "" });
 										}}
 										size="lg"
-										borderColor={
-											errors.code ? "red.500" : "gray.300"
-										}
+										borderColor={errors.supplierName ? "red.500" : "gray.300"}
 									/>
-									{errors.code && (
-										<Text
-											color="red.500"
-											fontSize="sm"
-											mt={1}>
-											{errors.code}
+									{errors.supplierName && (
+										<Text color="red.500" fontSize="sm" mt={1}>
+											{errors.supplierName}
 										</Text>
 									)}
 								</FormControl>
 							</GridItem>
 
-							{/* Tên nhà cung cấp */}
+							{/* Loại nhà cung cấp */}
 							<GridItem>
-								<FormControl
-									isRequired
-									isInvalid={!!errors.name}>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
-										Tên nhà cung cấp
+								<FormControl isRequired>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+										Loại nhà cung cấp
 									</FormLabel>
-									<Input
-										placeholder="Nhập tên nhà cung cấp"
-										value={formData.name}
-										onChange={(e) => {
+									<Select
+										value={formData.supplierType}
+										onChange={(e) =>
 											setFormData({
 												...formData,
-												name: e.target.value,
-											});
-											setErrors({ ...errors, name: "" });
-										}}
-										size="lg"
-										borderColor={
-											errors.name ? "red.500" : "gray.300"
+												supplierType: e.target.value as SupplierType,
+											})
 										}
-									/>
-									{errors.name && (
-										<Text
-											color="red.500"
-											fontSize="sm"
-											mt={1}>
-											{errors.name}
-										</Text>
-									)}
+										size="lg">
+										<option value="Doanh nghiệp">Doanh nghiệp</option>
+										<option value="Tư nhân">Tư nhân</option>
+									</Select>
 								</FormControl>
 							</GridItem>
 
 							{/* Số điện thoại */}
 							<GridItem>
-								<FormControl
-									isRequired
-									isInvalid={!!errors.phone}>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+								<FormControl isRequired isInvalid={!!errors.phoneNumber}>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										Số điện thoại
 									</FormLabel>
 									<Input
-										placeholder="0xxxxxxxxx"
-										value={formData.phone}
+										placeholder="0909123456"
+										value={formData.phoneNumber}
 										onChange={(e) => {
-											setFormData({
-												...formData,
-												phone: e.target.value,
-											});
-											setErrors({ ...errors, phone: "" });
+											setFormData({ ...formData, phoneNumber: e.target.value });
+											setErrors({ ...errors, phoneNumber: "" });
 										}}
 										size="lg"
-										borderColor={
-											errors.phone
-												? "red.500"
-												: "gray.300"
-										}
+										borderColor={errors.phoneNumber ? "red.500" : "gray.300"}
 									/>
-									{errors.phone && (
-										<Text
-											color="red.500"
-											fontSize="sm"
-											mt={1}>
-											{errors.phone}
+									{errors.phoneNumber && (
+										<Text color="red.500" fontSize="sm" mt={1}>
+											{errors.phoneNumber}
 										</Text>
 									)}
 								</FormControl>
@@ -324,34 +271,22 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 							{/* Email */}
 							<GridItem>
 								<FormControl isInvalid={!!errors.email}>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										Email
 									</FormLabel>
 									<Input
-										placeholder="email@example.com"
-										value={formData.email}
+										type="email"
+										placeholder="contact@example.com"
+										value={formData.email || ""}
 										onChange={(e) => {
-											setFormData({
-												...formData,
-												email: e.target.value,
-											});
+											setFormData({ ...formData, email: e.target.value });
 											setErrors({ ...errors, email: "" });
 										}}
 										size="lg"
-										borderColor={
-											errors.email
-												? "red.500"
-												: "gray.300"
-										}
+										borderColor={errors.email ? "red.500" : "gray.300"}
 									/>
 									{errors.email && (
-										<Text
-											color="red.500"
-											fontSize="sm"
-											mt={1}>
+										<Text color="red.500" fontSize="sm" mt={1}>
 											{errors.email}
 										</Text>
 									)}
@@ -361,42 +296,33 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 							{/* Mã số thuế */}
 							<GridItem>
 								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										Mã số thuế
 									</FormLabel>
 									<Input
-										placeholder="Nhập mã số thuế"
-										value={formData.taxCode}
+										placeholder="0123456789"
+										value={formData.taxCode || ""}
 										onChange={(e) =>
-											setFormData({
-												...formData,
-												taxCode: e.target.value,
-											})
+											setFormData({ ...formData, taxCode: e.target.value })
 										}
 										size="lg"
 									/>
 								</FormControl>
 							</GridItem>
 
-							{/* Người liên hệ */}
+							{/* Tên người đại diện */}
 							<GridItem>
 								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										Người liên hệ
 									</FormLabel>
 									<Input
-										placeholder="Tên người liên hệ"
-										value={formData.contactPerson}
+										placeholder="Nguyễn Văn A"
+										value={formData.representName || ""}
 										onChange={(e) =>
 											setFormData({
 												...formData,
-												contactPerson: e.target.value,
+												representName: e.target.value,
 											})
 										}
 										size="lg"
@@ -404,149 +330,113 @@ export const AddSupplierModal: React.FC<AddSupplierModalProps> = ({
 								</FormControl>
 							</GridItem>
 
-							{/* SĐT người liên hệ */}
+							{/* SĐT người đại diện */}
 							<GridItem>
-								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+								<FormControl isInvalid={!!errors.representPhoneNumber}>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										SĐT người liên hệ
 									</FormLabel>
 									<Input
-										placeholder="0xxxxxxxxx"
-										value={formData.contactPhone}
-										onChange={(e) =>
+										placeholder="0901234567"
+										value={formData.representPhoneNumber || ""}
+										onChange={(e) => {
 											setFormData({
 												...formData,
-												contactPhone: e.target.value,
-											})
-										}
+												representPhoneNumber: e.target.value,
+											});
+											setErrors({ ...errors, representPhoneNumber: "" });
+										}}
 										size="lg"
-									/>
-								</FormControl>
-							</GridItem>
-
-							{/* Trạng thái */}
-							<GridItem>
-								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
-										Trạng thái
-									</FormLabel>
-									<Select
-										value={formData.status}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												status: e.target.value as
-													| "active"
-													| "inactive",
-											})
+										borderColor={
+											errors.representPhoneNumber ? "red.500" : "gray.300"
 										}
-										size="lg">
-										<option value="active">
-											Hoạt động
-										</option>
-										<option value="inactive">
-											Ngưng hoạt động
-										</option>
-									</Select>
+									/>
+									{errors.representPhoneNumber && (
+										<Text color="red.500" fontSize="sm" mt={1}>
+											{errors.representPhoneNumber}
+										</Text>
+									)}
 								</FormControl>
 							</GridItem>
 
 							{/* Số tài khoản */}
 							<GridItem>
 								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
 										Số tài khoản
 									</FormLabel>
 									<Input
-										placeholder="Số tài khoản ngân hàng"
-										value={formData.bankAccount}
+										placeholder="1234567890"
+										value={formData.bankAccount || ""}
 										onChange={(e) =>
-											setFormData({
-												...formData,
-												bankAccount: e.target.value,
-											})
+											setFormData({ ...formData, bankAccount: e.target.value })
 										}
 										size="lg"
 									/>
 								</FormControl>
 							</GridItem>
 
-							{/* Tên ngân hàng */}
+							{/* Ngân hàng */}
 							<GridItem>
 								<FormControl>
-									<FormLabel
-										fontSize="16px"
-										fontWeight="600"
-										color="gray.700">
-										Tên ngân hàng
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+										Ngân hàng
 									</FormLabel>
 									<Input
-										placeholder="Tên ngân hàng"
-										value={formData.bankName}
+										placeholder="Vietcombank"
+										value={formData.bankName || ""}
 										onChange={(e) =>
-											setFormData({
-												...formData,
-												bankName: e.target.value,
-											})
+											setFormData({ ...formData, bankName: e.target.value })
 										}
 										size="lg"
 									/>
+								</FormControl>
+							</GridItem>
+
+							{/* Địa chỉ */}
+							<GridItem colSpan={{ base: 1, md: 2 }}>
+								<FormControl isRequired isInvalid={!!errors.address}>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+										Địa chỉ
+									</FormLabel>
+									<Input
+										placeholder="123 Đường Nguyễn Văn Linh, Quận 7, TP. HCM"
+										value={formData.address}
+										onChange={(e) => {
+											setFormData({ ...formData, address: e.target.value });
+											setErrors({ ...errors, address: "" });
+										}}
+										size="lg"
+										borderColor={errors.address ? "red.500" : "gray.300"}
+									/>
+									{errors.address && (
+										<Text color="red.500" fontSize="sm" mt={1}>
+											{errors.address}
+										</Text>
+									)}
+								</FormControl>
+							</GridItem>
+
+							{/* Sản phẩm cung cấp */}
+							<GridItem colSpan={{ base: 1, md: 2 }}>
+								<FormControl>
+									<FormLabel fontSize="16px" fontWeight="600" color="gray.700">
+										Sản phẩm cung cấp
+									</FormLabel>
+									<Box
+										p={4}
+										border="1px solid"
+										borderColor="gray.200"
+										borderRadius="lg"
+										bg="gray.50">
+										<ProductSelector
+											selectedProducts={selectedProducts}
+											onProductsChange={handleProductsChange}
+										/>
+									</Box>
 								</FormControl>
 							</GridItem>
 						</Grid>
-
-						{/* Địa chỉ */}
-						<FormControl>
-							<FormLabel
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700">
-								Địa chỉ
-							</FormLabel>
-							<Input
-								placeholder="Nhập địa chỉ đầy đủ"
-								value={formData.address}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										address: e.target.value,
-									})
-								}
-								size="lg"
-							/>
-						</FormControl>
-
-						{/* Ghi chú */}
-						<FormControl>
-							<FormLabel
-								fontSize="16px"
-								fontWeight="600"
-								color="gray.700">
-								Ghi chú
-							</FormLabel>
-							<Textarea
-								placeholder="Nhập ghi chú (tùy chọn)"
-								value={formData.notes}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										notes: e.target.value,
-									})
-								}
-								size="lg"
-								rows={3}
-								resize="vertical"
-							/>
-						</FormControl>
 					</VStack>
 				</ModalBody>
 

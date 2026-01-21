@@ -1,74 +1,148 @@
-export interface Supplier {
-	id: string;
-	name: string;
+// Status type for purchase workflow: Draft -> Completed/Cancelled
+export type PurchaseStatus = "Draft" | "Completed" | "Cancelled";
+
+// Supplier info embedded in purchase order
+export interface PurchaseSupplier {
+	supplierId: string;
+	supplierName: string;
 	phone?: string;
-	email?: string;
-	address?: string;
+	representName?: string;
+	representPhoneNumber?: string;
 }
 
+// Item in purchase order
 export interface PurchaseItem {
-	id: string;
-	productCode: string;
+	productId: string;
 	productName: string;
-	category?: string;
-	unit: string; // Đơn vị tính
-	quantity: number; // Số lượng nhập
-	unitPrice: number; // Đơn giá nhập
-	vat: number; // VAT (%)
-	totalPrice: number; // Thành tiền
-	expiryDate?: Date; // Hạn sử dụng (nếu có)
-	manufactureDate?: Date; // Ngày sản xuất (nếu có)
+	importPrice: number;
+	quantityOrdered: number;
+	quantityReceived: number; // Default = 0 when create draft
+	subTotal: number;
 }
 
-export interface Purchase {
+// Invoice info for confirmed orders
+export interface PurchaseInvoice {
+	invoiceNumber: string;
+	invoiceDate: string;
+	images: string[];
+}
+
+// Purchase order list item (from GET /purchase_orders)
+export interface PurchaseListItem {
 	id: string;
-	purchaseNumber: string; // Mã phiếu nhập (PN-YYYYMMDD-XXXX)
-	supplier: Supplier;
+	poCode: string;
+	supplierName: string;
+	staffNameCreated: string;
+	totalAmount: number;
+	status: PurchaseStatus;
+	purchaseDate: string;
+	checkDate?: string;
+}
+
+// Purchase order detail (from GET /purchase_orders/{id})
+export interface PurchaseDetail {
+	_id: string;
+	poCode: string;
+	status: PurchaseStatus;
+	notes?: string;
+	supplier: PurchaseSupplier;
+	staffIdCreated: string;
+	purchaseDate: string;
+	staffIdChecked?: string;
+	checkDate?: string;
 	items: PurchaseItem[];
-	subtotal: number; // Tổng tiền hàng
-	tax: number; // Thuế VAT
-	shippingFee: number; // Phí vận chuyển
-	discount: number; // Giảm giá
-	total: number; // Tổng tiền thanh toán
-	paymentStatus: "unpaid" | "paid"; // Trạng thái thanh toán
-	paidAmount: number; // Số tiền đã trả
-	notes?: string; // Ghi chú
-	staff?: {
-		id: string;
-		name: string;
+	totalAmount: number;
+	invoice?: PurchaseInvoice;
+	generatedLotIds?: string[];
+}
+
+// Create draft request body
+export interface CreateDraftRequest {
+	supplierId: string;
+	notes?: string;
+	items: {
+		productId: string;
+		quantityOrdered: number;
+	}[];
+}
+
+// Create draft response
+export interface CreateDraftResponse {
+	id: string;
+	poId: string;
+	supplierName: string;
+	status: "Draft";
+	purchaseDate: string;
+}
+
+// Actual item for confirm receipt
+export interface ActualItem {
+	productId: string;
+	quantityReceived: number;
+	importPrice: number;
+	manufactureDate: string;
+	expirationDate: string;
+	notes?: string; // Ghi chú cho từng sản phẩm (lý do nhập/hủy/thiếu...)
+}
+
+// Confirm receipt request body
+export interface ConfirmReceiptRequest {
+	staffIdChecked: string;
+	checkDate: string;
+	notes?: string;
+	invoice: {
+		invoiceNumber: string;
+		invoiceDate: string;
+		images: string[];
 	};
-	warehouseLocation?: string; // Kho hàng
-	expectedDeliveryDate?: Date; // Ngày giao hàng dự kiến
-	actualDeliveryDate?: Date; // Ngày giao hàng thực tế
-	status: "draft" | "ordered" | "received" | "cancelled"; // Trạng thái đơn hàng
-	createdAt: Date;
-	updatedAt: Date;
+	actualItems: ActualItem[];
 }
 
-export interface PurchaseStats {
-	totalPurchases: number; // Tổng số phiếu nhập
-	totalAmount: number; // Tổng tiền nhập hàng
-	pendingOrders: number; // Đơn hàng chờ nhận
-	totalItems: number; // Tổng số mặt hàng
+// Lot info for printing labels
+export interface LotToPrint {
+	lotId: string;
+	productName: string;
+	quantity: number;
+	expirationDate: string;
 }
 
+// Confirm receipt response
+export interface ConfirmReceiptResponse {
+	poId: string;
+	status: "Completed";
+	checkDate: string;
+	finalTotalAmount: number;
+	lotsToPrint: LotToPrint[];
+}
+
+// Cancel purchase order request body
+export interface CancelPurchaseOrderRequest {
+	staffIdChecked: string;
+	checkDate: string;
+	cancelNotesReason: string;
+}
+
+// Cancel purchase order response
+export interface CancelPurchaseOrderResponse {
+	poId: string;
+	poCode: string;
+	status: "Cancelled";
+	cancellationReason: string;
+	checkDate: string;
+}
+
+// Labels response (for reprint)
+export interface LabelsResponse {
+	lotId: string;
+	productName: string;
+	quantity: number;
+	expirationDate: string;
+}
+
+// Filter type for purchase list
 export interface PurchaseFilter {
-	searchQuery: string; // Tìm theo mã phiếu, nhà cung cấp
-	status: string; // all, draft, ordered, received, cancelled
-	paymentStatus: string; // all, unpaid, paid
-	supplierId: string; // Lọc theo nhà cung cấp
-	dateFrom?: Date; // Từ ngày
-	dateTo?: Date; // Đến ngày
-}
-
-export interface ExcelPurchaseItem {
-	"Mã sản phẩm": string;
-	"Tên sản phẩm": string;
-	"Nhóm hàng"?: string;
-	"Đơn vị tính": string;
-	"Số lượng": number;
-	"Đơn giá": number;
-	"VAT (%)"?: number;
-	"Ngày sản xuất"?: string; // DD/MM/YYYY
-	"Hạn sử dụng"?: string; // DD/MM/YYYY
+	search?: string; // Filter by poId or supplierName
+	status?: string; // "Draft" | "Completed" | "Cancelled" | "all"
+	startDate?: string; // dd-MM-yyyy
+	endDate?: string; // dd-MM-yyyy
 }

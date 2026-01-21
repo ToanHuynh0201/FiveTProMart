@@ -7,6 +7,7 @@ interface StatsCardProps {
 	icon: IconType;
 	bgGradient: string;
 	onClick?: () => void;
+	isActive?: boolean;
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({
@@ -15,17 +16,20 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 	icon,
 	bgGradient,
 	onClick,
+	isActive = false,
 }) => {
 	return (
 		<Box
 			bg="white"
 			p={6}
 			borderRadius="16px"
-			boxShadow="md"
+			boxShadow={isActive ? "lg" : "md"}
 			position="relative"
 			overflow="hidden"
 			transition="all 0.3s"
 			cursor={onClick ? "pointer" : "default"}
+			borderWidth="2px"
+			borderColor={isActive ? "brand.500" : "transparent"}
 			_hover={{
 				transform: "translateY(-4px)",
 				boxShadow: "xl",
@@ -40,7 +44,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 				h="120px"
 				borderRadius="full"
 				bgGradient={bgGradient}
-				opacity={0.1}
+				opacity={isActive ? 0.2 : 0.1}
 			/>
 
 			<Flex
@@ -77,6 +81,18 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 					/>
 				</Flex>
 			</Flex>
+
+			{/* Active indicator */}
+			{isActive && (
+				<Box
+					position="absolute"
+					bottom={0}
+					left={0}
+					right={0}
+					h="3px"
+					bgGradient={bgGradient}
+				/>
+			)}
 		</Box>
 	);
 };

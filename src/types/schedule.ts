@@ -71,3 +71,99 @@ export interface MonthData {
 	year: number;
 	weeks: WeekRange[];
 }
+
+// API DTOs
+export interface RoleRequirement {
+	accountType: string; // "SalesStaff" | "WarehouseStaff"
+	quantity: number;
+}
+
+export interface ShiftRoleConfig {
+	id: string;
+	configName: string;
+	description?: string;
+	requirements: RoleRequirement[];
+	isActive?: boolean;
+}
+
+export interface CreateShiftRoleConfigDTO {
+	configName: string;
+	requirements: RoleRequirement[];
+}
+
+export interface WorkShift {
+	id: string;
+	shiftName: string;
+	startTime: string; // "HH:mm"
+	endTime: string; // "HH:mm"
+	isActive: boolean;
+	roleConfig: {
+		id: string;
+		configName: string;
+	};
+}
+
+export interface CreateWorkShiftDTO {
+	shiftName: string;
+	startTime: string; // "HH:mm"
+	endTime: string; // "HH:mm"
+	roleConfigId: string;
+}
+
+// API Response Types
+export interface WorkScheduleAssignment {
+	profileId: string;
+	fullName: string;
+	accountType: string;
+	status: string; // "Assigned"
+}
+
+// API Response for work schedule (from GET /work-schedules)
+export interface WorkScheduleResponse {
+	id: string;
+	workDate: string; // Date ISO string
+	workShiftId: string;
+	shiftName: string;
+	startTime: string; // "HH:mm"
+	endTime: string; // "HH:mm"
+	isCompliant: boolean;
+	missingRoles: RoleRequirement[];
+	requirementsRoles: RoleRequirement[];
+	assignments: WorkScheduleAssignment[];
+}
+
+export interface GetWorkSchedulesFilters {
+	startDate: string; // "dd-MM-yyyy"
+	endDate: string; // "dd-MM-yyyy"
+	profileId?: string;
+	workShiftId?: string;
+}
+
+export interface AssignStaffDTO {
+	workDates: string[]; // ["20-01-2026", "21-01-2026"]
+	workShiftId: string;
+	assignedStaffIds: string[];
+}
+
+export interface ScheduleStatus {
+	workDate: string;
+	isCompliant: boolean;
+	missingRoles: RoleRequirement[];
+}
+
+export interface AssignStaffResponse {
+	assignedCount: number;
+	scheduleStatus: ScheduleStatus[];
+}
+
+export interface RemoveStaffDTO {
+	workDates: string[];
+	workShiftId: string[];
+	assignedStaffIds: string[];
+}
+
+export interface RemoveStaffResponse {
+	workDate: string;
+	isCompliant: boolean;
+	missingRoles: RoleRequirement[];
+}

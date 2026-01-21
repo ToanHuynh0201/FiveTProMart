@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
 	Box,
 	Text,
 	SimpleGrid,
 	Flex,
-	Spinner,
 	useDisclosure,
 	useToast,
 	Button,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { BsExclamationTriangle, BsTrash } from "react-icons/bs";
@@ -22,8 +28,13 @@ import {
 	BatchListModal,
 	DisposalModal,
 	CriticalAlertsBanner,
+	AddProductModal,
 } from "@/components/inventory";
-import { Pagination } from "@/components/common";
+import {
+	Pagination,
+	TableSkeleton,
+	StatsGridSkeleton,
+} from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
 import type {
 	InventoryProduct,
@@ -33,12 +44,16 @@ import type {
 	DisposalItem,
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
-import { inventoryService } from "@/services/inventoryService";
+import {
+	inventoryService,
+	type CreateProductDTO,
+} from "@/services/inventoryService";
 import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
+	const navigate = useNavigate();
 	const toast = useToast();
 	const { user } = useAuthStore();
 
@@ -74,10 +89,30 @@ const InventoryPage = () => {
 		onOpen: onDisposalModalOpen,
 		onClose: onDisposalModalClose,
 	} = useDisclosure();
+	const {
+		isOpen: isAddModalOpen,
+		onOpen: onAddModalOpen,
+		onClose: onAddModalClose,
+	} = useDisclosure();
+
+	// Delete confirmation dialog state
+	const [productToDelete, setProductToDelete] = useState<string | null>(null);
+	const cancelRef = useRef<HTMLButtonElement>(null);
+	const {
+		isOpen: isDeleteAlertOpen,
+		onOpen: onDeleteAlertOpen,
+		onClose: onDeleteAlertClose,
+	} = useDisclosure();
 
 	// Fetch function for API call
 	const fetchProducts = async (filters: InventoryFilters) => {
-		const response = await inventoryService.getProducts(filters);
+		// CRITICAL: Backend uses zero-based page indexing (page starts at 0)
+		// UI uses 1-based indexing for better UX
+		const apiFilters = {
+			...filters,
+			page: filters.page - 1, // Convert to 0-based
+		};
+		const response = await inventoryService.getProducts(apiFilters);
 		setProducts(response.data);
 		setTotalItems(response.pagination.totalItems);
 	};
@@ -93,7 +128,7 @@ const InventoryPage = () => {
 	} = useFilters<InventoryFilters>(
 		{
 			page: 1,
-			pageSize: ITEMS_PER_PAGE,
+			size: ITEMS_PER_PAGE,
 			searchQuery: "",
 			category: "all",
 			status: "all",
@@ -106,7 +141,7 @@ const InventoryPage = () => {
 	// usePagination for metadata only
 	const { currentPage, pageSize, pagination, goToPage } = usePagination({
 		initialPage: filters.page,
-		pageSize: filters.pageSize,
+		pageSize: filters.size,
 		initialTotal: totalItems,
 	});
 
@@ -121,7 +156,7 @@ const InventoryPage = () => {
 	useEffect(() => {
 		const loadInitialData = async () => {
 			try {
-				// Load categories from API
+				// Load categories from API - use directly, no transformation
 				const categoriesData = await inventoryService.getCategories();
 				setCategories(categoriesData);
 			} catch (error) {
@@ -188,14 +223,54 @@ const InventoryPage = () => {
 		onEditModalOpen();
 	};
 
-	const handleDelete = async (id: string) => {
-		if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
-			await handleDeleteProduct(id);
+	const handleDelete = (id: string) => {
+		setProductToDelete(id);
+		onDeleteAlertOpen();
+	};
+
+	const handleDeleteConfirm = async () => {
+		if (productToDelete) {
+			await handleDeleteProduct(productToDelete);
+			setProductToDelete(null);
+			onDeleteAlertClose();
+		}
+	};
+
+	const handleAddProduct = async (productData: CreateProductDTO) => {
+		try {
+			await inventoryService.createProduct(productData);
+
+			// Refresh data after adding
+			await fetchProducts(filters);
+
+			// Reload stats after adding
+			try {
+				const statsData = await inventoryService.getStats();
+				setStats(statsData);
+			} catch (error) {
+				console.error("Error reloading stats:", error);
+			}
+
+			toast({
+				title: "Thành công",
+				description: "Đã thêm sản phẩm mới",
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error creating product:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể thêm sản phẩm",
+				status: "error",
+				duration: 3000,
+			});
+			throw error;
 		}
 	};
 
 	const handleManageBatches = (id: string) => {
-		const product = products.find((p) => p.id === id);
+		const product = products.find((p) => p.productId === id);
 		if (product) {
 			setSelectedProduct(product);
 			onBatchModalOpen();
@@ -222,7 +297,7 @@ const InventoryPage = () => {
 
 			// Update selected product for the modal
 			const updatedProduct = products.find(
-				(p) => p.id === selectedProduct.id,
+				(p) => p.productId === selectedProduct.productId,
 			);
 			if (updatedProduct) {
 				setSelectedProduct(updatedProduct);
@@ -324,27 +399,48 @@ const InventoryPage = () => {
 						color="brand.600">
 						Quản lý hàng hóa
 					</Text>
-					<Button
-						leftIcon={<BsTrash />}
-						colorScheme="red"
-						variant="outline"
-						onClick={handleDisposal}
-						size="md"
-						fontWeight="600">
-						Hủy hàng
-					</Button>
+					<Flex gap={3}>
+						<Button
+							bgGradient="linear(135deg, brand.500 0%, brand.400 100%)"
+							color="white"
+							onClick={onAddModalOpen}
+							size="md"
+							fontWeight="600"
+							_hover={{
+								bgGradient:
+									"linear(135deg, brand.600 0%, brand.500 100%)",
+							}}>
+							+ Thêm hàng hóa
+						</Button>
+						<Button
+							leftIcon={<BsTrash />}
+							colorScheme="red"
+							variant="outline"
+							onClick={handleDisposal}
+							size="md"
+							fontWeight="600">
+							Hủy hàng
+						</Button>
+					</Flex>
 				</Flex>
 
 				{/* Critical Alerts Banner - Shows when there are urgent issues */}
-				{stats && (stats.expiredBatches > 0 || stats.outOfStockProducts > 0 || stats.expiringSoonBatches > 0 || stats.lowStockProducts > 0) && (
-					<CriticalAlertsBanner
-						expiredBatches={stats.expiredBatches}
-						expiringSoonBatches={stats.expiringSoonBatches}
-						outOfStockProducts={stats.outOfStockProducts}
-						lowStockProducts={stats.lowStockProducts}
-						onFilterByIssue={(issue) => handleFilterChange("stockLevel", issue)}
-					/>
-				)}
+				{stats &&
+					(stats.expiredBatches > 0 ||
+						stats.outOfStockProducts > 0 ||
+						stats.expiringSoonBatches > 0 ||
+						stats.lowStockProducts > 0) && (
+						<CriticalAlertsBanner
+							expiredBatches={stats.expiredBatches}
+							expiringSoonBatches={stats.expiringSoonBatches}
+							outOfStockProducts={stats.outOfStockProducts}
+							lowStockProducts={stats.lowStockProducts}
+							onFilterByIssue={(issue) =>
+								handleFilterChange("stockLevel", issue)
+							}
+							onNavigateToPurchase={() => navigate("/purchase")}
+						/>
+					)}
 
 				{/* Stats Cards */}
 				{stats && (
@@ -419,18 +515,18 @@ const InventoryPage = () => {
 						handleFilterChange("stockLevel", newFilters.stockLevel);
 					}}
 				/>
-				{/* Loading State */}
+				{/* Loading State - Skeletons matching content shape to prevent CLS */}
 				{loading && (
-					<Flex
-						justify="center"
-						align="center"
-						minH="400px">
-						<Spinner
-							size="xl"
-							color="brand.500"
-							thickness="4px"
+					<Box>
+						{/* Stats Skeleton */}
+						<StatsGridSkeleton />
+						{/* Table Skeleton */}
+						<TableSkeleton
+							rows={ITEMS_PER_PAGE}
+							columns={6}
+							hasActionColumn
 						/>
-					</Flex>
+					</Box>
 				)}
 
 				{/* Error State */}
@@ -480,6 +576,7 @@ const InventoryPage = () => {
 
 							<ProductTable
 								products={products}
+								categories={categories}
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
@@ -500,7 +597,7 @@ const InventoryPage = () => {
 						)}
 					</>
 				)}
-				{/* Empty State */}
+				{/* Empty State - gray.600 for WCAG AA contrast compliance (4.54:1) */}
 				{!loading && !error && products.length === 0 && (
 					<Flex
 						direction="column"
@@ -511,7 +608,7 @@ const InventoryPage = () => {
 						<Text
 							fontSize="20px"
 							fontWeight="500"
-							color="gray.500">
+							color="gray.600">
 							{filters.searchQuery ||
 							filters.category !== "all" ||
 							filters.status !== "all" ||
@@ -522,6 +619,14 @@ const InventoryPage = () => {
 					</Flex>
 				)}
 			</Box>
+
+			{/* Add Product Modal */}
+			<AddProductModal
+				isOpen={isAddModalOpen}
+				onClose={onAddModalClose}
+				onAdd={handleAddProduct}
+				categories={categories}
+			/>
 
 			{/* Edit Product Modal */}
 			<EditProductModal
@@ -547,7 +652,6 @@ const InventoryPage = () => {
 				isOpen={isBatchModalOpen}
 				onClose={onBatchModalClose}
 				product={selectedProduct}
-				onUpdateBatch={handleUpdateBatch}
 			/>
 
 			{/* Disposal Modal */}
@@ -557,6 +661,41 @@ const InventoryPage = () => {
 				products={products}
 				onSubmit={handleSubmitDisposal}
 			/>
+
+			{/* Delete Confirmation Dialog - Branded, accessible, consistent UX */}
+			<AlertDialog
+				isOpen={isDeleteAlertOpen}
+				leastDestructiveRef={cancelRef}
+				onClose={onDeleteAlertClose}>
+				<AlertDialogOverlay>
+					<AlertDialogContent>
+						<AlertDialogHeader
+							fontSize="lg"
+							fontWeight="bold">
+							Xóa Sản Phẩm
+						</AlertDialogHeader>
+
+						<AlertDialogBody>
+							Bạn có chắc chắn muốn xóa sản phẩm này? Hành động
+							này không thể hoàn tác.
+						</AlertDialogBody>
+
+						<AlertDialogFooter>
+							<Button
+								ref={cancelRef}
+								onClick={onDeleteAlertClose}>
+								Hủy
+							</Button>
+							<Button
+								colorScheme="red"
+								onClick={handleDeleteConfirm}
+								ml={3}>
+								Xóa
+							</Button>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialogOverlay>
+			</AlertDialog>
 		</MainLayout>
 	);
 };

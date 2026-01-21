@@ -1,96 +1,98 @@
 import apiService from "@/lib/api";
-import type { Purchase } from "@/types";
-import type { PurchaseFilters } from "@/types/filters";
-import type { ApiResponse } from "@/types/api";
-import { buildQueryParams } from "@/utils/queryParams";
+import type {
+	CreateDraftRequest,
+	ConfirmReceiptRequest,
+	CancelPurchaseOrderRequest,
+} from "@/types/purchase";
+import { withErrorHandling } from "@/utils/error";
 
-export const purchaseService = {
+const BASE_URL = "/purchase_orders";
+
+class PurchaseService {
 	/**
-	 * Fetch purchases with server-side filtering and pagination
+	 * Get purchase orders list with filtering and pagination
+	 * GET /api/v1/purchase_orders
 	 */
-	async getPurchases(
-		filters: PurchaseFilters,
-	): Promise<ApiResponse<Purchase>> {
-		const params = buildQueryParams(filters);
-		return apiService.get<ApiResponse<Purchase>>(
-			`/purchases?${params.toString()}`,
-		);
-	},
+	getPurchaseOrders = withErrorHandling(
+		async (filters?: {
+			search?: string;
+			status?: string;
+			startDate?: string;
+			endDate?: string;
+			supplierId?: string;
+			page?: number;
+			size?: number;
+			sortBy?: string;
+			order?: string;
+		}) => {
+			const params = new URLSearchParams();
 
-	async getPurchaseById(id: string): Promise<Purchase> {
-		return apiService.get<Purchase>(`/purchases/${id}`);
-	},
+			if (filters?.search) params.append("search", filters.search);
+			if (filters?.status && filters.status !== "all")
+				params.append("status", filters.status);
+			if (filters?.startDate)
+				params.append("startDate", filters.startDate);
+			if (filters?.endDate) params.append("endDate", filters.endDate);
+			if (filters?.supplierId)
+				params.append("supplierId", filters.supplierId);
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
+			if (filters?.size) params.append("size", filters.size.toString());
+			if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+			if (filters?.order) params.append("order", filters.order);
 
-	async createPurchase(data: Omit<Purchase, "id">): Promise<Purchase> {
-		return apiService.post<Purchase>("/purchases", data);
-	},
+			const queryString = params.toString();
+			const url = queryString ? `${BASE_URL}?${queryString}` : BASE_URL;
 
-	async updatePurchase(
-		id: string,
-		data: Partial<Purchase>,
-	): Promise<Purchase> {
-		return apiService.put<Purchase>(`/purchases/${id}`, data);
-	},
-
-	async deletePurchase(id: string): Promise<void> {
-		return apiService.delete(`/purchases/${id}`);
-	},
-
-	/**
-	 * Cancel a purchase order (status: "ordered" → "cancelled")
-	 */
-	async cancelPurchase(id: string): Promise<Purchase> {
-		return apiService.put<Purchase>(`/purchases/${id}/cancel`, {});
-	},
-
-	/**
-	 * Export purchases to Excel file
-	 */
-	async exportToExcel(purchaseIds: string[]): Promise<Blob> {
-		const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/purchases/export`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ ids: purchaseIds }),
-		});
-		if (!response.ok) throw new Error('Export failed');
-		return response.blob();
-	},
+			return await apiService.get(url);
+		},
+	);
 
 	/**
-	 * Generate a new purchase number
+	 * Get purchase order detail
+	 * GET /api/v1/purchase_orders/{id}
 	 */
-	async generatePurchaseNumber(): Promise<string> {
-		try {
-			const response = await apiService.get<{ data: string }>('/purchases/generate-number');
-			return response.data;
-		} catch {
-			// Fallback: Generate client-side
-			const now = new Date();
-			const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-			const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-			return `PO-${dateStr}-${random}`;
-		}
-	},
+	getPurchaseOrderById = withErrorHandling(async (id: string) => {
+		return await apiService.get(`${BASE_URL}/${id}`);
+	});
 
 	/**
-	 * Get Excel template for import
+	 * Create draft purchase order
+	 * POST /api/v1/purchase_orders
 	 */
-	async getExcelTemplate(): Promise<Blob> {
-		const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'}/purchases/template`, {
-			method: 'GET',
-		});
-		if (!response.ok) throw new Error('Template download failed');
-		return response.blob();
-	},
+	createDraftPurchase = withErrorHandling(
+		async (data: CreateDraftRequest) => {
+			return await apiService.post(BASE_URL, data);
+		},
+	);
 
 	/**
-	 * Import purchases from Excel file
+	 * Confirm purchase order and generate lots
+	 * POST /api/v1/purchase_orders/{id}/confirm
 	 */
-	async importFromExcel(file: File): Promise<{ success: boolean; count: number; errors: string[] }> {
-		const formData = new FormData();
-		formData.append('file', file);
-		return apiService.post('/purchases/import', formData);
-	},
-};
+	confirmPurchaseOrder = withErrorHandling(
+		async (id: string, data: ConfirmReceiptRequest) => {
+			return await apiService.post(`${BASE_URL}/${id}/confirm`, data);
+		},
+	);
+
+	/**
+	 * Cancel purchase order
+	 * POST /api/v1/purchase_orders/{id}/cancel
+	 */
+	cancelPurchaseOrder = withErrorHandling(
+		async (id: string, data: CancelPurchaseOrderRequest) => {
+			return await apiService.post(`${BASE_URL}/${id}/cancel`, data);
+		},
+	);
+
+	/**
+	 * Get labels for reprint
+	 * GET /api/v1/purchase_orders/{id}/labels
+	 */
+	getLabels = withErrorHandling(async (id: string) => {
+		return await apiService.get(`${BASE_URL}/${id}/labels`);
+	});
+}
+
+export const purchaseService = new PurchaseService();

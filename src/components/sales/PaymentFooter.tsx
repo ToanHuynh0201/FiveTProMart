@@ -9,10 +9,13 @@ import {
 	Grid,
 	Input,
 	useToast,
+	Switch,
+	Tooltip,
 } from "@chakra-ui/react";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
-import type { PaymentMethod } from "@/types/sales";
+import type { PaymentMethod, DiscountRequest } from "@/types/sales";
 import { customerService } from "@/services/customerService";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 interface Customer {
 	id: string;
@@ -33,6 +36,9 @@ interface PaymentFooterProps {
 	/** Amount given by customer for change calculation */
 	cashReceived: number;
 	onCashReceivedChange: (amount: number) => void;
+	/** Discount request for loyalty points (optional) */
+	discount?: DiscountRequest | null;
+	onDiscountChange?: (discount: DiscountRequest | null) => void;
 }
 
 export const PaymentFooter: React.FC<PaymentFooterProps> = ({
@@ -46,13 +52,26 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	onCustomerChange,
 	cashReceived,
 	onCashReceivedChange,
+	discount,
+	onDiscountChange,
 }) => {
+	// Get sidebar width for proper positioning
+	const { sidebarWidth } = useSidebar();
+
+	// Calculate final total after discount
+	const discountAmount = discount?.type === "LOYALTY_POINTS" 
+		? (discount.pointsToUse ?? 0) 
+		: 0;
+	const finalTotal = Math.max(0, total - discountAmount);
+
 	const [phoneInput, setPhoneInput] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
 	// Local string for input, synced with parent number
 	const [cashInput, setCashInput] = useState<string>(
 		cashReceived > 0 ? cashReceived.toString() : "",
 	);
+	// Local state for "use all points" toggle
+	const [useAllPoints, setUseAllPoints] = useState(false);
 
 	const toast = useToast();
 
@@ -87,15 +106,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 			);
 			if (foundCustomer) {
 				onCustomerChange({
-					id: foundCustomer.id,
-					name: foundCustomer.name,
-					phone: foundCustomer.phone ?? "",
+					id: foundCustomer.customerId,
+					name: foundCustomer.fullName,
+					phone: foundCustomer.phoneNumber ?? "",
 					points: foundCustomer.loyaltyPoints ?? 0,
 				});
-				setPhoneInput(foundCustomer.phone ?? "");
+				setPhoneInput(foundCustomer.phoneNumber ?? "");
 				toast({
 					title: "Tìm thấy khách hàng",
-					description: `${foundCustomer.name} - ${foundCustomer.loyaltyPoints ?? 0} điểm`,
+					description: `${foundCustomer.fullName} - ${foundCustomer.loyaltyPoints ?? 0} điểm`,
 					status: "success",
 					duration: 2000,
 				});
@@ -131,7 +150,12 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		if (customer?.phone) {
 			setPhoneInput(customer.phone);
 		}
-	}, [customer]);
+		// Reset points toggle when customer changes
+		setUseAllPoints(false);
+		if (onDiscountChange) {
+			onDiscountChange(null);
+		}
+	}, [customer, onDiscountChange]);
 
 	// Sync cashInput with prop when prop changes externally
 	React.useEffect(() => {
@@ -139,6 +163,17 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 			setCashInput(cashReceived.toString());
 		}
 	}, [cashReceived, cashInput]);
+	
+	// Recalculate discount when total changes (in case points > new total)
+	React.useEffect(() => {
+		if (useAllPoints && onDiscountChange && customer?.points) {
+			const pointsToUse = Math.min(customer.points, Math.floor(total));
+			onDiscountChange({
+				type: "LOYALTY_POINTS",
+				pointsToUse,
+			});
+		}
+	}, [total, useAllPoints, customer?.points, onDiscountChange]);
 
 	// Handle cash input change
 	const handleCashInputChange = (value: string) => {
@@ -155,14 +190,15 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		<Box
 			position="fixed"
 			bottom={0}
-			left={{ base: 0, md: "254px" }}
+			left={{ base: 0, md: `${sidebarWidth}px` }}
 			right={0}
 			bg="white"
 			boxShadow="0 -2px 16px rgba(0, 0, 0, 0.08)"
 			borderTop="1px solid"
 			borderColor="gray.200"
 			zIndex={10}
-			backdropFilter="blur(8px)">
+			backdropFilter="blur(8px)"
+			transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)">
 			<Box
 				px={{ base: 4, md: 6, lg: 8 }}
 				py={{ base: 4, md: 5 }}>
@@ -182,7 +218,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase"
 									letterSpacing="wide">
 									SDT Khách hàng
@@ -209,7 +245,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									}}
 								/>
 								{customer?.name && (
-									<HStack spacing={2}>
+									<HStack spacing={2} flexWrap="wrap">
 										<Text
 											fontSize="xs"
 											color="green.600"
@@ -219,12 +255,44 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										</Text>
 										{customer.points &&
 											customer.points > 0 && (
-												<Badge
-													colorScheme="green"
-													fontSize="10px"
-													borderRadius="full">
-													{customer.points}đ
-												</Badge>
+												<>
+													<Badge
+														colorScheme={useAllPoints ? "purple" : "green"}
+														fontSize="10px"
+														borderRadius="full">
+														{useAllPoints ? `−${Math.min(customer.points, Math.floor(total))}đ` : `${customer.points}đ`}
+													</Badge>
+													<Tooltip 
+														label={`Dùng ${Math.min(customer.points, Math.floor(total))} điểm để giảm ${Math.min(customer.points, Math.floor(total)).toLocaleString("vi-VN")}đ`}
+														placement="top"
+														hasArrow
+													>
+														<HStack spacing={1} cursor="pointer">
+															<Switch
+																size="sm"
+																colorScheme="purple"
+																isChecked={useAllPoints}
+																onChange={(e) => {
+																	const checked = e.target.checked;
+																	setUseAllPoints(checked);
+																	if (checked && onDiscountChange && customer.points) {
+																		// Use points up to total (can't discount more than total)
+																		const pointsToUse = Math.min(customer.points, Math.floor(total));
+																		onDiscountChange({
+																			type: "LOYALTY_POINTS",
+																			pointsToUse,
+																		});
+																	} else if (onDiscountChange) {
+																		onDiscountChange(null);
+																	}
+																}}
+															/>
+															<Text fontSize="10px" color="purple.600" fontWeight="600">
+																Dùng điểm
+															</Text>
+														</HStack>
+													</Tooltip>
+												</>
 											)}
 									</HStack>
 								)}
@@ -268,7 +336,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									total === 0 ||
 									(paymentMethod === "cash" && !hasEnoughCash)
 								}>
-								In hóa đơn (F)
+								In hóa đơn (P)
 							</Button>
 						</Grid>
 
@@ -285,7 +353,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										Tiền khách đưa
@@ -318,7 +386,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										Tiền thối
@@ -343,7 +411,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 											color={
 												cashReceived && change >= 0
 													? "green.700"
-													: "gray.500"
+													: "gray.600"
 											}
 											textAlign="center">
 											{cashReceived && change >= 0
@@ -362,27 +430,48 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase"
 										letterSpacing="wide">
 										TỔNG TIỀN
 									</Text>
 									<HStack spacing={2}>
+										{discountAmount > 0 && (
+											<Text
+												fontSize="md"
+												fontWeight="500"
+												color="gray.400"
+												textDecoration="line-through"
+												lineHeight="1">
+												{total.toLocaleString("vi-VN")}đ
+											</Text>
+										)}
 										<Text
 											fontSize="2xl"
 											fontWeight="800"
-											color="#161f70"
+											color={discountAmount > 0 ? "red.500" : "#161f70"}
 											lineHeight="1"
 											letterSpacing="tight">
-											{total.toLocaleString("vi-VN")}
+											{finalTotal.toLocaleString("vi-VN")}
 										</Text>
 										<Text
 											fontSize="lg"
 											fontWeight="700"
-											color="#161f70">
+											color={discountAmount > 0 ? "red.500" : "#161f70"}>
 											đ
 										</Text>
 									</HStack>
+									{discountAmount > 0 && (
+										<Badge
+											colorScheme="red"
+											fontSize="xs"
+											px={3}
+											py={1}
+											borderRadius="full"
+											fontWeight="600">
+											-{discountAmount.toLocaleString("vi-VN")}đ điểm thưởng
+										</Badge>
+									)}
 									{loyaltyPoints && loyaltyPoints > 0 && (
 										<Badge
 											colorScheme="green"
@@ -420,7 +509,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									SDT Khách hàng
 								</Text>
@@ -460,7 +549,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>
@@ -506,7 +595,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										<Text
 											fontSize="xs"
 											fontWeight="600"
-											color="gray.500"
+											color="gray.600"
 											textTransform="uppercase">
 											Tiền khách đưa
 										</Text>
@@ -537,7 +626,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										<Text
 											fontSize="xs"
 											fontWeight="600"
-											color="gray.500"
+											color="gray.600"
 											textTransform="uppercase">
 											Tiền thối
 										</Text>
@@ -561,7 +650,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 												color={
 													cashReceived && change >= 0
 														? "green.700"
-														: "gray.500"
+														: "gray.600"
 												}>
 												{cashReceived && change >= 0
 													? change.toLocaleString(
@@ -598,7 +687,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									boxShadow:
 										"0 6px 16px rgba(22, 31, 112, 0.35)",
 								}}>
-								In hóa đơn (F)
+								In hóa đơn (P)
 							</Button>
 						</VStack>
 					</VStack>
@@ -616,7 +705,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 							<Text
 								fontSize="xs"
 								fontWeight="600"
-								color="gray.500"
+								color="gray.600"
 								textTransform="uppercase">
 								SDT Khách hàng
 							</Text>
@@ -666,7 +755,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase">
 										Tiền khách đưa
 									</Text>
@@ -697,7 +786,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									<Text
 										fontSize="xs"
 										fontWeight="600"
-										color="gray.500"
+										color="gray.600"
 										textTransform="uppercase">
 										Tiền thối
 									</Text>
@@ -721,7 +810,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 											color={
 												cashReceived && change >= 0
 													? "green.700"
-													: "gray.500"
+													: "gray.600"
 											}
 											textAlign="center">
 											{cashReceived && change >= 0
@@ -749,7 +838,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								<Text
 									fontSize="xs"
 									fontWeight="600"
-									color="gray.500"
+									color="gray.600"
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>
@@ -787,7 +876,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 								_active={{ transform: "scale(0.98)" }}>
 								<VStack spacing={0.5}>
 									<Text fontSize="xl">🖨️</Text>
-									<Text fontSize="xs">In hóa đơn (F)</Text>
+									<Text fontSize="xs">In hóa đơn (P)</Text>
 								</VStack>
 							</Button>
 						</Grid>

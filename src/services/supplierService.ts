@@ -1,40 +1,112 @@
 import apiService from "@/lib/api";
-import type { Supplier } from "@/types/supplier";
-import type { SupplierFilters } from "@/types/filters";
-import type { ApiResponse } from "@/types/api";
-import { buildQueryParams } from "@/utils/queryParams";
+import { withErrorHandling } from "@/utils/error";
+import type { CreateSupplierDTO, UpdateSupplierDTO } from "@/types/supplier";
 
-export const supplierService = {
+/**
+ * SupplierService - Handles all supplier-related API calls
+ * All methods use withErrorHandling for consistent error handling and data extraction
+ */
+class SupplierService {
 	/**
-	 * Fetch suppliers with server-side filtering and pagination
+	 * Get paginated list of suppliers
+	 * @param filters - Pagination and search filters
+	 * @returns Promise with success/error result containing suppliers array and pagination
 	 */
-	async getSuppliers(
-		filters: SupplierFilters,
-	): Promise<ApiResponse<Supplier>> {
-		const params = buildQueryParams(filters);
-		return apiService.get<ApiResponse<Supplier>>(
-			`/suppliers?${params.toString()}`,
-		);
-	},
+	getSuppliers = withErrorHandling(
+		async (filters?: {
+			page?: number;
+			size?: number;
+			search?: string;
+			supplierType?: string;
+			sortBy?: string;
+			order?: string;
+		}) => {
+			// Build query string using URLSearchParams
+			const params = new URLSearchParams();
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
+			if (filters?.size) params.append("size", filters.size.toString());
+			if (filters?.search) params.append("search", filters.search);
+			if (filters?.supplierType)
+				params.append("supplierType", filters.supplierType);
+			if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+			if (filters?.order) params.append("order", filters.order);
 
-	async getSupplierById(id: string): Promise<Supplier> {
-		return apiService.get<Supplier>(`/suppliers/${id}`);
-	},
+			const queryString = params.toString();
+			const url = queryString
+				? `/suppliers?${queryString}`
+				: "/suppliers";
 
-	async createSupplier(
-		data: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
-	): Promise<Supplier> {
-		return apiService.post<Supplier>("/suppliers", data);
-	},
+			return await apiService.get(url);
+		},
+	);
 
-	async updateSupplier(
-		id: string,
-		data: Partial<Supplier>,
-	): Promise<Supplier> {
-		return apiService.put<Supplier>(`/suppliers/${id}`, data);
-	},
+	/**
+	 * Get supplier by ID
+	 * @param id - Supplier UUID
+	 * @returns Promise with success/error result containing supplier detail data
+	 */
+	getSupplierById = withErrorHandling(async (id: string) => {
+		return await apiService.get(`/suppliers/${id}`);
+	});
 
-	async deleteSupplier(id: string): Promise<void> {
-		return apiService.delete(`/suppliers/${id}`);
-	},
-};
+	/**
+	 * Create new supplier
+	 * @param data - Supplier creation data
+	 * @returns Promise with success/error result containing created supplier
+	 */
+	createSupplier = withErrorHandling(async (data: CreateSupplierDTO) => {
+		return await apiService.post("/suppliers", data);
+	});
+
+	/**
+	 * Update existing supplier
+	 * @param id - Supplier UUID
+	 * @param data - Partial supplier update data
+	 * @returns Promise with success/error result containing updated supplier
+	 */
+	updateSupplier = withErrorHandling(
+		async (id: string, data: UpdateSupplierDTO) => {
+			return await apiService.put(`/suppliers/${id}`, data);
+		},
+	);
+
+	/**
+	 * Delete supplier
+	 * @param id - Supplier UUID
+	 * @returns Promise with success/error result
+	 */
+	deleteSupplier = withErrorHandling(async (id: string) => {
+		return await apiService.delete(`/suppliers/${id}`);
+	});
+
+	/**
+	 * Get products from a supplier
+	 * @param supplierId - Supplier UUID
+	 * @param filters - Pagination filters
+	 * @returns Promise with success/error result containing products array
+	 */
+	getSupplierProducts = withErrorHandling(
+		async (
+			supplierId: string,
+			filters?: {
+				page?: number;
+				size?: number;
+			},
+		) => {
+			const params = new URLSearchParams();
+			if (filters?.page !== undefined)
+				params.append("page", filters.page.toString());
+			if (filters?.size) params.append("size", filters.size.toString());
+
+			const queryString = params.toString();
+			const url = queryString
+				? `/suppliers/${supplierId}/products?${queryString}`
+				: `/suppliers/${supplierId}/products`;
+
+			return await apiService.get(url);
+		},
+	);
+}
+
+export const supplierService = new SupplierService();

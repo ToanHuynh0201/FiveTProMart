@@ -1,56 +1,74 @@
+/**
+ * Supplier type enum - matches backend enum
+ */
+export type SupplierType = "Doanh nghiệp" | "Tư nhân";
+
+/**
+ * Supplier status enum
+ */
+export type SupplierStatus = "HOẠT ĐỘNG" | "NGỪNG HOẠT ĐỘNG";
+
+/**
+ * Supplier model - matches backend response from GET /suppliers
+ */
 export interface Supplier {
-	id: string;
-	code: string; // Mã nhà cung cấp
-	name: string;
-	phone: string;
-	email?: string;
-	address?: string;
-	taxCode?: string; // Mã số thuế
-	contactPerson?: string; // Người liên hệ
-	contactPhone?: string; // SĐT người liên hệ
-	bankAccount?: string; // Số tài khoản
-	bankName?: string; // Tên ngân hàng
-	totalProducts?: number; // Tổng số sản phẩm cung cấp
-	totalPurchases?: number; // Tổng số đơn nhập hàng
-	totalValue?: number; // Tổng giá trị nhập hàng
-	lastPurchaseDate?: Date; // Ngày nhập hàng gần nhất
-	status: "active" | "inactive";
-	notes?: string;
-	createdAt: Date;
-	updatedAt: Date;
+	supplierId: string;
+	supplierName: string;
+	address: string;
+	phoneNumber: string;
+	representName: string | null;
+	representPhoneNumber: string | null;
+	supplierType: SupplierType;
+	currentDebt: number;
 }
 
-export interface SupplierDetail extends Supplier {
-	products?: SupplierProduct[]; // Danh sách sản phẩm cung cấp
-	purchaseHistory?: PurchaseHistory[]; // Lịch sử nhập hàng
+/**
+ * Supplier detail model - matches backend response from GET /suppliers/{id}
+ */
+export interface SupplierDetail {
+	supplierId: string;
+	supplierName: string;
+	address: string;
+	phoneNumber: string;
+	email: string | null;
+	taxCode: string | null;
+	bankAccount: string | null;
+	bankName: string | null;
+	representName: string | null;
+	representPhoneNumber: string | null;
+	supplierType: SupplierType;
+	status: SupplierStatus;
+	currentDebt: number;
+	suppliedProducts: SuppliedProductInfo[];
 }
 
-export interface SupplierProduct {
-	id: string;
+/**
+ * Supplied product info in supplier detail
+ */
+export interface SuppliedProductInfo {
 	productId: string;
-	productCode: string;
+	lastImportPrice: number;
+	lastImportDate: string | null;
+}
+
+/**
+ * Product details for supplier products tab
+ */
+export interface SupplierProduct {
+	productId: string;
 	productName: string;
 	category: string;
-	unit: string;
-	lastPurchasePrice?: number; // Giá nhập gần nhất
-	lastPurchaseDate?: Date;
-	totalQuantityPurchased?: number; // Tổng số lượng đã nhập
-}
-
-export interface PurchaseHistory {
-	id: string;
-	purchaseNumber: string;
-	date: Date;
-	totalAmount: number;
-	itemCount: number;
-	status: "draft" | "ordered" | "received" | "cancelled";
+	unitOfMeasure: string;
+	totalStockQuantity: number;
+	lastImportPrice: number;
+	lastImportDate: string | null;
 }
 
 export interface SupplierStats {
 	totalSuppliers: number;
 	activeSuppliers: number;
 	inactiveSuppliers: number;
-	totalPurchaseValue: number; // Tổng giá trị nhập hàng
+	totalPurchaseValue: number;
 	topSupplier?: {
 		name: string;
 		value: number;
@@ -58,22 +76,40 @@ export interface SupplierStats {
 }
 
 export interface SupplierFilter {
-	searchQuery: string; // Tìm theo mã, tên, SĐT
-	status: string; // all, active, inactive
+	searchQuery: string;
+	status: string;
 }
 
-export interface UpdateSupplierData {
-	code?: string;
-	name?: string;
-	phone?: string;
+/**
+ * DTO for creating a new supplier
+ */
+export interface CreateSupplierDTO {
+	supplierName: string;
+	supplierType: SupplierType;
+	phoneNumber: string;
+	address: string;
 	email?: string;
-	address?: string;
 	taxCode?: string;
-	contactPerson?: string;
-	contactPhone?: string;
 	bankAccount?: string;
 	bankName?: string;
-	status?: "active" | "inactive";
-	notes?: string;
-	productIds?: string[]; // List of product IDs that this supplier provides
+	representName?: string;
+	representPhoneNumber?: string;
+	suppliedProductType?: string[]; // Array of productIds
+}
+
+/**
+ * DTO for updating supplier
+ */
+export interface UpdateSupplierDTO {
+	supplierName?: string;
+	supplierType?: SupplierType;
+	phoneNumber?: string;
+	address?: string;
+	email?: string;
+	taxCode?: string;
+	bankAccount?: string;
+	bankName?: string;
+	representName?: string;
+	representPhoneNumber?: string;
+	suppliedProductType?: string[]; // Array of productIds
 }

@@ -13,20 +13,22 @@ import {
 	Input,
 	VStack,
 	HStack,
-	useToast,
 	Select,
 	Text,
 } from "@chakra-ui/react";
-import type { ProductBatch } from "@/types/inventory";
+import type {
+	StockInventoryItem,
+	UpdateStockInventoryRequest,
+} from "@/types/stockInventory";
 
 interface EditBatchModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	batch: ProductBatch | null;
+	batch: StockInventoryItem | null;
 	productName: string;
 	onUpdate: (
-		batchId: string,
-		updates: Partial<ProductBatch>,
+		lotId: string,
+		updates: UpdateStockInventoryRequest,
 	) => Promise<void>;
 }
 
@@ -37,19 +39,11 @@ const EditBatchModal = ({
 	productName,
 	onUpdate,
 }: EditBatchModalProps) => {
-	const toast = useToast();
 	const [loading, setLoading] = useState(false);
 
 	// Form state
 	const [formData, setFormData] = useState({
-		batchNumber: "",
-		quantity: 0,
-		quantityInStock: 0,
-		quantityOnDisplay: 0,
-		costPrice: 0,
-		expiryDate: "",
-		importDate: "",
-		supplier: "",
+		stockQuantity: 0,
 		status: "active" as "active" | "expired" | "sold-out",
 	});
 
@@ -57,18 +51,7 @@ const EditBatchModal = ({
 	useEffect(() => {
 		if (batch) {
 			setFormData({
-				batchNumber: batch.batchNumber,
-				quantity: batch.quantity,
-				quantityInStock: batch.quantityInStock || 0,
-				quantityOnDisplay: batch.quantityOnDisplay || 0,
-				costPrice: batch.costPrice,
-				expiryDate: batch.expiryDate
-					? new Date(batch.expiryDate).toISOString().split("T")[0]
-					: "",
-				importDate: new Date(batch.importDate)
-					.toISOString()
-					.split("T")[0],
-				supplier: batch.supplier || "",
+				stockQuantity: batch.stockQuantity,
 				status: batch.status,
 			});
 		}
@@ -77,86 +60,11 @@ const EditBatchModal = ({
 	const handleSubmit = async () => {
 		if (!batch) return;
 
-		// Validation
-		if (!formData.batchNumber.trim()) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng nhập số lô",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
-		if (formData.quantityInStock < 0 || formData.quantityOnDisplay < 0) {
-			toast({
-				title: "Lỗi",
-				description: "Số lượng không được âm",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
-		if (formData.quantityInStock + formData.quantityOnDisplay <= 0) {
-			toast({
-				title: "Lỗi",
-				description: "Tổng số lượng phải lớn hơn 0",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
-		if (formData.costPrice <= 0) {
-			toast({
-				title: "Lỗi",
-				description: "Giá vốn phải lớn hơn 0",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
-		if (!formData.importDate) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng chọn ngày nhập",
-				status: "error",
-				duration: 3000,
-			});
-			return;
-		}
-
 		setLoading(true);
 		try {
-			await onUpdate(batch.id, {
-				batchNumber: formData.batchNumber,
-				quantity: formData.quantityInStock + formData.quantityOnDisplay,
-				quantityInStock: formData.quantityInStock,
-				quantityOnDisplay: formData.quantityOnDisplay,
-				costPrice: formData.costPrice,
-				expiryDate: formData.expiryDate
-					? new Date(formData.expiryDate)
-					: undefined,
-				importDate: new Date(formData.importDate),
-				supplier: formData.supplier,
+			await onUpdate(batch.lotId, {
+				stockQuantity: formData.stockQuantity,
 				status: formData.status,
-			});
-
-			toast({
-				title: "Thành công",
-				description: "Đã cập nhật lô hàng",
-				status: "success",
-				duration: 3000,
-			});
-			onClose();
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Không thể cập nhật lô hàng",
-				status: "error",
-				duration: 3000,
 			});
 		} finally {
 			setLoading(false);
@@ -185,129 +93,28 @@ const EditBatchModal = ({
 							/>
 						</FormControl>
 
-						<FormControl isRequired>
-							<FormLabel>Số lô</FormLabel>
+						<FormControl>
+							<FormLabel>Mã lô</FormLabel>
 							<Input
-								value={formData.batchNumber}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										batchNumber: e.target.value,
-									})
-								}
-								placeholder="VD: LOT001"
+								value={batch?.lotId || ""}
+								isReadOnly
+								bg="gray.50"
 							/>
 						</FormControl>
 
-						<HStack
-							width="100%"
-							spacing={4}>
-							<FormControl isRequired>
-								<FormLabel>SL trong kho</FormLabel>
-								<Input
-									type="number"
-									value={formData.quantityInStock}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											quantityInStock:
-												parseInt(e.target.value) || 0,
-										})
-									}
-									min={0}
-								/>
-							</FormControl>
-
-							<FormControl isRequired>
-								<FormLabel>SL trưng bày</FormLabel>
-								<Input
-									type="number"
-									value={formData.quantityOnDisplay}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											quantityOnDisplay:
-												parseInt(e.target.value) || 0,
-										})
-									}
-									min={0}
-								/>
-							</FormControl>
-						</HStack>
-
-						<HStack
-							width="100%"
-							spacing={4}>
-							<FormControl>
-								<FormLabel>Tổng số lượng</FormLabel>
-								<Input
-									type="number"
-									value={formData.quantityInStock + formData.quantityOnDisplay}
-									isReadOnly
-									bg="gray.50"
-								/>
-							</FormControl>
-
-							<FormControl isRequired>
-								<FormLabel>Giá vốn (VNĐ)</FormLabel>
-								<Input
-									type="number"
-									value={formData.costPrice}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											costPrice:
-												parseInt(e.target.value) || 0,
-										})
-									}
-									min={0}
-								/>
-							</FormControl>
-						</HStack>
-
-						<HStack
-							width="100%"
-							spacing={4}>
-							<FormControl isRequired>
-								<FormLabel>Ngày nhập</FormLabel>
-								<Input
-									type="date"
-									value={formData.importDate}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											importDate: e.target.value,
-										})
-									}
-								/>
-							</FormControl>
-
-							<FormControl>
-								<FormLabel>Hạn sử dụng</FormLabel>
-								<Input
-									type="date"
-									value={formData.expiryDate}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											expiryDate: e.target.value,
-										})
-									}
-								/>
-							</FormControl>
-						</HStack>
-
-						<FormControl>
-							<FormLabel>Nhà cung cấp</FormLabel>
+						<FormControl isRequired>
+							<FormLabel>Số lượng tồn kho</FormLabel>
 							<Input
-								value={formData.supplier}
+								type="number"
+								value={formData.stockQuantity}
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										supplier: e.target.value,
+										stockQuantity:
+											parseInt(e.target.value) || 0,
 									})
 								}
-								placeholder="Tên nhà cung cấp"
+								min={0}
 							/>
 						</FormControl>
 
@@ -332,9 +139,9 @@ const EditBatchModal = ({
 
 						<Text
 							fontSize="sm"
-							color="gray.500"
+							color="gray.600"
 							alignSelf="flex-start">
-							* Các trường có dấu sao là bắt buộc
+							* Chỉ có thể chỉnh sửa số lượng và trạng thái
 						</Text>
 					</VStack>
 				</ModalBody>

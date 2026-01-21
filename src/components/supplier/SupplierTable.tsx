@@ -55,7 +55,7 @@ const SupplierTable = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(selectedSupplier.id);
+			await onDelete(selectedSupplier.supplierId);
 			onClose();
 			toast({
 				title: "Thành công",
@@ -79,9 +79,8 @@ const SupplierTable = ({
 		}
 	};
 
-	const formatDate = (date: Date | undefined) => {
-		if (!date) return "N/A";
-		return new Date(date).toLocaleDateString("vi-VN");
+	const formatCurrency = (value: number) => {
+		return value.toLocaleString("vi-VN") + "đ";
 	};
 
 	return (
@@ -102,15 +101,7 @@ const SupplierTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									width="120px">
-									Mã NCC
-								</Th>
-								<Th
-									fontSize="13px"
-									fontWeight="700"
-									color="gray.700"
-									textTransform="none"
-									width="300px">
+									width="250px">
 									Tên nhà cung cấp
 								</Th>
 								<Th
@@ -118,25 +109,35 @@ const SupplierTable = ({
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									width="150px"
-									textAlign="center">
-									Nhập gần nhất
+									width="120px">
+									Loại NCC
 								</Th>
 								<Th
 									fontSize="13px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									width="150px"
-									textAlign="center">
-									Trạng thái
+									width="130px">
+									Số điện thoại
+								</Th>
+								{/* TODO: Add "Loại sản phẩm" column when GET /suppliers returns suppliedProductType
+								    Currently the API only accepts this field in POST/PUT but doesn't return it in GET.
+								    See SupplierAPI.md - GET response doesn't include suppliedProductType */}
+								<Th
+									fontSize="13px"
+									fontWeight="700"
+									color="gray.700"
+									textTransform="none"
+									width="120px"
+									textAlign="right">
+									Công nợ
 								</Th>
 								<Th
 									fontSize="13px"
 									fontWeight="700"
 									color="gray.700"
 									textTransform="none"
-									width="150px"
+									width="120px"
 									textAlign="center">
 									Thao tác
 								</Th>
@@ -156,52 +157,45 @@ const SupplierTable = ({
 							) : (
 								supplierList.map((supplier) => (
 									<Tr
-										key={supplier.id}
+										key={supplier.supplierId}
 										_hover={{ bg: "gray.50" }}
 										transition="background 0.2s">
 										<Td
 											fontSize="14px"
-											fontWeight="600"
-											color="#161f70">
-											{supplier.code}
-										</Td>
-										<Td
-											fontSize="14px"
 											fontWeight="500">
 											<Tooltip
-												label={supplier.name}
+												label={supplier.supplierName}
 												placement="top">
 												<Text
 													noOfLines={1}
-													maxW="250px">
-													{supplier.name}
+													maxW="220px">
+													{supplier.supplierName}
 												</Text>
 											</Tooltip>
 										</Td>
 										<Td
 											fontSize="13px"
-											textAlign="center"
 											color="gray.600">
-											{formatDate(
-												supplier.lastPurchaseDate,
-											)}
-										</Td>
-										<Td textAlign="center">
 											<Badge
-												colorScheme={
-													supplier.status === "active"
-														? "green"
-														: "gray"
-												}
-												px={3}
+												colorScheme="blue"
+												px={2}
 												py={1}
-												borderRadius="full"
-												fontSize="12px"
-												fontWeight="600">
-												{supplier.status === "active"
-													? "Hoạt động"
-													: "Ngưng"}
+												borderRadius="md"
+												fontSize="12px">
+												{supplier.supplierType}
 											</Badge>
+										</Td>
+										<Td
+											fontSize="13px"
+											color="gray.600">
+											{supplier.phoneNumber}
+										</Td>
+										<Td
+											fontSize="13px"
+											textAlign="right"
+											fontWeight="600"
+											color={supplier.currentDebt > 0 ? "red.600" : "green.600"}>
+											{formatCurrency(supplier.currentDebt)}
 										</Td>
 										<Td>
 											<Flex
@@ -219,7 +213,7 @@ const SupplierTable = ({
 															variant="ghost"
 															onClick={() =>
 																onViewDetails(
-																	supplier.id,
+																	supplier.supplierId,
 																)
 															}
 														/>
@@ -237,7 +231,7 @@ const SupplierTable = ({
 															variant="ghost"
 															onClick={() =>
 																onEdit(
-																	supplier.id,
+																	supplier.supplierId,
 																)
 															}
 														/>
@@ -284,7 +278,7 @@ const SupplierTable = ({
 					<ModalBody>
 						<Text>
 							Bạn có chắc chắn muốn xóa nhà cung cấp{" "}
-							<strong>{selectedSupplier?.name}</strong>?
+							<strong>{selectedSupplier?.supplierName}</strong>?
 						</Text>
 						<Text
 							mt={2}

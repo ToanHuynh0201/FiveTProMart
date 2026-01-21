@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	ScheduleGrid,
@@ -16,6 +16,7 @@ import {
 	Flex,
 	Spinner,
 	IconButton,
+	useToast,
 } from "@chakra-ui/react";
 import { EditIcon, SettingsIcon } from "@chakra-ui/icons";
 import type {
@@ -23,10 +24,14 @@ import type {
 	ShiftAssignment,
 	WeekRange,
 	ShiftConfig,
+	WorkScheduleResponse,
+	WorkShift,
+	ShiftRoleConfig,
 } from "@/types";
 import { scheduleService } from "@/services/scheduleService";
 
 const SchedulePage = () => {
+	const toast = useToast();
 	const currentDate = new Date();
 	const [selectedMonth, setSelectedMonth] = useState(
 		currentDate.getMonth() + 1,
@@ -38,12 +43,14 @@ const SchedulePage = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [shiftConfig, setShiftConfig] = useState<ShiftConfig | null>(null);
+	const [, setWorkShifts] = useState<WorkShift[]>([]);
 	const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 	const [editModalData, setEditModalData] = useState<{
 		isOpen: boolean;
 		date: string;
 		shift: string;
 		assignments: ShiftAssignment[];
+		workScheduleId?: string;
 	}>({
 		isOpen: false,
 		date: "",
@@ -63,6 +70,186 @@ const SchedulePage = () => {
 		assignments: [],
 	});
 
+	// Helper: Generate weeks for a month
+	const generateWeeksForMonth = (month: number, year: number): WeekRange[] => {
+		const weeks: WeekRange[] = [];
+		const firstDay = new Date(year, month - 1, 1);
+		const lastDay = new Date(year, month, 0);
+
+		// Find the Monday of the week containing the first day
+		let currentWeekStart = new Date(firstDay);
+		const dayOfWeek = currentWeekStart.getDay();
+		const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+		currentWeekStart.setDate(currentWeekStart.getDate() + daysToMonday);
+
+		while (currentWeekStart <= lastDay) {
+			const weekEnd = new Date(currentWeekStart);
+			weekEnd.setDate(weekEnd.getDate() + 6);
+
+			const startLabel = `${currentWeekStart.getDate().toString().padStart(2, "0")}/${(currentWeekStart.getMonth() + 1).toString().padStart(2, "0")}`;
+			const endLabel = `${weekEnd.getDate().toString().padStart(2, "0")}/${(weekEnd.getMonth() + 1).toString().padStart(2, "0")}`;
+
+			weeks.push({
+				start: currentWeekStart.toISOString().split("T")[0],
+				end: weekEnd.toISOString().split("T")[0],
+				label: `${startLabel} - ${endLabel}`,
+			});
+
+			currentWeekStart = new Date(weekEnd);
+			currentWeekStart.setDate(currentWeekStart.getDate() + 1);
+		}
+
+		return weeks;
+	};
+
+	// Helper: Format date to dd-MM-yyyy
+	const formatDateForAPI = (dateStr: string): string => {
+		const date = new Date(dateStr);
+		const day = date.getDate().toString().padStart(2, "0");
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		const year = date.getFullYear();
+		return `${day}-${month}-${year}`;
+	};
+
+	// Helper: Parse dd-MM-yyyy to yyyy-MM-dd
+	const parseDateFromAPI = (dateStr: string): string => {
+		// Check if already in ISO format (yyyy-MM-dd)
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+			return dateStr;
+		}
+
+		// Parse dd-MM-yyyy format
+		const parts = dateStr.split("-");
+		if (parts.length === 3) {
+			const [day, month, year] = parts;
+			return `${year}-${month}-${day}`;
+		}
+
+		// Fallback: return as is
+		return dateStr;
+	};
+
+	// Helper: Convert WorkScheduleResponse[] to DaySchedule[]
+	const convertToWeekData = (
+		schedules: WorkScheduleResponse[],
+		weekRange: WeekRange,
+	): DaySchedule[] => {
+		const daySchedules: DaySchedule[] = [];
+		const startDate = new Date(weekRange.start);
+
+		// Generate 7 days
+		for (let i = 0; i < 7; i++) {
+			const currentDate = new Date(startDate);
+			currentDate.setDate(startDate.getDate() + i);
+			const dateStr = currentDate.toISOString().split("T")[0];
+
+			const daySchedule: DaySchedule = {
+				date: dateStr,
+				dayOfWeek: "",
+				shifts: {},
+			};
+
+			// Group schedules by shift for this date
+			const daySchedules_api = schedules.filter((schedule) => {
+				const scheduleDate = parseDateFromAPI(schedule.workDate);
+				return scheduleDate === dateStr;
+			});
+
+			daySchedules_api.forEach((schedule) => {
+				const shiftAssignments: ShiftAssignment[] =
+					schedule.assignments.map((assignment) => ({
+						id: assignment.profileId,
+						staffId: assignment.profileId,
+						staffName: assignment.fullName,
+						staffPosition: mapAccountTypeToPosition(
+							assignment.accountType,
+						),
+						date: dateStr,
+						shift: schedule.workShiftId,
+						shiftName: schedule.shiftName,
+						employmentType: "Fulltime",
+						status: assignment.status as
+							| "scheduled"
+							| "completed"
+							| "absent"
+							| "late",
+						notes: "",
+					}));
+
+				daySchedule.shifts[schedule.workShiftId] = shiftAssignments;
+			});
+
+			daySchedules.push(daySchedule);
+		}
+
+		return daySchedules;
+	};
+
+	// Helper: Map accountType to Vietnamese position
+	const mapAccountTypeToPosition = (accountType: string): string => {
+		if (accountType === "WarehouseStaff") {
+			return "Nhân viên kho";
+		} else if (accountType === "SalesStaff") {
+			return "Nhân viên bán hàng";
+		}
+		return accountType;
+	};
+
+	// Helper: Convert WorkShift[] to ShiftTemplate[] (with role configs)
+	const convertWorkShiftsToTemplates = async (
+		shifts: WorkShift[],
+	): Promise<ShiftConfig> => {
+		// Fetch all role configs first
+		const roleConfigsResult = await scheduleService.getRoleConfigs(true);
+		const roleConfigsMap = new Map();
+
+		if (roleConfigsResult.success && roleConfigsResult.data) {
+			roleConfigsResult.data.forEach((config: ShiftRoleConfig) => {
+				roleConfigsMap.set(config.id, config);
+			});
+		}
+
+		const templates = shifts.map((shift, index) => {
+			// Calculate working hours
+			const [startHour, startMinute] = shift.startTime
+				.split(":")
+				.map(Number);
+			const [endHour, endMinute] = shift.endTime.split(":").map(Number);
+			const startInMinutes = startHour * 60 + startMinute;
+			const endInMinutes = endHour * 60 + endMinute;
+			const durationInMinutes = endInMinutes - startInMinutes;
+			const workingHours = parseFloat((durationInMinutes / 60).toFixed(2));
+
+			// Get requirements from role config
+			const roleConfig = roleConfigsMap.get(shift.roleConfig.id);
+			const warehouseReq =
+				roleConfig?.requirements?.find(
+					(req: any) => req.accountType === "WarehouseStaff",
+				)?.quantity || 0;
+			const salesReq =
+				roleConfig?.requirements?.find(
+					(req: any) => req.accountType === "SalesStaff",
+				)?.quantity || 0;
+
+			return {
+				id: shift.id,
+				name: shift.shiftName,
+				startTime: shift.startTime,
+				endTime: shift.endTime,
+				requiredWarehouseStaff: warehouseReq,
+				requiredSalesStaff: salesReq,
+				workingHours,
+				order: index,
+			};
+		});
+
+		return {
+			shifts: templates,
+			maxShiftsPerWeek: 6, // Default value
+			updatedAt: new Date().toISOString(),
+		};
+	};
+
 	// Load weeks when month/year changes
 	useEffect(() => {
 		loadMonthData();
@@ -81,79 +268,40 @@ const SchedulePage = () => {
 	}, []);
 
 	const loadShiftConfig = async () => {
+		setIsLoading(true);
 		try {
-			const configs = await scheduleService.getShiftConfig();
-			// Convert array to ShiftConfig object format
-			const config: ShiftConfig = {
-				shifts: configs.map((c) => ({
-					id: c.id,
-					name: c.name,
-					startTime: c.startTime,
-					endTime: c.endTime,
-					requiredWarehouseStaff: 2,
-					requiredSalesStaff: 3,
-					order: 1,
-				})),
-				maxShiftsPerWeek: 6,
-				updatedAt: new Date().toISOString(),
-			};
-			setShiftConfig(config);
-		} catch {
-			// Default config if API fails
-			setShiftConfig({
-				shifts: [
-					{ id: "morning", name: "Ca Sáng", startTime: "08:00", endTime: "12:00", requiredWarehouseStaff: 2, requiredSalesStaff: 3, order: 1 },
-					{ id: "afternoon", name: "Ca Chiều", startTime: "13:00", endTime: "17:00", requiredWarehouseStaff: 2, requiredSalesStaff: 3, order: 2 },
-					{ id: "evening", name: "Ca Tối", startTime: "17:00", endTime: "21:00", requiredWarehouseStaff: 1, requiredSalesStaff: 2, order: 3 },
-				],
-				maxShiftsPerWeek: 6,
-				updatedAt: new Date().toISOString(),
+			const result = await scheduleService.getWorkShifts(true);
+
+			if (result.success && result.data) {
+				setWorkShifts(result.data);
+				const config = await convertWorkShiftsToTemplates(result.data);
+				setShiftConfig(config);
+			} else {
+				toast({
+					title: "Lỗi",
+					description:
+						result.error || "Không thể tải cấu hình ca làm việc",
+					status: "error",
+					duration: 3000,
+				});
+			}
+		} catch (error) {
+			console.error("Error loading shift config:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi tải cấu hình ca làm việc",
+				status: "error",
+				duration: 3000,
 			});
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
-	const loadMonthData = async () => {
-		try {
-			await scheduleService.getMonthData(selectedMonth, selectedYear);
-			// Generate weeks for the month
-			const weeksInMonth = generateWeeksForMonth(selectedMonth, selectedYear);
-			setWeeks(weeksInMonth);
-			setSelectedWeekIndex(0);
-		} catch {
-			// Generate weeks locally if API fails
-			const weeksInMonth = generateWeeksForMonth(selectedMonth, selectedYear);
-			setWeeks(weeksInMonth);
-			setSelectedWeekIndex(0);
-		}
-	};
-
-	// Helper function to generate weeks for a month
-	const generateWeeksForMonth = (month: number, year: number): WeekRange[] => {
-		const weeks: WeekRange[] = [];
-		const firstDay = new Date(year, month - 1, 1);
-		const lastDay = new Date(year, month, 0);
-		
-		let currentStart = new Date(firstDay);
-		// Adjust to start of week (Monday)
-		const dayOfWeek = currentStart.getDay();
-		const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-		currentStart.setDate(currentStart.getDate() + diff);
-
-		while (currentStart <= lastDay) {
-			const weekEnd = new Date(currentStart);
-			weekEnd.setDate(weekEnd.getDate() + 6);
-			
-			weeks.push({
-				start: currentStart.toISOString().split('T')[0],
-				end: weekEnd.toISOString().split('T')[0],
-				label: `${currentStart.getDate()}/${currentStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-			});
-			
-			currentStart = new Date(weekEnd);
-			currentStart.setDate(currentStart.getDate() + 1);
-		}
-		
-		return weeks;
+	const loadMonthData = () => {
+		const generatedWeeks = generateWeeksForMonth(selectedMonth, selectedYear);
+		setWeeks(generatedWeeks);
+		setSelectedWeekIndex(0);
 	};
 
 	const loadWeekSchedule = async () => {
@@ -161,59 +309,39 @@ const SchedulePage = () => {
 
 		setIsLoading(true);
 		try {
-			const weekStart = weeks[selectedWeekIndex]?.start;
-			if (!weekStart) {
-				setWeekData([]);
-				return;
-			}
+			const currentWeek = weeks[selectedWeekIndex];
+			const startDate = formatDateForAPI(currentWeek.start);
+			const endDate = formatDateForAPI(currentWeek.end);
 
-			const weekSchedule = await scheduleService.getWeekSchedule(weekStart);
-			
-			// Transform API response to DaySchedule format
-			if (weekSchedule.days && weekSchedule.days.length > 0) {
-				const transformedData = weekSchedule.days.map(day => ({
-					date: day.date,
-					dayOfWeek: day.dayOfWeek,
-					shifts: Object.fromEntries(
-						day.shifts.map(s => [s.shiftId, [...s.warehouseStaff, ...s.salesStaff]])
-					),
-				}));
-				setWeekData(transformedData as any);
+			const result = await scheduleService.getWorkSchedules({
+				startDate,
+				endDate,
+			});
+
+			if (result.success && result.data) {
+				const weekData = convertToWeekData(result.data, currentWeek);
+				setWeekData(weekData);
 			} else {
-				// Generate empty week data
-				const emptyWeekData = generateEmptyWeekData(weekStart);
-				setWeekData(emptyWeekData);
-			}
-		} catch {
-			// Generate empty week data on error
-			const weekStart = weeks[selectedWeekIndex]?.start;
-			if (weekStart) {
-				setWeekData(generateEmptyWeekData(weekStart));
-			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể tải lịch làm việc",
+					status: "error",
+					duration: 3000,
+				});
 				setWeekData([]);
 			}
+		} catch (error) {
+			console.error("Error loading week schedule:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi tải lịch làm việc",
+				status: "error",
+				duration: 3000,
+			});
+			setWeekData([]);
 		} finally {
 			setIsLoading(false);
 		}
-	};
-
-	// Helper to generate empty week data
-	const generateEmptyWeekData = (weekStart: string): DaySchedule[] => {
-		const days: DaySchedule[] = [];
-		const dayNames = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
-		const startDate = new Date(weekStart);
-		
-		for (let i = 0; i < 7; i++) {
-			const currentDate = new Date(startDate);
-			currentDate.setDate(startDate.getDate() + i);
-			days.push({
-				date: currentDate.toISOString().split('T')[0],
-				dayOfWeek: dayNames[i],
-				shifts: {},
-			});
-		}
-		
-		return days;
 	};
 
 	const handleCellClick = (date: string, shiftId: string) => {
@@ -254,40 +382,35 @@ const SchedulePage = () => {
 	};
 
 	const handleScheduleUpdate = async () => {
-		// Reload schedule after update
+		// Reload the week schedule after assignment/removal
 		await loadWeekSchedule();
+
 		// Update modal data with fresh data
-		if (editModalData.isOpen) {
-			const day = weekData.find(d => d.date === editModalData.date);
+		if (editModalData.isOpen && editModalData.date && editModalData.shift) {
+			const day = weekData.find((d) => d.date === editModalData.date);
 			if (day) {
+				const assignments = day.shifts[editModalData.shift] || [];
 				setEditModalData({
 					...editModalData,
-					assignments: day.shifts[editModalData.shift] || [],
+					assignments,
 				});
 			}
 		}
 	};
 
 	const handleSaveShiftConfig = async (config: ShiftConfig) => {
-		try {
-			// Save shift config via API
-			await scheduleService.updateShiftConfig(
-				config.shifts.map(s => ({
-					id: s.id,
-					name: s.name,
-					startTime: s.startTime,
-					endTime: s.endTime,
-					type: s.id as "morning" | "afternoon" | "evening" | "night",
-					color: s.id === "morning" ? "blue" : s.id === "afternoon" ? "orange" : "purple",
-				}))
-			);
-			setShiftConfig(config);
-			// Reload week schedule after config change
-			await loadWeekSchedule();
-		} catch {
-			// Save locally even if API fails
-			setShiftConfig(config);
-		}
+		// Note: The API doesn't have an update endpoint for shift config
+		// ShiftConfigModal handles creating new shifts via createWorkShift
+		// For now, just update local state
+		setShiftConfig(config);
+		await loadWeekSchedule();
+
+		toast({
+			title: "Thành công",
+			description: "Đã cập nhật cấu hình ca làm việc",
+			status: "success",
+			duration: 3000,
+		});
 	};
 
 	if (!shiftConfig) {

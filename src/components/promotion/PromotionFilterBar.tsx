@@ -7,11 +7,8 @@ import {
 	Text,
 	Badge,
 } from "@chakra-ui/react";
-import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
-import { useState, useEffect } from "react";
+import { RepeatIcon } from "@chakra-ui/icons";
 import type { PromotionFilter } from "../../types/promotion";
-import { inventoryService } from "@/services/inventoryService";
-import type { PromotionProduct } from "../../types/promotion";
 
 interface PromotionFilterBarProps {
 	filters: PromotionFilter;
@@ -24,28 +21,6 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 	onFiltersChange,
 	onReset,
 }) => {
-	const [products, setProducts] = useState<PromotionProduct[]>([]);
-
-	useEffect(() => {
-		loadProducts();
-	}, []);
-
-	const loadProducts = async () => {
-		try {
-			// Fetch available products from inventoryService
-		const response = await inventoryService.getProducts({ page: 1, pageSize: 100 });
-		const productsData = response.data || [];
-		setProducts(productsData.map(p => ({
-			id: p.id,
-			code: p.barcode || p.id,
-			name: p.name || '',
-			})));
-		} catch (error) {
-			console.error("Error loading products:", error);
-			setProducts([]);
-		}
-	};
-
 	const handleTypeChange = (type: string) => {
 		onFiltersChange({ ...filters, type });
 	};
@@ -54,18 +29,36 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 		onFiltersChange({ ...filters, status });
 	};
 
-	const handleProductFilter = (productCode: string) => {
-		if (productCode === "all") {
-			onFiltersChange({ ...filters, searchQuery: "" });
-		} else {
-			onFiltersChange({ ...filters, searchQuery: productCode });
-		}
-	};
-
 	const hasActiveFilters =
 		filters.type !== "all" ||
 		filters.status !== "all" ||
 		filters.searchQuery !== "";
+
+	const getTypeLabel = (type: string) => {
+		switch (type) {
+			case "Discount":
+				return "Giảm giá";
+			case "Buy X Get Y":
+				return "Mua X tặng Y";
+			default:
+				return type;
+		}
+	};
+
+	const getStatusLabel = (status: string) => {
+		switch (status) {
+			case "Active":
+				return "Đang áp dụng";
+			case "Upcoming":
+				return "Sắp diễn ra";
+			case "Expired":
+				return "Đã hết hạn";
+			case "Cancelled":
+				return "Đã hủy";
+			default:
+				return status;
+		}
+	};
 
 	return (
 		<Box
@@ -91,10 +84,8 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 							h="44px"
 							borderRadius="8px">
 							<option value="all">Tất cả loại KM</option>
-							<option value="discount">Giảm giá</option>
-							<option value="buyThisGetThat">
-								Mua này tặng kia
-							</option>
+							<option value="Discount">Giảm giá</option>
+							<option value="Buy X Get Y">Mua X tặng Y</option>
 						</Select>
 					</Box>
 
@@ -106,30 +97,10 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 							h="44px"
 							borderRadius="8px">
 							<option value="all">Tất cả trạng thái</option>
-							<option value="active">Đang áp dụng</option>
-							<option value="inactive">Chưa áp dụng</option>
-							<option value="expired">Đã hết hạn</option>
-						</Select>
-					</Box>
-
-					<Box
-						minW={{ base: "full", md: "250px" }}
-						position="relative">
-						<Select
-							placeholder="Lọc theo sản phẩm"
-							onChange={(e) => handleProductFilter(e.target.value)}
-							fontSize="14px"
-							h="44px"
-							borderRadius="8px"
-							icon={<SearchIcon />}>
-							<option value="all">Tất cả sản phẩm</option>
-							{products.map((product) => (
-								<option
-									key={product.id}
-									value={product.code}>
-									{product.code} - {product.name}
-								</option>
-							))}
+							<option value="Active">Đang áp dụng</option>
+							<option value="Upcoming">Sắp diễn ra</option>
+							<option value="Expired">Đã hết hạn</option>
+							<option value="Cancelled">Đã hủy</option>
 						</Select>
 					</Box>
 				</HStack>
@@ -169,9 +140,7 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 							borderRadius="full"
 							fontSize="12px"
 							fontWeight="600">
-							{filters.type === "discount"
-								? "Giảm giá"
-								: "Mua này tặng kia"}
+							{getTypeLabel(filters.type)}
 						</Badge>
 					)}
 					{filters.status !== "all" && (
@@ -182,11 +151,7 @@ export const PromotionFilterBar: React.FC<PromotionFilterBarProps> = ({
 							borderRadius="full"
 							fontSize="12px"
 							fontWeight="600">
-							{filters.status === "active"
-								? "Đang áp dụng"
-								: filters.status === "inactive"
-									? "Chưa áp dụng"
-									: "Đã hết hạn"}
+							{getStatusLabel(filters.status)}
 						</Badge>
 					)}
 					{filters.searchQuery !== "" && (

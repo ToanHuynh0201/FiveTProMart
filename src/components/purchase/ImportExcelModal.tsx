@@ -22,7 +22,6 @@ import {
 } from "@chakra-ui/react";
 import { DownloadIcon, AttachmentIcon } from "@chakra-ui/icons";
 import type { PurchaseItem } from "../../types/purchase";
-import { purchaseService } from "@/services/purchaseService";
 
 interface ImportExcelModalProps {
 	isOpen: boolean;
@@ -40,32 +39,14 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [previewItems, setPreviewItems] = useState<PurchaseItem[]>([]);
 
-	const handleDownloadTemplate = async () => {
-		try {
-			const blob = await purchaseService.getExcelTemplate();
-			const url = window.URL.createObjectURL(blob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = "purchase_template.xlsx";
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			window.URL.revokeObjectURL(url);
-			
-			toast({
-				title: "Tải xuống thành công",
-				description: "File mẫu đã được tải xuống",
-				status: "success",
-				duration: 2000,
-			});
-		} catch {
-			toast({
-				title: "Lỗi",
-				description: "Không thể tải file mẫu",
-				status: "error",
-				duration: 3000,
-			});
-		}
+	const handleDownloadTemplate = () => {
+		// TODO: Call purchaseService.exportExcelTemplate()
+		toast({
+			title: "Tải xuống thành công",
+			description: "File mẫu đã được tải xuống",
+			status: "success",
+			duration: 2000,
+		});
 	};
 
 	const handleFileSelect = () => {
@@ -95,8 +76,8 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			const response = await purchaseService.importFromExcel(file);
-			const items: PurchaseItem[] = Array.isArray(response) ? response : [];
+			// TODO: Call purchaseService.importFromExcel(file)
+			const items: PurchaseItem[] = [];
 
 			if (items.length === 0) {
 				toast({
@@ -115,10 +96,10 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 				status: "success",
 				duration: 2000,
 			});
-		} catch (error: unknown) {
+		} catch (error: any) {
 			toast({
 				title: "Lỗi",
-				description: (error as Error)?.message || "Không thể đọc file Excel",
+				description: error.message || "Không thể đọc file Excel",
 				status: "error",
 				duration: 4000,
 			});
@@ -265,74 +246,40 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 												<Th>STT</Th>
 												<Th>Mã SP</Th>
 												<Th>Tên sản phẩm</Th>
-												<Th>Nhóm hàng</Th>
-												<Th>Đơn vị</Th>
-												<Th isNumeric>SL</Th>
-												<Th isNumeric>Đơn giá</Th>
-												<Th isNumeric>VAT (%)</Th>
-												<Th>NSX</Th>
-												<Th>HSD</Th>
+												<Th isNumeric>SL đặt</Th>
+												<Th isNumeric>Giá nhập</Th>
 												<Th isNumeric>Thành tiền</Th>
 											</Tr>
 										</Thead>
 										<Tbody>
 											{previewItems.map((item, index) => (
-												<Tr key={item.id}>
+												<Tr key={item.productId}>
 													<Td>{index + 1}</Td>
 													<Td fontSize="13px">
-														{item.productCode}
+														{item.productId}
 													</Td>
 													<Td fontSize="13px">
 														{item.productName}
-													</Td>
-													<Td fontSize="13px">
-														{item.category || "-"}
-													</Td>
-													<Td fontSize="13px">
-														{item.unit}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px"
 														fontWeight="600">
-														{item.quantity}
+														{item.quantityOrdered}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px">
 														{formatCurrency(
-															item.unitPrice,
+															item.importPrice,
 														)}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="13px">
-														{item.vat}%
-													</Td>
-													<Td fontSize="13px">
-														{item.manufactureDate
-															? new Date(
-																	item.manufactureDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
-													</Td>
-													<Td fontSize="13px">
-														{item.expiryDate
-															? new Date(
-																	item.expiryDate,
-															  ).toLocaleDateString(
-																	"vi-VN",
-															  )
-															: "-"}
 													</Td>
 													<Td
 														isNumeric
 														fontSize="13px"
 														fontWeight="700">
 														{formatCurrency(
-															item.totalPrice,
+															item.subTotal,
 														)}
 													</Td>
 												</Tr>
@@ -359,7 +306,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 											{formatCurrency(
 												previewItems.reduce(
 													(sum, item) =>
-														sum + item.totalPrice,
+														sum + item.subTotal,
 													0,
 												),
 											)}

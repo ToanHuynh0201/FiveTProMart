@@ -1,77 +1,153 @@
-// Loại khuyến mãi
-export type PromotionType = "discount" | "buyThisGetThat";
+// Loại khuyến mãi theo API spec
+export type PromotionType = "Discount" | "Buy X Get Y";
 
-// Sản phẩm áp dụng khuyến mãi
-export interface PromotionProduct {
-	id: string;
-	code: string;
-	name: string;
-	category?: string;
-	unit?: string;
+// Trạng thái khuyến mãi theo API spec
+export type PromotionStatus = "Active" | "Expired" | "Upcoming" | "Cancelled";
+
+// Sản phẩm trong danh sách khuyến mãi (list response)
+export interface PromotionProductSummary {
+	productId: string;
+	productName: string;
 }
 
-// Cấu hình cho từng loại khuyến mãi
-export interface DiscountConfig {
-	percentage: number; // Phần trăm giảm giá (0-100)
-	products: PromotionProduct[]; // Danh sách sản phẩm áp dụng giảm giá
+// Sản phẩm chi tiết trong promotion detail
+export interface PromotionProductDetail {
+	productId: string;
+	productName: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
+	promotionPrice: number | null; // null nếu là Buy X Get Y
 }
 
-// Nhóm sản phẩm cần mua trong "Mua này tặng kia"
-export interface PurchaseProductGroup {
-	product: PromotionProduct; // Sản phẩm cần mua
-	quantity: number; // Số lượng cần mua
-}
-
-export interface BuyThisGetThatConfig {
-	purchaseGroups: PurchaseProductGroup[]; // Các nhóm sản phẩm cần mua
-	giftProducts: {
-		product: PromotionProduct; // Sản phẩm tặng
-		quantity: number; // Số lượng tặng
-	}[];
-}
-
-// Interface chính cho khuyến mãi
+// Interface cho list promotions (GET /promotions)
 export interface Promotion {
-	id: string;
-	code: string; // Mã khuyến mãi
-	name: string; // Tên chương trình khuyến mãi
-	description?: string; // Mô tả
-	type: PromotionType; // Loại khuyến mãi
-
-	// Cấu hình theo loại khuyến mãi
-	discountConfig?: DiscountConfig; // Cho loại "discount"
-	buyThisGetThatConfig?: BuyThisGetThatConfig; // Cho loại "buyThisGetThat"
-
-	startDate: Date; // Ngày bắt đầu
-	endDate: Date; // Ngày kết thúc
-	status: "active" | "inactive" | "expired"; // Trạng thái
-
-	createdAt: Date;
-	updatedAt: Date;
-	createdBy?: string; // Người tạo
+	promotionId: string;
+	promotionName: string;
+	promotionType: PromotionType;
+	products: PromotionProductSummary[];
+	// Cho loại Discount
+	discountPercent?: number;
+	// Cho loại Buy X Get Y
+	buyQuantity?: number;
+	getQuantity?: number;
+	// Thời gian
+	startDate: string; // Format: dd-MM-yyyy
+	endDate: string; // Format: dd-MM-yyyy
+	status: PromotionStatus;
 }
 
-// Filter cho tìm kiếm khuyến mãi
-export interface PromotionFilter {
-	searchQuery: string; // Tìm theo tên, mã KM, tên sản phẩm
-	type: string; // Loại khuyến mãi (all, discount, buy1getN, buyThisGetThat)
-	status: string; // Trạng thái (all, active, inactive, expired)
-	dateRange?: {
-		start: Date;
-		end: Date;
-	};
+// Interface cho promotion detail (GET /promotions/{id})
+export interface PromotionDetail {
+	promotionId: string;
+	promotionName: string;
+	promotionDescription: string;
+	promotionType: PromotionType;
+	// Cho loại Discount
+	discountPercent: number | null;
+	// Cho loại Buy X Get Y
+	buyQuantity: number | null;
+	getQuantity: number | null;
+	// Thông tin khác
+	status: PromotionStatus;
+	startDate: string; // Format: dd-MM-yyyy
+	endDate: string; // Format: dd-MM-yyyy
+	products: PromotionProductDetail[];
 }
 
-// Thống kê khuyến mãi
+// Interface cho tạo promotion mới - Discount type
+export interface CreateDiscountPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Discount";
+	discountPercent: number; // 1-100
+	startDate: string; // Format: dd-MM-yyyy
+	endDate: string; // Format: dd-MM-yyyy
+}
+
+// Interface cho tạo promotion mới - Buy X Get Y type
+export interface CreateBuyXGetYPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Buy X Get Y";
+	buyQuantity: number; // > 0
+	getQuantity: number; // > 0
+	startDate: string; // Format: dd-MM-yyyy
+	endDate: string; // Format: dd-MM-yyyy
+}
+
+// Union type cho tạo promotion
+export type CreatePromotionRequest =
+	| CreateDiscountPromotion
+	| CreateBuyXGetYPromotion;
+
+// Interface cho update promotion - Discount type
+export interface UpdateDiscountPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Discount";
+	discountPercent: number; // 1-100
+	startDate: string; // Format: yyyy-MM-dd
+	endDate: string; // Format: yyyy-MM-dd
+}
+
+// Interface cho update promotion - Buy X Get Y type
+export interface UpdateBuyXGetYPromotion {
+	promotionName: string;
+	promotionDescription?: string;
+	products: string[]; // Array of productId
+	promotionType: "Buy X Get Y";
+	buyQuantity: number; // > 0
+	getQuantity: number; // > 0
+	startDate: string; // Format: yyyy-MM-dd
+	endDate: string; // Format: yyyy-MM-dd
+}
+
+// Union type cho update promotion
+export type UpdatePromotionRequest =
+	| UpdateDiscountPromotion
+	| UpdateBuyXGetYPromotion;
+
+// Response khi tạo promotion thành công
+export interface CreatePromotionResponse {
+	promotionId: string;
+	promotionName: string;
+	promotionDescription: string;
+	status: PromotionStatus;
+	startDate: string;
+	endDate: string;
+}
+
+// Response khi update promotion thành công
+export interface UpdatePromotionResponse {
+	promotionId: string;
+	promotionName: string;
+	promotionDescription: string;
+	status: PromotionStatus;
+	startDate: string;
+	endDate: string;
+}
+
+// Response khi hủy promotion
+export interface CancelPromotionResponse {
+	promotionId: string;
+	status: "Cancelled";
+}
+
+// Thống kê khuyến mãi (cho stats cards)
 export interface PromotionStats {
 	totalPromotions: number;
 	activePromotions: number;
 	expiredPromotions: number;
-	upcomingPromotions: number; // Sắp diễn ra
+	upcomingPromotions: number;
+	cancelledPromotions?: number;
 }
 
-// Form data để tạo/sửa khuyến mãi
-export type PromotionFormData = Omit<
-	Promotion,
-	"id" | "createdAt" | "updatedAt" | "status"
->;
+// Filter cho tìm kiếm khuyến mãi (UI)
+export interface PromotionFilter {
+	searchQuery: string;
+	type: string; // "all" | "Discount" | "Buy X Get Y"
+	status: string; // "all" | "Active" | "Expired" | "Upcoming" | "Cancelled"
+}

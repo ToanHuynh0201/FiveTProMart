@@ -18,8 +18,10 @@ import {
 	useDisclosure,
 	useToast,
 	Portal,
+	Badge,
 } from "@chakra-ui/react";
-import type { Staff } from "@/types";
+import type { Staff } from "@/types/staff";
+import { ACCOUNT_TYPE_LABELS } from "@/types/staff";
 import { useState } from "react";
 
 interface StaffCardProps {
@@ -38,7 +40,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 
 		setIsDeleting(true);
 		try {
-			await onDelete(staff.id);
+			await onDelete(staff.profileId);
 			onClose();
 			toast({
 				title: "Thành công",
@@ -73,7 +75,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 			}}
 			cursor="pointer"
 			position="relative"
-			onClick={() => onViewDetails?.(staff.id)}
+			onClick={() => onViewDetails?.(staff.profileId)}
 			h="100%"
 			isolation="auto">
 			{/* Menu dropdown */}
@@ -108,7 +110,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 							<MenuItem
 								onClick={(e) => {
 									e.stopPropagation();
-									onViewDetails?.(staff.id);
+									onViewDetails?.(staff.profileId);
 								}}>
 								Xem chi tiết
 							</MenuItem>
@@ -141,7 +143,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 					fontSize="32px"
 					fontWeight="700"
 					color="brand.500">
-					{staff.name.charAt(0)}
+					{staff.fullName.charAt(0)}
 				</Box>
 			</Flex>
 			{/* Name */}
@@ -151,16 +153,18 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 				color="brand.600"
 				mb={1}
 				lineHeight="1.2">
-				{staff.name}
+				{staff.fullName}
 			</Text>
 			{/* Position */}
-			<Text
-				fontSize="17px"
-				fontWeight="500"
-				color="black"
+			<Badge
+				colorScheme={staff.accountType === "SalesStaff" ? "blue" : "green"}
+				fontSize="12px"
+				px={2}
+				py={1}
+				borderRadius="full"
 				mb={3}>
-				{staff.position}
-			</Text>
+				{ACCOUNT_TYPE_LABELS[staff.accountType]}
+			</Badge>
 			{/* View Details Link */}
 			<Text
 				fontSize="10px"
@@ -173,7 +177,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 					textDecoration: "underline",
 					color: "brand.500",
 				}}
-				onClick={() => onViewDetails?.(staff.id)}>
+				onClick={() => onViewDetails?.(staff.profileId)}>
 				Xem chi tiết
 			</Text>
 			{/* Delete Confirmation Modal */}
@@ -200,7 +204,7 @@ const StaffCard = ({ staff, onViewDetails, onDelete }: StaffCardProps) => {
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa nhân viên{" "}
-							<strong>{staff.name}</strong>? Hành động này không
+							<strong>{staff.fullName}</strong>? Hành động này không
 							thể hoàn tác.
 						</Text>
 					</ModalBody>

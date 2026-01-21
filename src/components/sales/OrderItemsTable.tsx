@@ -9,9 +9,9 @@ import {
 	Text,
 	NumberInput,
 	NumberInputField,
-	Button,
 	Badge,
 	Tooltip,
+	IconButton,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { OrderItem } from "../../types/sales";
@@ -41,13 +41,13 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 			<Table
 				variant="simple"
 				size="sm">
-				<Thead bg="#161f70">
+				<Thead bg="gray.50">
 					<Tr>
 						<Th
 							w={{ base: "40px", md: "50px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}>
@@ -57,7 +57,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							minW={{ base: "180px", md: "220px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}>
@@ -67,7 +67,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							w={{ base: "100px", md: "120px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}
@@ -78,7 +78,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							w={{ base: "100px", md: "120px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}
@@ -89,7 +89,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							w={{ base: "100px", md: "130px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}
@@ -102,7 +102,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 							w={{ base: "110px", md: "140px" }}
 							fontSize="11px"
 							fontWeight="700"
-							color="white"
+							color="gray.600"
 							textTransform="uppercase"
 							letterSpacing="wider"
 							py={3}
@@ -183,8 +183,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 													alignItems="center"
 													gap={1}
 													mb={
-														item.product
-															.promotion ||
+														item.promotionName ||
 														item.product.expiryDate
 															? 1
 															: 0
@@ -192,21 +191,29 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 													📦 Lô: {item.batchNumber}
 												</Text>
 											)}
-											{item.product.promotion && (
-												<Text
-													fontSize="12px"
-													color="red.500"
-													fontWeight="500"
-													display="flex"
-													alignItems="center"
-													gap={1}
-													mb={
-														item.product.expiryDate
-															? 1
-															: 0
-													}>
-													✨ {item.product.promotion}
-												</Text>
+											{item.promotionName && (
+												<Tooltip
+													label={`Tiết kiệm ${item.savings?.toLocaleString("vi-VN")}đ/sản phẩm`}
+													placement="top">
+													<Badge
+														colorScheme="red"
+														fontSize="11px"
+														fontWeight="600"
+														px={2}
+														py={0.5}
+														borderRadius="md"
+														display="flex"
+														alignItems="center"
+														gap={1}
+														w="fit-content"
+														mb={
+															item.product.expiryDate
+																? 1
+																: 0
+														}>
+														🏷️ {item.promotionName}
+													</Badge>
+												</Tooltip>
 											)}
 											{item.product.expiryDate && (
 												<Tooltip
@@ -341,8 +348,29 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 										color="gray.700"
 										textAlign="right"
 										isNumeric>
-										{item.unitPrice.toLocaleString("vi-VN")}
-										đ
+										{item.promotionalPrice ? (
+											<Box>
+												<Text
+													as="span"
+													fontSize="13px"
+													color="gray.400"
+													textDecoration="line-through"
+													mr={1}>
+													{item.unitPrice.toLocaleString("vi-VN")}đ
+												</Text>
+												<Text
+													as="span"
+													color="red.500"
+													fontWeight="600">
+													{item.promotionalPrice.toLocaleString("vi-VN")}đ
+												</Text>
+											</Box>
+										) : (
+											<>
+												{item.unitPrice.toLocaleString("vi-VN")}
+												đ
+											</>
+										)}
 									</Td>
 									<Td
 										py={5}
@@ -359,15 +387,12 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 									<Td
 										py={5}
 										textAlign="center">
-										<Button
-											size="md"
+										<IconButton
+											aria-label="Xóa sản phẩm"
+											icon={<DeleteIcon />}
+											size="sm"
 											variant="ghost"
 											colorScheme="red"
-											leftIcon={<DeleteIcon />}
-											fontSize="14px"
-											fontWeight="600"
-											px={4}
-											h="40px"
 											onClick={() =>
 												onRemoveItem(item.id)
 											}
@@ -377,9 +402,8 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 											}}
 											_active={{
 												bg: "red.100",
-											}}>
-											Xóa
-										</Button>
+											}}
+										/>
 									</Td>
 								</Tr>
 							);

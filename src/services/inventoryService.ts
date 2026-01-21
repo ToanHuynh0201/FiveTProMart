@@ -1,19 +1,23 @@
 import apiService from "@/lib/api";
-import type { InventoryProduct, InventoryCategory, InventoryStats } from "@/types";
+import type { InventoryProduct, InventoryStats } from "@/types";
+import type { ProductBatch } from "@/types/inventory";
 import type { InventoryFilters } from "@/types/filters";
 import type { ApiResponse } from "@/types/api";
 import { buildQueryParams } from "@/utils/queryParams";
 
 /**
- * Category type from API
+ * Request type for creating/updating products
+ * Matches backend ProductRequest.java exactly
  */
-interface CategoryApiResponse {
+interface ProductRequest {
 	categoryId: string;
-	categoryName: string;
+	productName: string;
+	unitOfMeasure: string;
+	sellingPrice: number;
 }
 
 /**
- * Disposal request matching FRONTEND_API_REQUIREMENTS.md §4
+ * Disposal request matching FRONTEND_API_REQUIREMENTS.md ┬º4
  */
 interface DisposeRequest {
 	quantity: number;
@@ -23,7 +27,7 @@ interface DisposeRequest {
 }
 
 /**
- * Disposal response matching FRONTEND_API_REQUIREMENTS.md §4
+ * Disposal response matching FRONTEND_API_REQUIREMENTS.md ┬º4
  */
 interface DisposeResponse {
 	disposalId: string;
@@ -39,9 +43,30 @@ interface DisposeResponse {
 	notes?: string;
 }
 
+/**
+ * Category DTO types
+ */
+export interface CategoryDTO {
+	categoryId: string;
+	categoryCode: string;
+	categoryName: string;
+	description?: string;
+}
+
+export interface CreateCategoryDTO {
+	categoryName: string;
+}
+
+export interface UpdateCategoryDTO {
+	categoryCode?: string;
+	categoryName?: string;
+	description?: string;
+}
+
 export const inventoryService = {
 	/**
 	 * Fetch products with server-side filtering and pagination
+	 * Returns InventoryProduct[] matching backend ProductResponse.java exactly
 	 */
 	async getProducts(
 		filters: InventoryFilters,
@@ -53,20 +78,33 @@ export const inventoryService = {
 	},
 
 	async getProductById(id: string): Promise<InventoryProduct> {
-		return apiService.get<InventoryProduct>(`/products/${id}`);
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>(`/products/${id}`);
+		return response.data;
 	},
 
-	async createProduct(
-		data: Omit<InventoryProduct, "id">,
-	): Promise<InventoryProduct> {
-		return apiService.post<InventoryProduct>("/products", data);
+	async createProduct(data: ProductRequest): Promise<InventoryProduct> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>("/products", data);
+		return response.data;
 	},
 
 	async updateProduct(
 		id: string,
-		data: Partial<InventoryProduct>,
+		data: Partial<ProductRequest>,
 	): Promise<InventoryProduct> {
-		return apiService.put<InventoryProduct>(`/products/${id}`, data);
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: InventoryProduct;
+		}>(`/products/${id}`, data);
+		return response.data;
 	},
 
 	async deleteProduct(id: string): Promise<void> {
@@ -78,60 +116,102 @@ export const inventoryService = {
 	// ===================================================================
 	/**
 	 * Fetch all product categories
+	 * Returns CategoryDTO[] matching backend CategoryResponse.java exactly
 	 */
-	async getCategories(): Promise<InventoryCategory[]> {
+	async getCategories(search?: string): Promise<CategoryDTO[]> {
+		const url = search
+			? `/product-categories?search=${encodeURIComponent(search)}`
+			: "/product-categories";
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: CategoryApiResponse[];
-		}>("/product-categories");
+			data: CategoryDTO[];
+		}>(url);
+		return response.data;
+	},
 
-		// Map API response to frontend type
-		return response.data.map((cat) => ({
-			id: cat.categoryId,
-			name: cat.categoryName,
-			description: undefined,
-			productCount: 0, // API doesn't return this, would need separate query
-		}));
+	/**
+	 * Get a single category by ID
+	 */
+	async getCategoryById(id: string): Promise<CategoryDTO> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`);
+		return response.data;
+	},
+
+	/**
+	 * Create a new product category
+	 */
+	async createCategory(data: CreateCategoryDTO): Promise<CategoryDTO> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>("/product-categories", data);
+		return response.data;
+	},
+
+	/**
+	 * Update an existing product category
+	 */
+	async updateCategory(
+		id: string,
+		data: UpdateCategoryDTO,
+	): Promise<CategoryDTO> {
+		const response = await apiService.put<{
+			success: boolean;
+			message: string;
+			data: CategoryDTO;
+		}>(`/product-categories/${id}`, data);
+		return response.data;
+	},
+
+	/**
+	 * Delete a product category
+	 */
+	async deleteCategory(id: string): Promise<void> {
+		await apiService.delete(`/product-categories/${id}`);
 	},
 
 	// ===================================================================
-	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md §5)
+	// Stats - GET /api/products/stats (FRONTEND_API_REQUIREMENTS.md ┬º5)
 	// ===================================================================
 	/**
 	 * Get product statistics for dashboard.
-	 * Fails gracefully if backend endpoint doesn't exist yet.
+	 * Returns InventoryStats matching backend ProductStatsResponse.java exactly
 	 */
 	async getStats(): Promise<InventoryStats> {
 		const response = await apiService.get<{
 			success: boolean;
 			message: string;
-			data: {
-				totalProducts: number;
-				activeProducts: number;
-				inactiveProducts: number;
-				totalInventoryValue: number;
-				lowStockCount: number;
-				outOfStockCount: number;
-				expiringSoonCount: number;
-				expiredCount: number;
-			};
+			data: InventoryStats;
 		}>("/products/stats");
+		return response.data;
+	},
 
-		return {
-			totalProducts: response.data.totalProducts,
-			totalValue: response.data.totalInventoryValue,
-			lowStockProducts: response.data.lowStockCount,
-			outOfStockProducts: response.data.outOfStockCount,
-			activeProducts: response.data.activeProducts,
-			expiredBatches: response.data.expiredCount,
-			expiringSoonBatches: response.data.expiringSoonCount,
-		};
+	// ===================================================================
+	// Batches/Lots - GET /api/stock_inventories?productId={id}
+	// (StockInventoryAPI.md ┬º5.1)
+	// ===================================================================
+	/**
+	 * Fetch stock inventory batches for a specific product.
+	 * Returns ProductBatch[] matching backend StockInventoryResponse.java exactly
+	 */
+	async getBatchesByProductId(productId: string): Promise<ProductBatch[]> {
+		const response = await apiService.get<{
+			success: boolean;
+			message: string;
+			data: ProductBatch[];
+		}>(`/stock_inventories?productId=${encodeURIComponent(productId)}`);
+		return response.data;
 	},
 
 	// ===================================================================
 	// Dispose - POST /api/stock_inventories/{lotId}/dispose
-	// (FRONTEND_API_REQUIREMENTS.md §4)
+	// (FRONTEND_API_REQUIREMENTS.md ┬º4)
 	// ===================================================================
 	/**
 	 * Dispose a lot of stock (expired/damaged).
@@ -165,8 +245,8 @@ export const inventoryService = {
 	},
 
 	// ===================================================================
-	// Update Lot - PUT /api/stock-inventories/{lot_id}
-	// (StockInventoryAPI.md §5.4)
+	// Update Lot - PUT /api/v1/stock_inventories/{lot_id}
+	// (StockInventoryAPI.md ┬º5.4)
 	// ===================================================================
 	/**
 	 * Update a stock inventory lot (quantity and status)
@@ -184,7 +264,7 @@ export const inventoryService = {
 			success: boolean;
 			message: string;
 			data: { lotId: string; stockQuantity: number; status: string };
-		}>(`/stock-inventories/${lotId}`, {
+		}>(`/stock_inventories/${lotId}`, {
 			stockQuantity,
 			status,
 		});

@@ -11,10 +11,24 @@ export const API_CONFIG = {
 	RETRY_DELAY: 1000,
 };
 
+/**
+ * Role constants - MUST match Keycloak realm roles exactly (PascalCase)
+ * These are used for authorization checks in the frontend.
+ *
+ * Role Hierarchy:
+ * - Admin: Full system access, can manage everything
+ * - Manager: Can view most things, limited write access
+ * - SalesStaff: Can process orders, manage customers
+ * - WarehouseStaff: Can manage inventory, stock, receive goods
+ */
 export const ROLES = {
-	ADMIN: "ADMIN",
-	USER: "USER",
-};
+	ADMIN: "Admin",
+	MANAGER: "Manager",
+	SALES_STAFF: "SalesStaff",
+	WAREHOUSE_STAFF: "WarehouseStaff",
+} as const;
+
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 // Auth Configuration
 export const AUTH_CONFIG = {
@@ -41,6 +55,7 @@ export const ROUTES = {
 	SCHEDULE: "/schedule",
 	SALES: "/sales",
 	INVENTORY: "/inventory",
+	CATEGORIES: "/categories",
 	PURCHASE: "/purchase",
 	PROMOTIONS: "/promotions",
 	FINANCE: "/finance",

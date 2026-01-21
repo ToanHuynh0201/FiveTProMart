@@ -17,7 +17,7 @@ import {
 import { useState, useEffect } from "react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { ShiftAssignment, Staff } from "@/types";
-import { scheduleService, type ShiftConfig, type StaffShiftCount } from "@/services/scheduleService";
+import { scheduleService } from "@/services/scheduleService";
 import { staffService } from "@/services/staffService";
 
 interface EditScheduleModalProps {
@@ -43,13 +43,10 @@ const EditScheduleModal = ({
 	const [selectedSalesStaffId, setSelectedSalesStaffId] =
 		useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
-	const [, setIsLoadingData] = useState(false);
 	const [shiftName, setShiftName] = useState<string>("");
-	const [, setShiftConfig] = useState<ShiftConfig | null>(null);
-	// Default staffing requirements - can be configured per shift via API
-	const [requiredWarehouseStaff, _setRequiredWarehouseStaff] =
-		useState<number>(2);
-	const [requiredSalesStaff, _setRequiredSalesStaff] = useState<number>(3);
+	const [requiredWarehouseStaff, setRequiredWarehouseStaff] =
+		useState<number>(0);
+	const [requiredSalesStaff, setRequiredSalesStaff] = useState<number>(0);
 	const [maxShiftsPerWeek] = useState<number>(6);
 	const [staffShiftCounts, setStaffShiftCounts] = useState<{
 		[staffId: string]: number;
@@ -76,74 +73,150 @@ const EditScheduleModal = ({
 
 	useEffect(() => {
 		if (isOpen) {
-			loadAllData();
+			loadAvailableStaff();
+			loadShiftDetails();
 		}
 	}, [isOpen, date, shift, assignments]);
 
-	const loadAllData = async () => {
-		setIsLoadingData(true);
-		try {
-			await Promise.all([
-				loadShiftConfig(),
-				loadAvailableStaff(),
-				loadStaffShiftCounts(),
-			]);
-		} finally {
-			setIsLoadingData(false);
-		}
+	// Helper: Format date to dd-MM-yyyy
+	const formatDateForAPI = (dateStr: string): string => {
+		const date = new Date(dateStr);
+		const day = date.getDate().toString().padStart(2, "0");
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		const year = date.getFullYear();
+		return `${day}-${month}-${year}`;
 	};
 
-	const loadShiftConfig = async () => {
-		const configs = await scheduleService.getShiftConfig();
-		const config = configs.find(c => c.id === shift);
-		if (config) {
-			setShiftConfig(config);
-			setShiftName(`${config.name} (${config.startTime} - ${config.endTime})`);
-		} else {
-			// Fallback to synchronous getter
-			setShiftName(scheduleService.getShiftName(shift));
+	// Helper: Get week start and end from date
+	const getWeekRange = (dateStr: string) => {
+		const date = new Date(dateStr);
+		const dayOfWeek = date.getDay();
+		const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+		const weekStart = new Date(date);
+		weekStart.setDate(date.getDate() + daysToMonday);
+
+		const weekEnd = new Date(weekStart);
+		weekEnd.setDate(weekStart.getDate() + 6);
+
+		return {
+			start: formatDateForAPI(weekStart.toISOString().split("T")[0]),
+			end: formatDateForAPI(weekEnd.toISOString().split("T")[0]),
+		};
+	};
+
+	const loadShiftDetails = async () => {
+		try {
+			// Fetch shift details to get requirements and shift name
+			const result = await scheduleService.getWorkShifts(true);
+
+			if (result.success && result.data) {
+				const shiftData = result.data.find((s: any) => s.id === shift);
+				if (shiftData) {
+					setShiftName(shiftData.shiftName);
+
+					// Fetch role config to get requirements
+					const roleConfigResult = await scheduleService.getRoleConfigs(
+						true,
+					);
+					if (
+						roleConfigResult.success &&
+						roleConfigResult.data
+					) {
+						const roleConfig = roleConfigResult.data.find(
+							(rc: any) => rc.id === shiftData.roleConfig.id,
+						);
+						if (roleConfig) {
+							const warehouseReq = roleConfig.requirements.find(
+								(req: any) => req.accountType === "WarehouseStaff",
+							);
+							const salesReq = roleConfig.requirements.find(
+								(req: any) => req.accountType === "SalesStaff",
+							);
+							setRequiredWarehouseStaff(
+								warehouseReq?.quantity || 0,
+							);
+							setRequiredSalesStaff(salesReq?.quantity || 0);
+						}
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Error loading shift details:", error);
 		}
 	};
 
 	const loadAvailableStaff = async () => {
 		try {
-			// Try to get available staff from schedule API
-			const available = await scheduleService.getAvailableStaff(date, shift);
-			if (available.length > 0) {
-				// Filter out staff already assigned to this shift
-				const assignedIds = new Set(assignments.map(a => a.staffId));
-				setAvailableStaff(available.filter(s => !assignedIds.has(s.id)));
-			} else {
-				// Fallback: get all active staff from staffService
-				const response = await staffService.getStaff({ status: "active" } as any);
-				const allStaff = response.data || [];
-				const assignedIds = new Set(assignments.map(a => a.staffId));
-				setAvailableStaff(allStaff.filter(s => !assignedIds.has(s.id)));
-			}
-		} catch {
-			setAvailableStaff([]);
-		}
-	};
-
-	const loadStaffShiftCounts = async () => {
-		try {
-			const counts = await scheduleService.getStaffShiftCounts();
-			const countsMap: { [staffId: string]: number } = {};
-			counts.forEach((c: StaffShiftCount) => {
-				countsMap[c.staffId] = c.shiftsThisWeek;
+			// Fetch all active staff
+			const result = await staffService.getStaffs({
+				page: 0,
+				size: 1000, // Get all staff
 			});
-			setStaffShiftCounts(countsMap);
-		} catch {
-			setStaffShiftCounts({});
+
+			if (result.success && result.data) {
+				// Filter out already assigned staff
+				const assignedStaffIds = new Set(
+					assignments.map((a) => a.staffId),
+				);
+				const available = result.data.filter(
+					(s: Staff) => !assignedStaffIds.has(s.profileId),
+				);
+
+				setAvailableStaff(available);
+
+				// Load shift counts for available staff
+				if (available.length > 0) {
+					await loadStaffShiftCounts(
+						available.map((s: Staff) => s.profileId),
+					);
+				}
+			}
+		} catch (error) {
+			console.error("Error loading available staff:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể tải danh sách nhân viên",
+				status: "error",
+				duration: 3000,
+			});
 		}
 	};
 
-	// Filter staff by position
+	const loadStaffShiftCounts = async (_staffIds: string[]) => {
+		try {
+			const weekRange = getWeekRange(date);
+
+			// Fetch schedules for the week
+			const result = await scheduleService.getWorkSchedules({
+				startDate: weekRange.start,
+				endDate: weekRange.end,
+			});
+
+			if (result.success && result.data) {
+				// Count shifts per staff
+				const counts: { [staffId: string]: number } = {};
+
+				result.data.forEach((schedule: any) => {
+					schedule.assignments.forEach((assignment: any) => {
+						counts[assignment.profileId] =
+							(counts[assignment.profileId] || 0) + 1;
+					});
+				});
+
+				setStaffShiftCounts(counts);
+			}
+		} catch (error) {
+			console.error("Error loading staff shift counts:", error);
+		}
+	};
+
+	// Filter staff by accountType
 	const warehouseStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên kho",
+		(staff) => staff.accountType === "WarehouseStaff",
 	);
 	const salesStaff = availableStaff.filter(
-		(staff) => staff.position === "Nhân viên bán hàng",
+		(staff) => staff.accountType === "SalesStaff",
 	);
 
 	// Count current assignments by position
@@ -172,30 +245,7 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
-		setIsLoading(true);
-		try {
-			await scheduleService.createAssignment({
-				staffId: selectedWarehouseStaffId,
-				shiftId: shift,
-				date,
-				role: "warehouse",
-			});
-			toast({
-				title: "Đã thêm nhân viên",
-				status: "success",
-				duration: 2000,
-			});
-			setSelectedWarehouseStaffId("");
-			onUpdate();
-		} catch {
-			toast({
-				title: "Không thể thêm nhân viên",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setIsLoading(false);
-		}
+		await assignStaff(selectedWarehouseStaffId);
 	};
 
 	const handleAddSalesStaff = async () => {
@@ -216,24 +266,49 @@ const EditScheduleModal = ({
 			if (!confirmed) return;
 		}
 
+		await assignStaff(selectedSalesStaffId);
+	};
+
+	const assignStaff = async (staffId: string) => {
 		setIsLoading(true);
 		try {
-			await scheduleService.createAssignment({
-				staffId: selectedSalesStaffId,
-				shiftId: shift,
-				date,
-				role: "sales",
+			const result = await scheduleService.assignStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: shift,
+				assignedStaffIds: [staffId],
 			});
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã thêm nhân viên vào ca làm việc",
+					status: "success",
+					duration: 2000,
+				});
+
+				// Reset selections
+				setSelectedWarehouseStaffId("");
+				setSelectedSalesStaffId("");
+
+				// Reload data
+				await onUpdate();
+				await loadAvailableStaff();
+			} else {
+				// Handle specific errors from API
+				if (result.error) {
+					toast({
+						title: "Lỗi",
+						description: result.error,
+						status: "error",
+						duration: 3000,
+					});
+				}
+			}
+		} catch (error) {
+			console.error("Error assigning staff:", error);
 			toast({
-				title: "Đã thêm nhân viên",
-				status: "success",
-				duration: 2000,
-			});
-			setSelectedSalesStaffId("");
-			onUpdate();
-		} catch {
-			toast({
-				title: "Không thể thêm nhân viên",
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi thêm nhân viên",
 				status: "error",
 				duration: 3000,
 			});
@@ -242,19 +317,39 @@ const EditScheduleModal = ({
 		}
 	};
 
-	const handleRemoveStaff = async (assignmentId: string) => {
+	const handleRemoveStaff = async (staffId: string) => {
 		setIsLoading(true);
 		try {
-			await scheduleService.deleteAssignment(assignmentId);
-			toast({
-				title: "Đã xóa phân công",
-				status: "success",
-				duration: 2000,
+			const result = await scheduleService.removeStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: [shift],
+				assignedStaffIds: [staffId],
 			});
-			onUpdate();
-		} catch {
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã xóa nhân viên khỏi ca làm việc",
+					status: "success",
+					duration: 2000,
+				});
+
+				// Reload data
+				await onUpdate();
+				await loadAvailableStaff();
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể xóa nhân viên",
+					status: "error",
+					duration: 3000,
+				});
+			}
+		} catch (error) {
+			console.error("Error removing staff:", error);
 			toast({
-				title: "Không thể xóa phân công",
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi xóa nhân viên",
 				status: "error",
 				duration: 3000,
 			});
@@ -385,7 +480,7 @@ const EditScheduleModal = ({
 														variant="ghost"
 														onClick={() =>
 															handleRemoveStaff(
-																assignment.id,
+																assignment.staffId,
 															)
 														}
 														isDisabled={isLoading}
@@ -497,7 +592,7 @@ const EditScheduleModal = ({
 														variant="ghost"
 														onClick={() =>
 															handleRemoveStaff(
-																assignment.id,
+																assignment.staffId,
 															)
 														}
 														isDisabled={isLoading}
@@ -557,13 +652,13 @@ const EditScheduleModal = ({
 											{warehouseStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>
@@ -642,13 +737,13 @@ const EditScheduleModal = ({
 											{salesStaff.map((staff) => {
 												const shiftCount =
 													staffShiftCounts[
-														staff.id
+														staff.profileId
 													] || 0;
 												return (
 													<option
-														key={staff.id}
-														value={staff.id}>
-														{staff.name} (
+														key={staff.profileId}
+														value={staff.profileId}>
+														{staff.fullName} (
 														{shiftCount}/
 														{maxShiftsPerWeek} ca)
 													</option>

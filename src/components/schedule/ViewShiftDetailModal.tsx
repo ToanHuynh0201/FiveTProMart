@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import type { ShiftAssignment } from "@/types";
-import { scheduleService, type ShiftConfig } from "@/services/scheduleService";
 
 interface ViewShiftDetailModalProps {
 	isOpen: boolean;
@@ -31,8 +30,7 @@ const ViewShiftDetailModal = ({
 	shift,
 	assignments,
 }: ViewShiftDetailModalProps) => {
-	const [shiftName, setShiftName] = useState<string>("");
-	const [, setShiftConfig] = useState<ShiftConfig | null>(null);
+	const [shiftName] = useState<string>("");
 
 	// Format date for display
 	const formatDateDisplay = (dateStr: string) => {
@@ -54,21 +52,14 @@ const ViewShiftDetailModal = ({
 	};
 
 	useEffect(() => {
-		if (isOpen && shift) {
-			loadShiftConfig();
+		if (isOpen) {
+			loadShiftName();
 		}
 	}, [isOpen, shift]);
 
-	const loadShiftConfig = async () => {
-		const configs = await scheduleService.getShiftConfig();
-		const config = configs.find(c => c.id === shift);
-		if (config) {
-			setShiftConfig(config);
-			setShiftName(`${config.name} (${config.startTime} - ${config.endTime})`);
-		} else {
-			// Fallback to synchronous getter
-			setShiftName(scheduleService.getShiftName(shift));
-		}
+	const loadShiftName = async () => {
+		// TODO: Fetch shift configuration from API
+		console.log("TODO: Load shift name from scheduleService.getShiftConfig()");
 	};
 
 	// Separate assignments by position

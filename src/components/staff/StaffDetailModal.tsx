@@ -1,4 +1,4 @@
-﻿import {
+import {
 	Modal,
 	ModalOverlay,
 	ModalContent,
@@ -24,8 +24,10 @@
 	useToast,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { staffService } from "../../services";
-import type { StaffDetail, UpdateStaffData } from "@/types";
+import type { StaffDetail, UpdateStaffDTO, AccountType } from "@/types/staff";
+import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_OPTIONS } from "@/types/staff";
+import { staffService } from "@/services/staffService";
+import { formatDateForAPI, formatDateForInput } from "@/utils/dateFormat";
 
 interface StaffDetailModalProps {
 	isOpen: boolean;
@@ -46,13 +48,14 @@ const StaffDetailModal = ({
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-	const [formData, setFormData] = useState<UpdateStaffData>({});
+	const [formData, setFormData] = useState<UpdateStaffDTO>({});
 	const toast = useToast();
 
 	useEffect(() => {
 		if (staffId && isOpen) {
 			loadStaffDetail();
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [staffId, isOpen]);
 
 	const loadStaffDetail = async () => {
@@ -60,18 +63,25 @@ const StaffDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			const data = await staffService.getStaffById(staffId);
-			setStaffDetail(data || null);
-			if (data) {
+			const result = await staffService.getStaffById(staffId);
+
+			if (result.success && result.data) {
+				setStaffDetail(result.data);
 				setFormData({
-					phone: data.phone,
-					email: data.email,
-					address: data.address,
-					salary: data.salary,
-					status: data.status,
-					position: data.position,
-					dateOfBirth: data.dateOfBirth,
-					hireDate: data.hireDate,
+					fullName: result.data.fullName,
+					email: result.data.email,
+					phoneNumber: result.data.phoneNumber,
+					accountType: result.data.accountType,
+					dateOfBirth: formatDateForInput(result.data.dateOfBirth),
+					location: result.data.location || "",
+				});
+			} else {
+				toast({
+					title: "Lỗi",
+					description: "Không thể tải thông tin nhân viên",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
 				});
 			}
 		} catch (error) {
@@ -88,21 +98,40 @@ const StaffDetailModal = ({
 		}
 	};
 
-
 	const handleSave = async () => {
 		if (!staffId) return;
 
 		setIsSaving(true);
 		try {
-			const updatedStaff = await staffService.updateStaff(staffId, formData);
+			const updateData: UpdateStaffDTO = {
+				fullName: formData.fullName,
+				email: formData.email,
+				phoneNumber: formData.phoneNumber,
+				accountType: formData.accountType,
+				dateOfBirth: formData.dateOfBirth
+					? formatDateForAPI(formData.dateOfBirth)
+					: undefined,
+				location: formData.location || undefined,
+			};
 
-			if (updatedStaff) {
-				setStaffDetail(updatedStaff);
+			const result = await staffService.updateStaff(staffId, updateData);
+
+			if (result.success) {
+				setStaffDetail(result.data);
 				setIsEditing(false);
 				toast({
 					title: "Thành công",
 					description: "Cập nhật thông tin nhân viên thành công",
 					status: "success",
+					duration: 3000,
+					isClosable: true,
+				});
+			} else {
+				toast({
+					title: "Lỗi",
+					description:
+						result.error || "Không thể cập nhật thông tin nhân viên",
+					status: "error",
 					duration: 3000,
 					isClosable: true,
 				});
@@ -124,14 +153,12 @@ const StaffDetailModal = ({
 	const handleCancel = () => {
 		if (staffDetail) {
 			setFormData({
-				phone: staffDetail.phone,
+				fullName: staffDetail.fullName,
 				email: staffDetail.email,
-				address: staffDetail.address,
-				salary: staffDetail.salary,
-				status: staffDetail.status,
-				position: staffDetail.position,
-				dateOfBirth: staffDetail.dateOfBirth,
-				hireDate: staffDetail.hireDate,
+				phoneNumber: staffDetail.phoneNumber,
+				accountType: staffDetail.accountType,
+				dateOfBirth: formatDateForInput(staffDetail.dateOfBirth),
+				location: staffDetail.location || "",
 			});
 		}
 		setIsEditing(false);
@@ -142,16 +169,27 @@ const StaffDetailModal = ({
 
 		setIsDeleting(true);
 		try {
-			await staffService.deleteStaff(staffId);
-			onDelete(staffId);
-			onClose();
-			toast({
-				title: "Thành công",
-				description: "Xóa nhân viên thành công",
-				status: "success",
-				duration: 3000,
-				isClosable: true,
-			});
+			const result = await staffService.deleteStaff(staffId);
+
+			if (result.success) {
+				onDelete(staffId);
+				onClose();
+				toast({
+					title: "Thành công",
+					description: "Xóa nhân viên thành công",
+					status: "success",
+					duration: 3000,
+					isClosable: true,
+				});
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể xóa nhân viên",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
+				});
+			}
 		} catch (error) {
 			console.error("Error deleting staff:", error);
 			toast({
@@ -167,13 +205,12 @@ const StaffDetailModal = ({
 		}
 	};
 
-
 	const InfoRow = ({
 		label,
 		value,
 	}: {
 		label: string;
-		value?: string | number;
+		value?: string | number | null;
 	}) => (
 		<Flex
 			justify="space-between"
@@ -249,435 +286,292 @@ const StaffDetailModal = ({
 						<VStack
 							spacing={6}
 							align="stretch">
+							<VStack
+								spacing={6}
+								align="stretch">
+								{/* Header Section */}
+								<Flex
+									gap={6}
+									align="start">
+									{/* Avatar */}
+									<Box
+										w="100px"
+										h="100px"
+										borderRadius="full"
+										bg="brand.100"
+										display="flex"
+										alignItems="center"
+										justifyContent="center"
+										fontSize="40px"
+										fontWeight="700"
+										color="brand.500"
+										flexShrink={0}>
+										{staffDetail.fullName.charAt(0)}
+									</Box>
+									{/* Basic Info */}
 									<VStack
-										spacing={6}
-										align="stretch">
-										{/* Header Section */}
-										<Flex
-											gap={6}
-											align="start">
-											{/* Avatar */}
-											<Box
-												w="100px"
-												h="100px"
-												borderRadius="full"
-												bg="brand.100"
-												display="flex"
-												alignItems="center"
-												justifyContent="center"
-												fontSize="40px"
-												fontWeight="700"
-												color="brand.500"
-												flexShrink={0}>
-												{staffDetail.name.charAt(0)}
-											</Box>
-											{/* Basic Info */}
+										align="start"
+										spacing={3}
+										flex={1}>
+										<Text
+											fontSize="28px"
+											fontWeight="900"
+											color="brand.600">
+											{staffDetail.fullName}
+										</Text>
+
+										{isEditing ? (
 											<VStack
 												align="start"
-												spacing={3}
-												flex={1}>
-												<Text
-													fontSize="28px"
-													fontWeight="900"
-													color="brand.600">
-													{staffDetail.name}
-												</Text>
-
-												{isEditing ? (
-													<VStack
-														align="start"
-														spacing={2}
-														w="full">
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Vị trí
-															</FormLabel>
-															<Select
-																value={
-																	formData.position ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			position:
-																				e
-																					.target
-																					.value,
-																		},
-																	)
-																}
-																size="sm">
-																<option value="Nhân viên bán hàng">
-																	Nhân viên
-																	bán hàng
+												spacing={2}
+												w="full">
+												<FormControl>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.600">
+														Chức vụ
+													</FormLabel>
+													<Select
+														value={
+															formData.accountType ||
+															""
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																accountType: e
+																	.target
+																	.value as AccountType,
+															})
+														}
+														size="sm">
+														{ACCOUNT_TYPE_OPTIONS.map(
+															(option) => (
+																<option
+																	key={
+																		option.value
+																	}
+																	value={
+																		option.value
+																	}>
+																	{option.label}
 																</option>
-																<option value="Nhân viên kho">
-																	Nhân viên
-																	kho
-																</option>
-															</Select>
-														</FormControl>
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Trạng thái
-															</FormLabel>
-															<Select
-																value={
-																	formData.status ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			status: e
-																				.target
-																				.value as
-																				| "active"
-																				| "inactive"
-																				| "on-leave",
-																		},
-																	)
-																}
-																size="sm">
-																<option value="active">
-																	Đang làm
-																	việc
-																</option>
-																<option value="on-leave">
-																	Nghỉ phép
-																</option>
-																<option value="inactive">
-																	Không hoạt
-																	động
-																</option>
-															</Select>
-														</FormControl>
-													</VStack>
-												) : (
-													<>
-														<Text
-															fontSize="18px"
-															fontWeight="500"
-															color="gray.700">
-															{
-																staffDetail.position
-															}
-														</Text>
-														{staffDetail.status && (
-															<Badge
-																colorScheme={
-																	staffDetail.status ===
-																	"active"
-																		? "green"
-																		: staffDetail.status ===
-																		  "on-leave"
-																		? "orange"
-																		: "gray"
-																}
-																borderRadius="8px"
-																px={3}
-																py={1}
-																fontSize="12px"
-																fontWeight="500">
-																{staffDetail.status ===
-																"active"
-																	? "Đang làm việc"
-																	: staffDetail.status ===
-																	  "on-leave"
-																	? "Nghỉ phép"
-																	: "Không hoạt động"}
-															</Badge>
+															),
 														)}
-													</>
-												)}
-											</VStack>{" "}
-											{/* Action Buttons */}
-											{!isEditing && (
-												<HStack spacing={2}>
-													<Button
-														size="sm"
-														colorScheme="brand"
-														onClick={() =>
-															setIsEditing(true)
-														}>
-														Chỉnh sửa
-													</Button>
-													{onDelete && (
-														<Button
-															size="sm"
-															colorScheme="red"
-															variant="outline"
-															onClick={() =>
-																setShowDeleteConfirm(
-																	true,
-																)
-															}>
-															Xóa
-														</Button>
-													)}
-												</HStack>
-											)}
-										</Flex>{" "}
-										<Divider />
-										{/* Contact Information */}
-										<Box>
-											<Text
-												fontSize="18px"
-												fontWeight="700"
-												color="brand.600"
-												mb={3}>
-												Thông tin liên hệ
-											</Text>
-											<VStack
-												spacing={3}
-												align="stretch">
-												{isEditing ? (
-													<>
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Số điện thoại
-															</FormLabel>
-															<Input
-																value={
-																	formData.phone ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			phone: e
-																				.target
-																				.value,
-																		},
-																	)
-																}
-																size="sm"
-															/>
-														</FormControl>
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Email
-															</FormLabel>
-															<Input
-																value={
-																	formData.email ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			email: e
-																				.target
-																				.value,
-																		},
-																	)
-																}
-																size="sm"
-																type="email"
-															/>
-														</FormControl>
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Địa chỉ
-															</FormLabel>
-															<Input
-																value={
-																	formData.address ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			address:
-																				e
-																					.target
-																					.value,
-																		},
-																	)
-																}
-																size="sm"
-															/>
-														</FormControl>
-													</>
-												) : (
-													<>
-														<InfoRow
-															label="Số điện thoại"
-															value={
-																staffDetail.phone
-															}
-														/>
-														<InfoRow
-															label="Email"
-															value={
-																staffDetail.email
-															}
-														/>
-														<InfoRow
-															label="Địa chỉ"
-															value={
-																staffDetail.address
-															}
-														/>
-													</>
-												)}
+													</Select>
+												</FormControl>
 											</VStack>
-										</Box>
-										<Divider />
-										{/* Work Information */}
-										<Box>
-											<Text
-												fontSize="18px"
-												fontWeight="700"
-												color="brand.600"
-												mb={3}>
-												Thông tin công việc
-											</Text>
-											<Grid
-												templateColumns="repeat(2, 1fr)"
-												gap={4}>
-												<GridItem>
-													{isEditing ? (
-														<FormControl>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Ngày sinh
-															</FormLabel>
-															<Input
-																value={
-																	formData.dateOfBirth ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			dateOfBirth:
-																				e
-																					.target
-																					.value,
-																		},
-																	)
-																}
-																size="sm"
-																type="date"
-															/>
-														</FormControl>
-													) : (
-														<InfoRow
-															label="Ngày sinh"
-															value={
-																staffDetail.dateOfBirth
-															}
-														/>
-													)}
-													{isEditing ? (
-														<FormControl mt={2}>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Ngày vào làm
-															</FormLabel>
-															<Input
-																value={
-																	formData.hireDate ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			hireDate:
-																				e
-																					.target
-																					.value,
-																		},
-																	)
-																}
-																size="sm"
-																type="date"
-															/>
-														</FormControl>
-													) : (
-														<InfoRow
-															label="Ngày vào làm"
-															value={
-																staffDetail.hireDate
-															}
-														/>
-													)}
-													{isEditing ? (
-														<FormControl mt={2}>
-															<FormLabel
-																fontSize="14px"
-																fontWeight="600"
-																color="gray.600">
-																Lương (VNĐ)
-															</FormLabel>
-															<Input
-																value={
-																	formData.salary ||
-																	""
-																}
-																onChange={(e) =>
-																	setFormData(
-																		{
-																			...formData,
-																			salary:
-																				Number(
-																					e
-																						.target
-																						.value,
-																				) ||
-																				0,
-																		},
-																	)
-																}
-																size="sm"
-																type="number"
-																placeholder="8000000"
-															/>
-														</FormControl>
-													) : (
-														<InfoRow
-															label="Lương"
-															value={
-																staffDetail.salary
-																	? `${staffDetail.salary.toLocaleString(
-																			"vi-VN",
-																	  )} VNĐ`
-																	: undefined
-															}
-														/>
-													)}
-												</GridItem>
-											</Grid>
-										</Box>
+										) : (
+											<>
+												<Text
+													fontSize="14px"
+													color="gray.600">
+													@{staffDetail.username}
+												</Text>
+												<Badge
+													colorScheme={
+														staffDetail.accountType ===
+														"SalesStaff"
+															? "blue"
+															: "green"
+													}
+													borderRadius="8px"
+													px={3}
+													py={1}
+													fontSize="12px"
+													fontWeight="500">
+													{
+														ACCOUNT_TYPE_LABELS[
+															staffDetail.accountType
+														]
+													}
+												</Badge>
+											</>
+										)}
 									</VStack>
+									{/* Action Buttons */}
+									{!isEditing && (
+										<HStack spacing={2}>
+											<Button
+												size="sm"
+												colorScheme="brand"
+												onClick={() =>
+													setIsEditing(true)
+												}>
+												Chỉnh sửa
+											</Button>
+											{onDelete && (
+												<Button
+													size="sm"
+													colorScheme="red"
+													variant="outline"
+													onClick={() =>
+														setShowDeleteConfirm(
+															true,
+														)
+													}>
+													Xóa
+												</Button>
+											)}
+										</HStack>
+									)}
+								</Flex>
+								<Divider />
+								{/* Contact Information */}
+								<Box>
+									<Text
+										fontSize="18px"
+										fontWeight="700"
+										color="brand.600"
+										mb={3}>
+										Thông tin liên hệ
+									</Text>
+									<VStack
+										spacing={3}
+										align="stretch">
+										{isEditing ? (
+											<>
+												<FormControl>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.600">
+														Số điện thoại
+													</FormLabel>
+													<Input
+														value={
+															formData.phoneNumber ||
+															""
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																phoneNumber:
+																	e.target
+																		.value,
+															})
+														}
+														size="sm"
+													/>
+												</FormControl>
+												<FormControl>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.600">
+														Email
+													</FormLabel>
+													<Input
+														value={
+															formData.email || ""
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																email: e.target
+																	.value,
+															})
+														}
+														size="sm"
+														type="email"
+													/>
+												</FormControl>
+												<FormControl>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.600">
+														Địa chỉ
+													</FormLabel>
+													<Input
+														value={
+															formData.location ||
+															""
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																location:
+																	e.target
+																		.value,
+															})
+														}
+														size="sm"
+													/>
+												</FormControl>
+											</>
+										) : (
+											<>
+												<InfoRow
+													label="Số điện thoại"
+													value={
+														staffDetail.phoneNumber
+													}
+												/>
+												<InfoRow
+													label="Email"
+													value={staffDetail.email}
+												/>
+												<InfoRow
+													label="Địa chỉ"
+													value={staffDetail.location}
+												/>
+											</>
+										)}
+									</VStack>
+								</Box>
+								<Divider />
+								{/* Work Information */}
+								<Box>
+									<Text
+										fontSize="18px"
+										fontWeight="700"
+										color="brand.600"
+										mb={3}>
+										Thông tin công việc
+									</Text>
+									<Grid
+										templateColumns="repeat(2, 1fr)"
+										gap={4}>
+										<GridItem>
+											{isEditing ? (
+												<FormControl>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.600">
+														Ngày sinh
+													</FormLabel>
+													<Input
+														value={
+															formData.dateOfBirth ||
+															""
+														}
+														onChange={(e) =>
+															setFormData({
+																...formData,
+																dateOfBirth:
+																	e.target
+																		.value,
+															})
+														}
+														size="sm"
+														type="date"
+													/>
+												</FormControl>
+											) : (
+												<InfoRow
+													label="Ngày sinh"
+													value={
+														staffDetail.dateOfBirth
+													}
+												/>
+											)}
+										</GridItem>
+									</Grid>
+								</Box>
+							</VStack>
 						</VStack>
 					) : (
 						<Box
@@ -747,7 +641,7 @@ const StaffDetailModal = ({
 								color="gray.700"
 								mb={6}>
 								Bạn có chắc chắn muốn xóa nhân viên{" "}
-								<strong>{staffDetail?.name}</strong>? Hành động
+								<strong>{staffDetail?.fullName}</strong>? Hành động
 								này không thể hoàn tác.
 							</Text>
 							<HStack

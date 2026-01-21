@@ -37,7 +37,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				<InputLeftElement
 					pointerEvents="none"
 					h="56px">
-					<SearchIcon color="gray.500" />
+					<SearchIcon color="gray.600" />
 				</InputLeftElement>
 				<Input
 					h="56px"
@@ -83,9 +83,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				<option value="all">Tất cả danh mục</option>
 				{categories.map((cat) => (
 					<option
-						key={cat.id}
-						value={cat.name}>
-						{cat.name} ({cat.productCount})
+						key={cat.categoryId}
+						value={cat.categoryName}>
+						{cat.categoryName}
 					</option>
 				))}
 			</Select>

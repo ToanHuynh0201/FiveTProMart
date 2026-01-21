@@ -25,10 +25,23 @@ import { FiCamera, FiCheck, FiX, FiVideo, FiVideoOff, FiSearch } from "react-ico
 import type { Product, CheckProductResponse } from "../../types/sales";
 import { salesService } from "../../services/salesService";
 
+/** Promotion info extracted from CheckProductResponse */
+export interface ScannedPromotionInfo {
+	promotionalPrice: number;
+	savings: number;
+	promotionName: string;
+	promotionType: "Discount" | "Buy X Get Y";
+}
+
 interface BarcodeScannerProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onProductFound: (product: Product, lotId?: string, lotNumber?: string) => void;
+	onProductFound: (
+		product: Product,
+		lotId?: string,
+		lotNumber?: string,
+		promotion?: ScannedPromotionInfo | null
+	) => void;
 }
 
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
@@ -165,6 +178,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 			// Map to UI Product type
 			const uiProduct = mapToUIProduct(response);
 
+			// Extract promotion info if available
+			const promotionInfo: ScannedPromotionInfo | null = response.promotion
+				? {
+						promotionalPrice: response.promotion.promotionalPrice,
+						savings: response.promotion.savings,
+						promotionName: response.promotion.promotionName,
+						promotionType: response.promotion.promotionType,
+				  }
+				: null;
+
 			toast({
 				title: "Quét mã lô hàng thành công!",
 				description: `Đã thêm: ${response.productName} - Lô ${response.lotId}`,
@@ -173,8 +196,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 				icon: <Icon as={FiCheck} />,
 			});
 
-			// Pass lotId as both batchId and batchNumber for now
-			onProductFound(uiProduct, response.lotId, response.lotId);
+			// Pass lotId and promotion info
+			onProductFound(uiProduct, response.lotId, response.lotId, promotionInfo);
 			onClose();
 		} catch (error: unknown) {
 			// Handle API error

@@ -16,7 +16,6 @@ import InventoryPage from "./pages/InventoryPage";
 import PurchasePage from "./pages/PurchasePage";
 import PromotionPage from "./pages/PromotionPage";
 import { ReportsPage } from "./pages/ReportsPage";
-import { SalaryPage } from "./pages/SalaryPage";
 import CustomersPage from "./pages/CustomersPage";
 import SupplierPage from "./pages/SupplierPage";
 import ExpensesPage from "./pages/ExpensesPage";
@@ -51,10 +50,6 @@ function App() {
 						<Route
 							path={ROUTES.SCHEDULE}
 							element={<SchedulePage />}
-						/>
-						<Route
-							path="/salary"
-							element={<SalaryPage />}
 						/>
 						<Route
 							path={ROUTES.SALES}

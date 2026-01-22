@@ -7,7 +7,7 @@ import {
 	AddStaffModal,
 	StaffViewEditModal,
 } from "@/components/staff";
-import { SalaryConfigModal, CalculateSalaryModal } from "@/components/salary";
+import { SalaryConfigModal, CalculateSalaryModal, StaffSalaryDetailModal } from "@/components/salary";
 import { Pagination } from "@/components/common";
 import type { Staff, CreateStaffDTO } from "@/types/staff";
 import { staffService, salaryService } from "@/services";
@@ -70,6 +70,9 @@ const StaffPage = () => {
 	const [salaryEndDate, setSalaryEndDate] = useState("");
 	const [salaryLoading, setSalaryLoading] = useState(false);
 	const [salaryData, setSalaryData] = useState<SalaryReport | null>(null);
+	const [selectedStaffIdForDetail, setSelectedStaffIdForDetail] = useState<string>("");
+	const [detailModalStartDate, setDetailModalStartDate] = useState("");
+	const [detailModalEndDate, setDetailModalEndDate] = useState("");
 
 	// Salary modals
 	const {
@@ -82,6 +85,12 @@ const StaffPage = () => {
 		isOpen: isCalculateOpen,
 		onOpen: onCalculateOpen,
 		onClose: onCalculateClose,
+	} = useDisclosure();
+
+	const {
+		isOpen: isDetailOpen,
+		onOpen: onDetailOpen,
+		onClose: onDetailClose,
 	} = useDisclosure();
 
 	// Use custom hooks for filters and pagination SEPARATELY
@@ -244,6 +253,18 @@ const StaffPage = () => {
 		return value.toFixed(0);
 	};
 
+	// Handle salary calculation success - auto update date range and load report
+	const handleSalaryCalculateSuccess = (calculatedDateStr: string) => {
+		// calculatedDateStr is in dd-MM-yyyy format
+		// Convert back to YYYY-MM-DD for date inputs
+		const [day, month, year] = calculatedDateStr.split("-");
+		const dateForInput = `${year}-${month}-${day}`;
+
+		// Set date range to the calculated date (same day)
+		setSalaryStartDate(dateForInput);
+		setSalaryEndDate(dateForInput);
+	};
+
 	// Event handlers
 	const handleSearch = (searchQuery: string) => {
 		handleFilterChange("search", searchQuery);
@@ -339,6 +360,45 @@ const StaffPage = () => {
 
 	const handleViewEditSuccess = () => {
 		fetchStaffs();
+	};
+
+	const handleViewSalary = (staffId: string) => {
+		// Close staff view modal
+		onViewEditModalClose();
+		
+		// Calculate date range
+		let startDate = salaryStartDate;
+		let endDate = salaryEndDate;
+		
+		if (!startDate || !endDate) {
+			const now = new Date();
+			const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+			const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+			const formatDate = (date: Date) => {
+				const year = date.getFullYear();
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const day = String(date.getDate()).padStart(2, '0');
+				return `${year}-${month}-${day}`;
+			};
+			startDate = formatDate(firstDay);
+			endDate = formatDate(lastDay);
+			setSalaryStartDate(startDate);
+			setSalaryEndDate(endDate);
+		}
+		
+		// Convert to dd-MM-yyyy format for modal
+		const convertDate = (dateStr: string) => {
+			const [year, month, day] = dateStr.split('-');
+			return `${day}-${month}-${year}`;
+		};
+		
+		// Set detail modal dates
+		setDetailModalStartDate(convertDate(startDate));
+		setDetailModalEndDate(convertDate(endDate));
+		
+		// Open salary detail modal
+		setSelectedStaffIdForDetail(staffId);
+		onDetailOpen();
 	};
 
 	return (
@@ -544,75 +604,67 @@ const StaffPage = () => {
 														fontWeight="600"
 														mb={2}
 														color="gray.700">
-														Ngày bắt đầu
-													</Text>
-													<Input
-														type="date"
-														value={salaryStartDate}
-														onChange={(e) =>
-															setSalaryStartDate(e.target.value)
+													Chọn tháng
+												</Text>
+												<Input
+													type="month"
+													value={salaryStartDate ? salaryStartDate.substring(0, 7) : ''}
+													onChange={(e) => {
+														const yearMonth = e.target.value; // YYYY-MM
+														if (yearMonth) {
+															const [year, month] = yearMonth.split('-');
+															const firstDay = `${year}-${month}-01`;
+															const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+															const endDay = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+															setSalaryStartDate(firstDay);
+															setSalaryEndDate(endDay);
 														}
-													/>
-												</Box>
-												<Box flex={1}>
-													<Text
-														fontSize="sm"
-														fontWeight="600"
-														mb={2}
-														color="gray.700">
-														Ngày kết thúc
-													</Text>
-													<Input
-														type="date"
-														value={salaryEndDate}
-														onChange={(e) =>
-															setSalaryEndDate(e.target.value)
-														}
-													/>
-												</Box>
-												<Button
-													colorScheme="blue"
-													isLoading={salaryLoading}
-													alignSelf="flex-end"
-													onClick={loadSalaryReport}>
-													Tìm kiếm
-												</Button>
-											</HStack>
-										</VStack>
+													}}
+												/>
+											</Box>
+											<Button
+												colorScheme="blue"
+												isLoading={salaryLoading}
+												alignSelf="flex-end"
+												onClick={loadSalaryReport}>
+												Tìm kiếm
+											</Button>
+										</HStack>
+									</VStack>
+							</CardBody>
+						</Card>
+
+						{/* Summary Stats */}
+						{salaryData && (
+							<HStack
+								gap={4}
+								mb={6}
+								flexWrap="wrap">
+								<Card flex={{ base: "1 1 calc(50% - 8px)", md: "1" }}>
+									<CardBody>
+										<Stat>
+											<StatLabel fontSize="sm">
+												Tổng chi phí lương
+											</StatLabel>
+											<StatNumber color="#161f70">
+												{formatCurrency(
+													salaryData.summary?.totalSalaryCost || 0
+												)}{" "}
+												VND
+											</StatNumber>
+										</Stat>
 									</CardBody>
 								</Card>
-
-								{/* Summary Stats */}
-								{salaryData && (
-									<HStack
-										gap={4}
-										mb={6}
-										flexWrap="wrap">
-										<Card flex={{ base: "1 1 calc(50% - 8px)", md: "1" }}>
-											<CardBody>
-												<Stat>
-													<StatLabel fontSize="sm">
-														Tổng chi phí lương
-													</StatLabel>
-													<StatNumber color="#161f70">
-														{formatCurrency(
-															salaryData.summary?.totalSalaryCost || 0
-														)}{" "}
-														VND
-													</StatNumber>
-												</Stat>
-											</CardBody>
-										</Card>
-										<Card flex={{ base: "1 1 calc(50% - 8px)", md: "1" }}>
-											<CardBody>
-												<Stat>
-													<StatLabel fontSize="sm">
-														Tổng giờ làm
-													</StatLabel>
-													<StatNumber color="#161f70">
-														{salaryData.summary?.totalWorkHours || 0} giờ
-													</StatNumber>
-												</Stat>
+								<Card flex={{ base: "1 1 calc(50% - 8px)", md: "1" }}>
+									<CardBody>
+										<Stat>
+											<StatLabel fontSize="sm">
+												Tổng giờ làm
+											</StatLabel>
+											<StatNumber color="#161f70">
+												{salaryData.summary?.totalWorkHours || 0} giờ
+											</StatNumber>
+										</Stat>
 											</CardBody>
 										</Card>
 										<Card flex={{ base: "1 1 calc(50% - 8px)", md: "1" }}>
@@ -687,6 +739,12 @@ const StaffPage = () => {
 																fontSize="sm">
 																Ngày tính lương
 															</Th>
+															<Th
+																fontWeight="700"
+																color="gray.700"
+																fontSize="sm">
+																Thao tác
+															</Th>
 														</Tr>
 													</Thead>
 													<Tbody>
@@ -706,16 +764,10 @@ const StaffPage = () => {
 																		<Td fontSize="sm">
 																			{staff.role}
 																		</Td>
-																		<Td fontSize="sm">
-																			{salaryData?.range
-																				? `${salaryData.range.startDate} - ${salaryData.range.endDate}`
-																				: "-"}
-																		</Td>
 																		<Td
 																			fontSize="sm"
 																			isNumeric>
-																			{staff.summary
-																				?.totalWorkHours || 0}{" "}
+																			{staff.totalWorkHours || 0}{" "}
 																			giờ
 																		</Td>
 																		<Td
@@ -724,8 +776,7 @@ const StaffPage = () => {
 																			fontWeight="600"
 																			color="#161f70">
 																			{formatCurrency(
-																				staff.summary
-																					?.totalSalary || 0
+																				staff.totalSalary || 0
 																			)}{" "}
 																			VND
 																		</Td>
@@ -733,6 +784,18 @@ const StaffPage = () => {
 																			{salaryData?.range
 																				? `${salaryData.range.startDate} - ${salaryData.range.endDate}`
 																				: "-"}
+																		</Td>
+																		<Td fontSize="sm">
+																			<Button
+																				size="xs"
+																				colorScheme="blue"
+																				onClick={() => {
+																					setSelectedStaffIdForDetail(staff.userId);
+																					onDetailOpen();
+																				}}
+																			>
+																				Xem chi tiết
+																			</Button>
 																		</Td>
 																	</Tr>
 																)
@@ -778,6 +841,7 @@ const StaffPage = () => {
 					staffId={selectedStaffId}
 					mode={viewEditMode}
 					onSuccess={handleViewEditSuccess}
+					onViewSalary={handleViewSalary}
 				/>
 
 				<SalaryConfigModal
@@ -792,10 +856,15 @@ const StaffPage = () => {
 				<CalculateSalaryModal
 					isOpen={isCalculateOpen}
 					onClose={onCalculateClose}
-					onSuccess={() => {
-						onCalculateClose();
-						loadSalaryReport();
-					}}
+					onSuccess={(calculatedDate) => handleSalaryCalculateSuccess(calculatedDate)}
+				/>
+
+				<StaffSalaryDetailModal
+					isOpen={isDetailOpen}
+					onClose={onDetailClose}
+					staffId={selectedStaffIdForDetail}
+					startDate={detailModalStartDate}
+					endDate={detailModalEndDate}
 				/>
 			</Box>
 		</MainLayout>

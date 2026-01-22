@@ -90,12 +90,15 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		if (formData.password.length < 6) {
+		// Password validation - must match backend requirements
+		const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+		if (!passwordRegex.test(formData.password)) {
 			toast({
 				title: "Lỗi",
-				description: "Mật khẩu phải có ít nhất 6 ký tự",
+				description:
+					"Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số",
 				status: "error",
-				duration: 3000,
+				duration: 4000,
 				isClosable: true,
 			});
 			return;
@@ -288,7 +291,7 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 													password: e.target.value,
 												})
 											}
-											placeholder="Ít nhất 6 ký tự"
+										placeholder="Ít nhất 8 ký tự, có chữ hoa, thường, số"
 											size="md"
 										/>
 										<InputRightElement>

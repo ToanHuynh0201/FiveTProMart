@@ -253,7 +253,7 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 									fontSize="14px"
 									color="gray.800"
 									fontWeight="600"
-									maxW="200px">
+									maxW="100px">
 									{highlightText(
 										promotion.promotionName,
 										searchQuery,
@@ -303,7 +303,9 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 										</Text>
 									</VStack>
 								</Td>
-								<Td>{getStatusBadge(promotion.status)}</Td>
+								<Td maxW="100px">
+									{getStatusBadge(promotion.status)}
+								</Td>
 								<Td>
 									<HStack
 										justify="center"

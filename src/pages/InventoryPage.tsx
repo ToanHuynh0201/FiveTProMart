@@ -43,7 +43,7 @@ import type {
 	DisposalItem,
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
-import { inventoryService } from "@/services/inventoryService";
+import { inventoryService, type ProductRequest } from "@/services/inventoryService";
 import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
@@ -232,7 +232,7 @@ const InventoryPage = () => {
 		}
 	};
 
-	const handleAddProduct = async (productData: any) => {
+	const handleAddProduct = async (productData: ProductRequest) => {
 		try {
 			await inventoryService.createProduct(productData);
 
@@ -524,6 +524,7 @@ const InventoryPage = () => {
 								onViewDetail={handleViewDetail}
 								onEdit={handleEdit}
 								onDelete={handleDelete}
+									onManageBatches={handleManageBatches}
 							/>
 						</Box>
 

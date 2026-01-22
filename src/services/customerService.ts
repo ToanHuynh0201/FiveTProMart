@@ -50,19 +50,31 @@ export const customerService = {
 	 */
 	async findByPhone(phone: string): Promise<Customer | null> {
 		try {
-			// Use fullName search which also searches phone numbers
-			const response = await apiService.get<ApiResponse<Customer>>(
-				`/customers?fullName=${encodeURIComponent(phone)}`
-			);
+// <<<<<<< HEAD
+// 			// Use fullName search which also searches phone numbers
+// 			const response = await apiService.get<ApiResponse<Customer>>(
+// 				`/customers?fullName=${encodeURIComponent(phone)}`
+// 			);
+
+// 			if (response.success && response.data.length > 0) {
+// 				// Find exact phone match
+// 				const match = response.data.find(
+// 					(c) => c.phoneNumber === phone,
+// 				);
+// 				if (match) {
+// 					return match;
+// 				}
+// =======
+			// Use exact phoneNumber match - backend supports this param
+			const response = await apiService.get<{
+				success: boolean;
+				data: Customer[];
+			}>(`/customers?phoneNumber=${encodeURIComponent(phone)}`);
 
 			if (response.success && response.data.length > 0) {
-				// Find exact phone match
-				const match = response.data.find(
-					(c) => c.phoneNumber === phone,
-				);
-				if (match) {
-					return match;
-				}
+				// Backend returns exact match, return first result
+				return response.data[0];
+// >>>>>>> feat/tho
 			}
 			return null;
 		} catch {

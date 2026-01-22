@@ -165,16 +165,15 @@ export interface CreateOrderResponseItem {
 
 /**
  * Response: POST /api/v1/orders
+ * NOTE: subTotal, discountAmount, amountGiven are NOT returned by backend.
+ * These must be tracked on frontend and passed to printReceipt separately.
  */
 export interface CreateOrderResponse {
 	orderId: string;
 	orderDate: string; // "dd-MM-yyyy hh-mm-ss"
-	subTotal: number; // Sum of all items before discount
-	discountAmount: number; // Amount deducted
-	totalAmount: number; // After discount (and cash rounding)
+	totalAmount: number; // Final total after discount and rounding
 	changeReturned: number;
 	pointsEarned: number; // 1% of totalAmount
-	pointsRedeemed?: number; // If loyalty points were used
 	items: CreateOrderResponseItem[];
 	// Cash rounding fields (Vietnam retail)
 	originalAmount?: number; // Total before rounding

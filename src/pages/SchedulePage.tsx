@@ -27,6 +27,7 @@ import type {
 	WorkScheduleResponse,
 	WorkShift,
 	ShiftRoleConfig,
+	UpdateWorkShiftDTO,
 } from "@/types";
 import { scheduleService } from "@/services/scheduleService";
 
@@ -70,6 +71,14 @@ const SchedulePage = () => {
 		assignments: [],
 	});
 
+	// Helper: Format local date to yyyy-MM-dd without timezone conversion
+	const formatLocalDate = (date: Date): string => {
+		const y = date.getFullYear();
+		const m = (date.getMonth() + 1).toString().padStart(2, "0");
+		const d = date.getDate().toString().padStart(2, "0");
+		return `${y}-${m}-${d}`;
+	};
+
 	// Helper: Generate weeks for a month
 	const generateWeeksForMonth = (
 		month: number,
@@ -93,8 +102,8 @@ const SchedulePage = () => {
 			const endLabel = `${weekEnd.getDate().toString().padStart(2, "0")}/${(weekEnd.getMonth() + 1).toString().padStart(2, "0")}`;
 
 			weeks.push({
-				start: currentWeekStart.toISOString().split("T")[0],
-				end: weekEnd.toISOString().split("T")[0],
+				start: formatLocalDate(currentWeekStart),
+				end: formatLocalDate(weekEnd),
 				label: `${startLabel} - ${endLabel}`,
 			});
 
@@ -107,11 +116,11 @@ const SchedulePage = () => {
 
 	// Helper: Format date to dd-MM-yyyy
 	const formatDateForAPI = (dateStr: string): string => {
-		const date = new Date(dateStr);
-		const day = date.getDate().toString().padStart(2, "0");
-		const month = (date.getMonth() + 1).toString().padStart(2, "0");
-		const year = date.getFullYear();
-		return `${day}-${month}-${year}`;
+		// Parse yyyy-MM-dd without timezone conversion
+		const [year, month, day] = dateStr.split("-").map(Number);
+		const dayStr = day.toString().padStart(2, "0");
+		const monthStr = month.toString().padStart(2, "0");
+		return `${dayStr}-${monthStr}-${year}`;
 	};
 
 	// Helper: Parse dd-MM-yyyy to yyyy-MM-dd
@@ -274,6 +283,28 @@ const SchedulePage = () => {
 		loadShiftConfig();
 	}, []);
 
+	// Auto-update editModalData.assignments when weekData changes
+	useEffect(() => {
+		if (editModalData.isOpen && editModalData.date && editModalData.shift) {
+			const daySchedule = weekData.find(
+				(day) => day.date === editModalData.date,
+			);
+			if (daySchedule) {
+				const updatedAssignments =
+					daySchedule.shifts[editModalData.shift] || [];
+				setEditModalData((prev) => ({
+					...prev,
+					assignments: updatedAssignments,
+				}));
+			}
+		}
+	}, [
+		weekData,
+		editModalData.isOpen,
+		editModalData.date,
+		editModalData.shift,
+	]);
+
 	const loadShiftConfig = async () => {
 		setIsLoading(true);
 		try {
@@ -310,7 +341,16 @@ const SchedulePage = () => {
 			selectedYear,
 		);
 		setWeeks(generatedWeeks);
-		setSelectedWeekIndex(0);
+
+		// Find current week containing today
+		const today = new Date();
+		const todayStr = formatLocalDate(today);
+		const currentWeekIndex = generatedWeeks.findIndex((week) => {
+			return todayStr >= week.start && todayStr <= week.end;
+		});
+
+		// Set to current week if found, otherwise default to first week
+		setSelectedWeekIndex(currentWeekIndex >= 0 ? currentWeekIndex : 0);
 	};
 
 	const loadWeekSchedule = async () => {
@@ -326,6 +366,8 @@ const SchedulePage = () => {
 				startDate,
 				endDate,
 			});
+
+			console.log(result);
 
 			if (result.success && result.data) {
 				const weekData = convertToWeekData(result.data, currentWeek);
@@ -393,33 +435,160 @@ const SchedulePage = () => {
 	const handleScheduleUpdate = async () => {
 		// Reload the week schedule after assignment/removal
 		await loadWeekSchedule();
+	};
 
-		// Update modal data with fresh data
-		if (editModalData.isOpen && editModalData.date && editModalData.shift) {
-			const day = weekData.find((d) => d.date === editModalData.date);
-			if (day) {
-				const assignments = day.shifts[editModalData.shift] || [];
-				setEditModalData({
-					...editModalData,
-					assignments,
+	const handleAssignStaff = async (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => {
+		try {
+			const result = await scheduleService.assignStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: shiftId,
+				assignedStaffIds: [staffId],
+			});
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã thêm nhân viên vào ca làm việc",
+					status: "success",
+					duration: 2000,
 				});
+				await handleScheduleUpdate();
+				return { success: true };
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể thêm nhân viên",
+					status: "error",
+					duration: 3000,
+				});
+				return { success: false, error: result.error };
 			}
+		} catch (error) {
+			console.error("Error assigning staff:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi thêm nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+			return {
+				success: false,
+				error: "Đã xảy ra lỗi khi thêm nhân viên",
+			};
+		}
+	};
+
+	const handleRemoveStaff = async (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => {
+		try {
+			const result = await scheduleService.removeStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: [shiftId],
+				assignedStaffIds: [staffId],
+			});
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã xóa nhân viên khỏi ca làm việc",
+					status: "success",
+					duration: 2000,
+				});
+				await handleScheduleUpdate();
+				return { success: true };
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể xóa nhân viên",
+					status: "error",
+					duration: 3000,
+				});
+				return { success: false, error: result.error };
+			}
+		} catch (error) {
+			console.error("Error removing staff:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi xóa nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+			return { success: false, error: "Đã xảy ra lỗi khi xóa nhân viên" };
 		}
 	};
 
 	const handleSaveShiftConfig = async (config: ShiftConfig) => {
-		// Note: The API doesn't have an update endpoint for shift config
-		// ShiftConfigModal handles creating new shifts via createWorkShift
-		// For now, just update local state
-		setShiftConfig(config);
-		await loadWeekSchedule();
+		try {
+			// Get all work shifts to find the ones that need updating
+			const shiftsResult = await scheduleService.getWorkShifts(true);
 
-		toast({
-			title: "Thành công",
-			description: "Đã cập nhật cấu hình ca làm việc",
-			status: "success",
-			duration: 3000,
-		});
+			if (!shiftsResult.success || !shiftsResult.data) {
+				throw new Error("Failed to fetch work shifts");
+			}
+
+			const existingShifts = shiftsResult.data;
+
+			// Update each shift that exists in both config and backend
+			const updatePromises = config.shifts
+				.filter((shift) => shift.id) // Only update shifts with IDs
+				.map(async (shift) => {
+					const existingShift = existingShifts.find(
+						(s: any) => s.id === shift.id,
+					);
+
+					if (existingShift) {
+						const updateData: UpdateWorkShiftDTO = {
+							shiftName: shift.name,
+							startTime: shift.startTime,
+							endTime: shift.endTime,
+							roleConfigId: existingShift.roleConfig.id, // Keep existing roleConfig
+							isActive: true,
+						};
+
+						return await scheduleService.updateWorkShift(
+							shift.id,
+							updateData,
+						);
+					}
+				})
+				.filter(Boolean); // Remove undefined promises
+
+			// Wait for all updates to complete
+			const results = await Promise.all(updatePromises);
+
+			// Check if all updates succeeded
+			const failedUpdates = results.filter((r) => r && !r.success);
+
+			if (failedUpdates.length > 0) {
+				throw new Error("Some shifts failed to update");
+			}
+
+			// Update local state and reload schedule
+			setShiftConfig(config);
+			await loadWeekSchedule();
+
+			toast({
+				title: "Thành công",
+				description: "Đã cập nhật cấu hình ca làm việc",
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error saving shift config:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể cập nhật cấu hình ca làm việc",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	if (!shiftConfig) {
@@ -532,6 +701,8 @@ const SchedulePage = () => {
 				shift={editModalData.shift}
 				assignments={editModalData.assignments}
 				onUpdate={handleScheduleUpdate}
+				onAssignStaff={handleAssignStaff}
+				onRemoveStaff={handleRemoveStaff}
 			/>
 
 			{/* View Modal */}

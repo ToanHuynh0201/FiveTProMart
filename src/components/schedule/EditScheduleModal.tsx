@@ -27,6 +27,16 @@ interface EditScheduleModalProps {
 	shift: string; // Changed from "morning" | "afternoon" to string (shift ID)
 	assignments: ShiftAssignment[];
 	onUpdate: () => void;
+	onAssignStaff: (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => Promise<{ success: boolean; error?: string }>;
+	onRemoveStaff: (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => Promise<{ success: boolean; error?: string }>;
 }
 
 const EditScheduleModal = ({
@@ -35,7 +45,8 @@ const EditScheduleModal = ({
 	date,
 	shift,
 	assignments,
-	onUpdate,
+	onAssignStaff,
+	onRemoveStaff,
 }: EditScheduleModalProps) => {
 	const [availableStaff, setAvailableStaff] = useState<Staff[]>([]);
 	const [selectedWarehouseStaffId, setSelectedWarehouseStaffId] =
@@ -116,19 +127,16 @@ const EditScheduleModal = ({
 					setShiftName(shiftData.shiftName);
 
 					// Fetch role config to get requirements
-					const roleConfigResult = await scheduleService.getRoleConfigs(
-						true,
-					);
-					if (
-						roleConfigResult.success &&
-						roleConfigResult.data
-					) {
+					const roleConfigResult =
+						await scheduleService.getRoleConfigs(true);
+					if (roleConfigResult.success && roleConfigResult.data) {
 						const roleConfig = roleConfigResult.data.find(
 							(rc: any) => rc.id === shiftData.roleConfig.id,
 						);
 						if (roleConfig) {
 							const warehouseReq = roleConfig.requirements.find(
-								(req: any) => req.accountType === "WarehouseStaff",
+								(req: any) =>
+									req.accountType === "WarehouseStaff",
 							);
 							const salesReq = roleConfig.requirements.find(
 								(req: any) => req.accountType === "SalesStaff",
@@ -159,9 +167,14 @@ const EditScheduleModal = ({
 				const assignedStaffIds = new Set(
 					assignments.map((a) => a.staffId),
 				);
-				const available = result.data.filter(
-					(s: Staff) => !assignedStaffIds.has(s.profileId),
-				);
+
+				const available = result.data.filter((s: Staff) => {
+					// Check both profileId and userId to ensure proper filtering
+					const isAssigned =
+						assignedStaffIds.has(s.profileId) ||
+						assignedStaffIds.has(s.userId);
+					return !isAssigned;
+				});
 
 				setAvailableStaff(available);
 
@@ -272,46 +285,12 @@ const EditScheduleModal = ({
 	const assignStaff = async (staffId: string) => {
 		setIsLoading(true);
 		try {
-			const result = await scheduleService.assignStaff({
-				workDates: [formatDateForAPI(date)],
-				workShiftId: shift,
-				assignedStaffIds: [staffId],
-			});
-
-			if (result.success) {
-				toast({
-					title: "Thành công",
-					description: "Đã thêm nhân viên vào ca làm việc",
-					status: "success",
-					duration: 2000,
-				});
-
-				// Reset selections
-				setSelectedWarehouseStaffId("");
-				setSelectedSalesStaffId("");
-
-				// Reload data
-				await onUpdate();
-				await loadAvailableStaff();
-			} else {
-				// Handle specific errors from API
-				if (result.error) {
-					toast({
-						title: "Lỗi",
-						description: result.error,
-						status: "error",
-						duration: 3000,
-					});
-				}
-			}
-		} catch (error) {
-			console.error("Error assigning staff:", error);
-			toast({
-				title: "Lỗi",
-				description: "Đã xảy ra lỗi khi thêm nhân viên",
-				status: "error",
-				duration: 3000,
-			});
+			await onAssignStaff(staffId, date, shift);
+			// Reset selections
+			setSelectedWarehouseStaffId("");
+			setSelectedSalesStaffId("");
+			// Reload available staff to remove assigned staff from dropdown
+			await loadAvailableStaff();
 		} finally {
 			setIsLoading(false);
 		}
@@ -320,39 +299,9 @@ const EditScheduleModal = ({
 	const handleRemoveStaff = async (staffId: string) => {
 		setIsLoading(true);
 		try {
-			const result = await scheduleService.removeStaff({
-				workDates: [formatDateForAPI(date)],
-				workShiftId: [shift],
-				assignedStaffIds: [staffId],
-			});
-
-			if (result.success) {
-				toast({
-					title: "Thành công",
-					description: "Đã xóa nhân viên khỏi ca làm việc",
-					status: "success",
-					duration: 2000,
-				});
-
-				// Reload data
-				await onUpdate();
-				await loadAvailableStaff();
-			} else {
-				toast({
-					title: "Lỗi",
-					description: result.error || "Không thể xóa nhân viên",
-					status: "error",
-					duration: 3000,
-				});
-			}
-		} catch (error) {
-			console.error("Error removing staff:", error);
-			toast({
-				title: "Lỗi",
-				description: "Đã xảy ra lỗi khi xóa nhân viên",
-				status: "error",
-				duration: 3000,
-			});
+			await onRemoveStaff(staffId, date, shift);
+			// Reload available staff to add removed staff back to dropdown
+			await loadAvailableStaff();
 		} finally {
 			setIsLoading(false);
 		}

@@ -14,6 +14,8 @@ interface SaleCelebrationProps {
 	// Cash rounding (Vietnam retail)
 	originalAmount?: number;
 	roundingAdjustment?: number;
+	// Loyalty points earned from this order
+	pointsEarned?: number;
 }
 
 export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
@@ -25,6 +27,7 @@ export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
 	duration = 2500,
 	originalAmount,
 	roundingAdjustment,
+	pointsEarned,
 }) => {
 	useEffect(() => {
 		if (isOpen) {
@@ -98,6 +101,12 @@ export const SaleCelebration: React.FC<SaleCelebrationProps> = ({
 							<Text fontWeight="semibold">{change.toLocaleString("vi-VN")}đ</Text>
 						</HStack>
 					)}
+					{pointsEarned !== undefined && pointsEarned > 0 && (
+						<HStack justify="space-between" pt={1} borderTop="1px dashed" borderColor="gray.200">
+							<Text color="orange.600">⭐ Điểm tích lũy:</Text>
+							<Text fontWeight="bold" color="orange.600">+{pointsEarned.toLocaleString("vi-VN")} điểm</Text>
+						</HStack>
+					)}
 				</VStack>
 			</Box>
 		</Box>
@@ -113,6 +122,7 @@ export const useSaleCelebration = () => {
 		change: number;
 		originalAmount?: number;
 		roundingAdjustment?: number;
+		pointsEarned?: number;
 	}>({
 		isOpen: false,
 		amount: 0,
@@ -126,6 +136,7 @@ export const useSaleCelebration = () => {
 		change: number;
 		originalAmount?: number;
 		roundingAdjustment?: number;
+		pointsEarned?: number;
 	}) => {
 		setCelebrationData({
 			isOpen: true,

@@ -20,6 +20,7 @@ import {
 	NumberIncrementStepper,
 	NumberDecrementStepper,
 	Textarea,
+	Select,
 	Spinner,
 	Flex,
 	useToast,
@@ -53,6 +54,7 @@ const DisposalModal = ({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [batches, setBatches] = useState<BatchWithSelection[]>([]);
 	const [note, setNote] = useState("");
+	const [reason, setReason] = useState<"expired" | "damaged" | "lost" | "other" | "">("");
 
 	// Load batches for all products when modal opens
 	useEffect(() => {
@@ -132,6 +134,16 @@ const DisposalModal = ({
 			return;
 		}
 
+		if (!reason) {
+			toast({
+				title: "Chưa chọn lý do",
+				description: "Vui lòng chọn lý do hủy hàng",
+				status: "warning",
+				duration: 3000,
+			});
+			return;
+		}
+
 		const disposalItems: DisposalItem[] = selectedBatches.map((b, index) => ({
 			id: `disposal-${Date.now()}-${index}`,
 			batchId: b.lotId,
@@ -143,7 +155,7 @@ const DisposalModal = ({
 			maxQuantity: b.stockQuantity,
 			costPrice: b.importPrice,
 			expiryDate: b.expirationDate ? new Date(b.expirationDate) : undefined,
-			reason: note || "Hủy hàng theo yêu cầu",
+			reason,
 		}));
 
 		setIsSubmitting(true);
@@ -258,7 +270,24 @@ const DisposalModal = ({
 
 							<Box mt={4}>
 								<Text fontSize="14px" fontWeight="600" mb={2}>
-									Lý do hủy hàng (tùy chọn):
+									Lý do hủy hàng:
+								</Text>
+								<Select
+									placeholder="Chọn lý do"
+									value={reason}
+									onChange={(e) => setReason(e.target.value as "expired" | "damaged" | "lost" | "other" | "")}
+									size="sm"
+								>
+									<option value="expired">Hết hạn sử dụng</option>
+									<option value="damaged">Hư hỏng</option>
+									<option value="lost">Mất mát</option>
+									<option value="other">Khác</option>
+								</Select>
+							</Box>
+
+							<Box mt={3}>
+								<Text fontSize="14px" fontWeight="600" mb={2}>
+									Ghi chú (tùy chọn):
 								</Text>
 								<Textarea
 									placeholder="VD: Hết hạn sử dụng, hư hỏng, lỗi sản phẩm..."

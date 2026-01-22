@@ -180,9 +180,12 @@ const StaffTable = ({
 											<Badge
 												colorScheme={
 													staff.accountType ===
-													"SalesStaff"
-														? "blue"
-														: "green"
+													"Admin"
+														? "red"
+														: staff.accountType ===
+															  "SalesStaff"
+															? "green"
+															: "blue"
 												}
 												fontSize="11px"
 												px={2}

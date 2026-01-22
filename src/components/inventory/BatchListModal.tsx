@@ -287,15 +287,13 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 													<Td
 														isNumeric
 														maxW="50px">
-														{batch.quantityShelf ??
-															0}{" "}
+														{batch.quantityShelf}{" "}
 														{product.unitOfMeasure}
 													</Td>
 													<Td
 														isNumeric
 														maxW="50px">
-														{batch.quantityStorage ??
-															0}{" "}
+														{batch.quantityStorage}{" "}
 														{product.unitOfMeasure}
 													</Td>
 													<Td isNumeric>

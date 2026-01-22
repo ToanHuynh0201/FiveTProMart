@@ -25,7 +25,12 @@ import {
 	BarcodeScanner,
 } from "../components/sales";
 import type { ScannedPromotionInfo } from "../components/sales/BarcodeScanner";
-import { KeyboardShortcutsModal, SaleCelebration, useSaleCelebration } from "../components/common";
+import {
+	KeyboardShortcutsModal,
+	SaleCelebration,
+	useSaleCelebration,
+	Pagination,
+} from "../components/common";
 import type {
 	OrderItem,
 	PaymentMethod,
@@ -35,12 +40,14 @@ import type {
 	OrderFilters as ApiOrderFilters,
 	OrderListItem,
 	DiscountRequest,
+	CreateOrderResponse,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
 import { salesService } from "../services/salesService";
 import { reservationService } from "../services/reservationService";
 import { useAuthStore } from "../store/authStore";
+import { API_CONFIG } from "../constants";
 import { useKeyboardShortcuts } from "../hooks";
 
 interface Customer {
@@ -49,6 +56,8 @@ interface Customer {
 	phone: string;
 	points?: number;
 }
+
+const createDraftOrderNumber = () => `TẠM-${Date.now()}`;
 
 const SalesPage = () => {
 	const toast = useToast();
@@ -65,10 +74,8 @@ const SalesPage = () => {
 	>();
 	const [cashReceived, setCashReceived] = useState<number>(0);
 	const [discount, setDiscount] = useState<DiscountRequest | null>(null);
-	const [orderNumber] = useState(
-		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
-	);
-	const [createdAt] = useState(new Date());
+	const [orderNumber, setOrderNumber] = useState(createDraftOrderNumber);
+	const [createdAt, setCreatedAt] = useState(new Date());
 	// Pending orders state - Load from localStorage
 	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
 		try {
@@ -92,9 +99,12 @@ const SalesPage = () => {
 	const [activeTabIndex, setActiveTabIndex] = useState(0);
 
 	// Order history states
-	const [orders, setOrders] = useState<SalesOrder[]>([]);
 	const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
 	const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
+	const [orderPage, setOrderPage] = useState(1);
+	const [orderPageSize] = useState(10);
+	const [orderTotalItems, setOrderTotalItems] = useState(0);
+	const [orderTotalPages, setOrderTotalPages] = useState(1);
 	const [filters, setFilters] = useState<OrderFilters>({
 		searchQuery: "",
 		status: "",
@@ -123,6 +133,53 @@ const SalesPage = () => {
 	// Refs for handlers that are defined later (needed for keyboard shortcuts)
 	const handlePrintRef = useRef<() => void>(() => {});
 	const handlePauseOrderRef = useRef<() => void>(() => {});
+
+	// Track current reservation IDs for cleanup on page unload
+	// Using ref to avoid re-renders and keep value fresh in cleanup callback
+	const activeReservationsRef = useRef<string[]>([]);
+	useEffect(() => {
+		activeReservationsRef.current = orderItems
+			.filter((item) => item.reservationId)
+			.map((item) => item.reservationId as string);
+	}, [orderItems]);
+
+	// Cleanup reservations when browser tab/window closes (zombie prevention)
+	// Backend has 15-min TTL as fallback, but this provides faster cleanup
+	useEffect(() => {
+		const handleBeforeUnload = () => {
+			const reservationIds = activeReservationsRef.current;
+			if (reservationIds.length === 0) return;
+
+			// Use sendBeacon for reliable delivery during unload
+			// Note: sendBeacon only supports simple POST with form/text data
+			// We send a JSON blob and rely on backend accepting application/json
+			const payload = JSON.stringify({
+				reservationIds,
+				reason: "Browser closed",
+			});
+			const endpoint = `${API_CONFIG.BASE_URL}/stock-reservations/release-batch`;
+			const accessToken = useAuthStore.getState().accessToken;
+
+			if (accessToken) {
+				void fetch(endpoint, {
+					method: "POST",
+					keepalive: true,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${accessToken}`,
+					},
+					credentials: "include",
+					body: payload,
+				});
+			} else {
+				const blob = new Blob([payload], { type: "application/json" });
+				navigator.sendBeacon(endpoint, blob);
+			}
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+	}, []);
 
 	// Keyboard shortcut handlers (memoized for stable references)
 	const handleClearCart = useCallback(async () => {
@@ -245,14 +302,35 @@ const SalesPage = () => {
 		loadOrders();
 
 		// Restore current order state from localStorage
+		// NOTE: We clear reservationIds because they're likely expired (15-min TTL)
+		// The items can still be checked out, but without reservation protection
 		try {
 			const saved = localStorage.getItem("salesPage_currentOrder");
 			if (saved && orderItems.length === 0) {
 				const currentOrderState = JSON.parse(saved);
-				setOrderItems(currentOrderState.orderItems || []);
+				// Clear stale reservation IDs - they've likely expired
+				const itemsWithoutReservations = (currentOrderState.orderItems || []).map(
+					(item: OrderItem) => ({
+						...item,
+						reservationId: undefined, // Clear potentially stale reservation
+					})
+				);
+				setOrderItems(itemsWithoutReservations);
 				setPaymentMethod(currentOrderState.paymentMethod);
 				if (currentOrderState.customer) {
 					setCustomer(currentOrderState.customer);
+				}
+				
+				// Warn user if there were items restored
+				if (itemsWithoutReservations.length > 0) {
+					toast({
+						title: "Giỏ hàng đã được khôi phục",
+						description: "Lưu ý: Hàng có thể đã được bán bởi quầy khác. Vui lòng kiểm tra.",
+						status: "warning",
+						duration: 5000,
+						isClosable: true,
+						position: "top",
+					});
 				}
 			}
 		} catch (error) {
@@ -264,7 +342,7 @@ const SalesPage = () => {
 	useEffect(() => {
 		// Apply filters when filters change
 		applyFilters();
-	}, [filters, orders]);
+	}, [filters, orderPage]);
 
 	// Save pending orders to localStorage whenever they change
 	useEffect(() => {
@@ -304,16 +382,30 @@ const SalesPage = () => {
 
 	const loadOrders = async () => {
 		try {
+			const statusMap: Record<string, string> = {
+				completed: "Đã thanh toán",
+				draft: "Chưa thanh toán",
+				cancelled: "Đã huỷ",
+			};
+			const paymentMethodMap: Record<string, string> = {
+				cash: "Tiền mặt",
+				transfer: "Chuyển khoản",
+			};
+
 			// Convert UI filters to API format
 			const apiFilters: ApiOrderFilters = {
 				search: filters.searchQuery || undefined,
-				status: filters.status as ApiOrderFilters["status"],
+				status: filters.status
+					? (statusMap[filters.status] as ApiOrderFilters["status"])
+					: undefined,
 				paymentMethod:
-					filters.paymentMethod as ApiOrderFilters["paymentMethod"],
+					filters.paymentMethod
+						? (paymentMethodMap[filters.paymentMethod] as ApiOrderFilters["paymentMethod"])
+						: undefined,
 				startDate: filters.dateFrom || undefined,
 				endDate: filters.dateTo || undefined,
-				page: 0,
-				size: 50,
+				page: orderPage - 1,
+				size: orderPageSize,
 				sort: "orderDate,desc",
 			};
 
@@ -349,8 +441,9 @@ const SalesPage = () => {
 				}),
 			);
 
-			setOrders(uiOrders);
 			setFilteredOrders(uiOrders);
+			setOrderTotalItems(response.pagination.totalItems);
+			setOrderTotalPages(response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading orders:", error);
 			toast({
@@ -359,8 +452,9 @@ const SalesPage = () => {
 				status: "error",
 				duration: 3000,
 			});
-			setOrders([]);
 			setFilteredOrders([]);
+			setOrderTotalItems(0);
+			setOrderTotalPages(1);
 		}
 	};
 
@@ -371,6 +465,7 @@ const SalesPage = () => {
 
 	const handleFiltersChange = (newFilters: OrderFilters) => {
 		setFilters(newFilters);
+		setOrderPage(1);
 	};
 
 	const handleResetFilters = () => {
@@ -381,11 +476,46 @@ const SalesPage = () => {
 			dateFrom: "",
 			dateTo: "",
 		});
+		setOrderPage(1);
 	};
 
-	const handleViewOrderDetail = (order: SalesOrder) => {
-		setSelectedOrder(order);
-		onOpen();
+	const handleViewOrderDetail = async (order: SalesOrder) => {
+		try {
+			// Fetch full order details from backend
+			const orderDetail = await salesService.getOrderById(order.id);
+			
+			// Map to SalesOrder format with items
+			const fullOrder: SalesOrder = {
+				...order,
+				items: orderDetail.items.map(item => ({
+					id: item.productId,
+					product: {
+						id: item.productId,
+						code: item.productId,
+						name: item.productName,
+						price: item.unitPrice,
+						stock: 0, // Not relevant for completed order
+					},
+					quantity: item.quantity,
+					unitPrice: item.unitPrice,
+					totalPrice: item.subTotal,
+				})),
+				subtotal: orderDetail.subTotal,
+				discount: orderDetail.discountAmount,
+				total: orderDetail.totalAmount,
+			};
+			
+			setSelectedOrder(fullOrder);
+			onOpen();
+		} catch (error) {
+			console.error("Error loading order details:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể tải chi tiết đơn hàng",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	const handleProductSelect = async (
@@ -538,32 +668,95 @@ const SalesPage = () => {
 		}
 	};
 
-	const handleUpdateQuantity = (itemId: string, quantity: number) => {
+	const handleUpdateQuantity = async (itemId: string, quantity: number) => {
 		if (quantity < 1) return;
 
-		setOrderItems((prevItems) =>
-			prevItems.map((item) => {
-				if (item.id === itemId) {
-					// Tìm số lượng tồn kho của lô hàng cụ thể
-					let maxQuantity = item.product.stock;
-					if (item.batchId) {
-						const batch = item.product.batches?.find(
-							(b) => b.id === item.batchId,
-						);
-						if (batch) {
-							maxQuantity = batch.quantity;
-						}
-					}
+		const item = orderItems.find((i) => i.id === itemId);
+		if (!item) return;
 
-					const newQuantity = Math.min(quantity, maxQuantity);
-					return {
-						...item,
-						quantity: newQuantity,
-						totalPrice: item.unitPrice * newQuantity,
-					};
+		// Calculate max quantity from batch
+		let maxQuantity = item.product.stock;
+		if (item.batchId) {
+			const batch = item.product.batches?.find((b) => b.id === item.batchId);
+			if (batch) {
+				maxQuantity = batch.quantity;
+			}
+		}
+
+		const newQuantity = Math.min(quantity, maxQuantity);
+		const quantityDelta = newQuantity - item.quantity;
+
+		// If no change, skip
+		if (quantityDelta === 0) return;
+
+		// Handle reservation sync for batch items
+		if (item.batchId && user?.userId) {
+			if (quantityDelta > 0) {
+				// INCREASING quantity: reserve additional units
+				try {
+					await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: quantityDelta,
+						reservedBy: user.userId,
+					});
+				} catch (error) {
+					toast({
+						title: "Không thể đặt thêm hàng",
+						description: "Số lượng yêu cầu vượt quá tồn kho khả dụng",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't update if can't reserve
 				}
-				return item;
-			}),
+			} else if (quantityDelta < 0 && item.reservationId) {
+				// DECREASING quantity: release old reservation, create new one
+				// (Backend doesn't support partial release, so we do release + re-reserve)
+				try {
+					await reservationService.release({
+						reservationId: item.reservationId,
+						reason: "Quantity decreased",
+					});
+					
+					// Re-reserve with new quantity
+					const reservation = await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: newQuantity,
+						reservedBy: user.userId,
+					});
+					
+					// Update with new reservation ID
+					setOrderItems((prevItems) =>
+						prevItems.map((i) =>
+							i.id === itemId
+								? {
+										...i,
+										quantity: newQuantity,
+										totalPrice: (i.promotionalPrice ?? i.unitPrice) * newQuantity,
+										reservationId: reservation.reservationId,
+								  }
+								: i,
+						),
+					);
+					return; // Exit early, we've already updated
+				} catch (error) {
+					console.error("Failed to adjust reservation:", error);
+					// Continue with UI update even if reservation fails
+				}
+			}
+		}
+
+		// Update UI
+		setOrderItems((prevItems) =>
+			prevItems.map((i) =>
+				i.id === itemId
+					? {
+							...i,
+							quantity: newQuantity,
+							totalPrice: (i.promotionalPrice ?? i.unitPrice) * newQuantity,
+					  }
+					: i,
+			),
 		);
 	};
 
@@ -586,13 +779,113 @@ const SalesPage = () => {
 		setOrderItems(orderItems.filter((item) => item.id !== itemId));
 	};
 
-	const calculateTotal = () => {
+	const calculateSubtotal = () => {
 		return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+	};
+
+	const calculateDiscountAmount = (subtotal: number) => {
+		if (!discount || discount.type === "NONE") return 0;
+
+		switch (discount.type) {
+			case "LOYALTY_POINTS":
+				return Math.min(discount.pointsToUse ?? 0, subtotal);
+			case "PERCENTAGE": {
+				const percentage = discount.percentage ?? 0;
+				const rawDiscount = (subtotal * percentage) / 100;
+				const cappedDiscount =
+					discount.maxAmount !== undefined
+						? Math.min(rawDiscount, discount.maxAmount)
+						: rawDiscount;
+				return Math.min(cappedDiscount, subtotal);
+			}
+			case "FIXED_AMOUNT":
+				return Math.min(discount.amount ?? 0, subtotal);
+			default:
+				return 0;
+		}
+	};
+
+	const calculateFinalTotal = () => {
+		const subtotal = calculateSubtotal();
+		const discountAmount = calculateDiscountAmount(subtotal);
+		return Math.max(0, subtotal - discountAmount);
+	};
+
+	const calculateRoundedCashTotal = () => {
+		// Round to nearest 1,000 VND (Vietnam retail standard)
+		return Math.round(calculateFinalTotal() / 1000) * 1000;
 	};
 
 	const calculateLoyaltyPoints = () => {
 		// 1 point per 100 VND spent (1% loyalty rate)
-		return Math.floor(calculateTotal() / 100);
+		return Math.floor(calculateFinalTotal() / 100);
+	};
+
+	const printReceipt = (
+		response: CreateOrderResponse,
+		localData: { subTotal: number; discountAmount: number; amountGiven: number }
+	) => {
+		const receiptWindow = window.open(
+			"",
+			"_blank",
+			"width=420,height=640,noopener,noreferrer",
+		);
+
+		if (!receiptWindow) return;
+
+		const itemsHtml = response.items
+			.map(
+				(item) => `
+					<tr>
+						<td>${item.productName}</td>
+						<td style="text-align:right;">${item.quantity}</td>
+						<td style="text-align:right;">${item.subTotal.toLocaleString("vi-VN")}</td>
+					</tr>
+				`,
+			)
+			.join("");
+
+		receiptWindow.document.write(`
+			<html>
+				<head>
+					<title>Hóa đơn</title>
+					<style>
+						body { font-family: Arial, sans-serif; padding: 16px; }
+						h1 { font-size: 16px; margin-bottom: 8px; }
+						table { width: 100%; border-collapse: collapse; }
+						td { padding: 4px 0; font-size: 12px; }
+						.total { font-weight: bold; margin-top: 8px; }
+					</style>
+				</head>
+				<body>
+					<h1>Hóa đơn #${response.orderId}</h1>
+					<div>Ngày: ${response.orderDate}</div>
+					<table>
+						<thead>
+							<tr>
+								<td>Sản phẩm</td>
+								<td style="text-align:right;">SL</td>
+								<td style="text-align:right;">Thành tiền</td>
+							</tr>
+						</thead>
+						<tbody>
+							${itemsHtml}
+						</tbody>
+					</table>
+					<div class="total">Tạm tính: ${localData.subTotal.toLocaleString("vi-VN")}đ</div>
+					<div>Giảm giá: ${localData.discountAmount.toLocaleString("vi-VN")}đ</div>
+					<div class="total">Tổng: ${response.totalAmount.toLocaleString("vi-VN")}đ</div>
+					<div>Tiền khách đưa: ${localData.amountGiven.toLocaleString("vi-VN")}đ</div>
+					<div>Tiền thối: ${response.changeReturned.toLocaleString("vi-VN")}đ</div>
+					${response.pointsEarned > 0 ? `<div style="margin-top:8px;color:#dd6b20;">⭐ Điểm tích lũy: +${response.pointsEarned.toLocaleString("vi-VN")} điểm</div>` : ""}
+				</body>
+			</html>
+		`);
+
+		receiptWindow.document.close();
+		receiptWindow.focus();
+		receiptWindow.print();
+		receiptWindow.close();
 	};
 
 	const handlePrint = async () => {
@@ -647,9 +940,37 @@ const SalesPage = () => {
 			// Get staffId from auth store
 			const staffId = user?.userId ?? "guest_staff";
 
+			if (paymentMethod === "cash") {
+				const roundedCashTotal = calculateRoundedCashTotal();
+				if (cashReceived <= 0) {
+					toast({
+						title: "Chưa nhập tiền khách đưa",
+						description: "Vui lòng nhập số tiền khách đưa",
+						status: "warning",
+						duration: 3000,
+						isClosable: true,
+					});
+					return;
+				}
+				if (cashReceived < roundedCashTotal) {
+					toast({
+						title: "Tiền khách đưa không đủ",
+						description: `Số tiền tối thiểu cần thu: ${roundedCashTotal.toLocaleString("vi-VN")}đ`,
+						status: "warning",
+						duration: 3000,
+						isClosable: true,
+					});
+					return;
+				}
+			}
+
 			// Use cashReceived if provided, otherwise use total (for transfer payments)
 			const amountGiven =
-				cashReceived > 0 ? cashReceived : calculateTotal();
+				cashReceived > 0 ? cashReceived : calculateFinalTotal();
+
+			// Calculate local values for receipt (BE doesn't return these)
+			const subTotal = calculateSubtotal();
+			const discountAmount = calculateDiscountAmount(subTotal);
 
 			// Call API to create order
 			const response = await salesService.createOrder({
@@ -661,6 +982,8 @@ const SalesPage = () => {
 				discount: discount || undefined,
 			});
 
+			printReceipt(response, { subTotal, discountAmount, amountGiven });
+
 			// Success notification - brief, professional confirmation
 			celebrate({
 				amount: response.totalAmount,
@@ -668,6 +991,7 @@ const SalesPage = () => {
 				change: response.changeReturned,
 				originalAmount: response.originalAmount,
 				roundingAdjustment: response.roundingAdjustment,
+				pointsEarned: response.pointsEarned,
 			});
 
 			// Clear localStorage
@@ -678,6 +1002,8 @@ const SalesPage = () => {
 			setPaymentMethod(undefined);
 			setCashReceived(0);
 			setDiscount(null);
+			setOrderNumber(createDraftOrderNumber());
+			setCreatedAt(new Date());
 			setCustomer({
 				id: `guest_${Date.now()}`,
 				name: "KHÁCH VÃNG LAI",
@@ -762,7 +1088,7 @@ const SalesPage = () => {
 	handlePauseOrderRef.current = handlePauseOrder;
 
 	// Khôi phục hóa đơn tạm dừng
-	const handleRestoreOrder = (order: PendingOrder) => {
+	const handleRestoreOrder = async (order: PendingOrder) => {
 		// Nếu đang có hóa đơn, tự động lưu vào danh sách pending
 		if (orderItems.length > 0) {
 			const currentPendingOrder: PendingOrder = {
@@ -796,8 +1122,46 @@ const SalesPage = () => {
 			setPendingOrders(pendingOrders.filter((po) => po.id !== order.id));
 		}
 
+		// Re-reserve stock for restored items (old reservations are likely expired)
+		// This is critical for data integrity - pending orders can be restored hours later
+		const restoredItems: OrderItem[] = [];
+		const failedItems: string[] = [];
+
+		for (const item of order.items) {
+			if (item.batchId && user?.userId) {
+				try {
+					// Create fresh reservation (ignore old reservationId - it's expired)
+					const reservation = await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: item.quantity,
+						reservedBy: user.userId,
+					});
+					
+					// Add item with fresh reservation ID
+					restoredItems.push({
+						...item,
+						reservationId: reservation.reservationId,
+					});
+				} catch (error) {
+					// Stock no longer available - add without reservation but warn user
+					console.error(`Failed to reserve stock for ${item.product.name}:`, error);
+					failedItems.push(item.product.name);
+					restoredItems.push({
+						...item,
+						reservationId: undefined, // Clear stale reservation
+					});
+				}
+			} else {
+				// No batch (shouldn't happen in normal flow) - add as-is
+				restoredItems.push({
+					...item,
+					reservationId: undefined,
+				});
+			}
+		}
+
 		// Khôi phục dữ liệu từ pending order
-		setOrderItems(order.items);
+		setOrderItems(restoredItems);
 		if (order.customer) {
 			setCustomer({
 				id: order.customer.id,
@@ -815,14 +1179,26 @@ const SalesPage = () => {
 		}
 		setPaymentMethod(order.paymentMethod);
 
-		toast({
-			title: "Đã khôi phục hóa đơn",
-			description: `Hóa đơn ${order.orderNumber} đã được khôi phục`,
-			status: "success",
-			duration: 3000,
-			isClosable: true,
-			position: "top",
-		});
+		// Show appropriate toast based on results
+		if (failedItems.length > 0) {
+			toast({
+				title: "Khôi phục hóa đơn - Cảnh báo",
+				description: `Một số sản phẩm có thể đã hết hàng: ${failedItems.join(", ")}. Vui lòng kiểm tra lại.`,
+				status: "warning",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
+		} else {
+			toast({
+				title: "Đã khôi phục hóa đơn",
+				description: `Hóa đơn ${order.orderNumber} đã được khôi phục`,
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		}
 	};
 
 	// Xóa hóa đơn tạm dừng
@@ -954,7 +1330,8 @@ const SalesPage = () => {
 
 								{/* Floating Payment Footer */}
 								<PaymentFooter
-									total={calculateTotal()}
+									subtotal={calculateSubtotal()}
+									total={calculateFinalTotal()}
 									loyaltyPoints={
 										customer?.phone
 											? calculateLoyaltyPoints()
@@ -989,17 +1366,29 @@ const SalesPage = () => {
 										borderRadius="xl"
 										p={6}
 										boxShadow="sm">
-										<Heading
+											<Heading
 											size="md"
 											mb={4}
 											color="#161f70">
-											Danh sách đơn hàng (
-											{filteredOrders.length})
+												Danh sách đơn hàng ({orderTotalItems})
 										</Heading>
 										<OrderHistoryTable
 											orders={filteredOrders}
 											onViewDetail={handleViewOrderDetail}
 										/>
+											{orderTotalPages > 1 && (
+												<Box mt={4}>
+													<Pagination
+														currentPage={orderPage}
+														totalPages={orderTotalPages}
+														totalItems={orderTotalItems}
+														pageSize={orderPageSize}
+														onPageChange={setOrderPage}
+														showInfo={true}
+														itemLabel="đơn hàng"
+													/>
+												</Box>
+											)}
 									</Box>
 								</VStack>
 							</TabPanel>
@@ -1028,6 +1417,9 @@ const SalesPage = () => {
 					amount={celebrationData.amount}
 					orderId={celebrationData.orderId}
 					change={celebrationData.change}
+					originalAmount={celebrationData.originalAmount}
+					roundingAdjustment={celebrationData.roundingAdjustment}
+					pointsEarned={celebrationData.pointsEarned}
 				/>
 			</Box>
 		</MainLayout>

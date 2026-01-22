@@ -9,6 +9,8 @@ export interface ProductBatch {
 	manufactureDate: string | null; // ISO date string (LocalDate)
 	expirationDate: string | null; // ISO date string (LocalDate)
 	stockQuantity: number;
+	quantityShelf: number;    // Display quantity (items on shelf)
+	quantityStorage: number;  // Warehouse quantity (items in storage)
 	importPrice: number;
 	status: string; // Backend returns string, e.g., "AVAILABLE", "EXPIRED"
 }

@@ -101,7 +101,6 @@ const OrderFilterBar = ({
 							boxShadow: "0 0 0 1px #161f70",
 						}}>
 						<option value="cash">Tiền mặt</option>
-						<option value="card">Thẻ</option>
 						<option value="transfer">Chuyển khoản</option>
 					</Select>
 				</HStack>

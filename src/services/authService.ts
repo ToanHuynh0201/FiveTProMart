@@ -110,6 +110,9 @@ class AuthService {
 				message: string;
 				data: User;
 			}>("/auth/me");
+
+			console.log(response);
+
 			const user: User = response.data;
 
 			// Update store with fresh user data

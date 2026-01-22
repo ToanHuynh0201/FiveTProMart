@@ -78,6 +78,9 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [actualItems, setActualItems] = useState<ActualItemInput[]>([]);
+	const [displayPrices, setDisplayPrices] = useState<Record<string, string>>(
+		{},
+	);
 	const [invoiceData, setInvoiceData] = useState({
 		invoiceNumber: "",
 		invoiceDate: "",
@@ -85,6 +88,34 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 	});
 	const [notes, setNotes] = useState("");
 	const [lotsToPrint, setLotsToPrint] = useState<LotToPrint[] | null>(null);
+
+	// Format currency for display
+	const formatCurrencyInput = (value: number) => {
+		if (!value && value !== 0) return "";
+		return value.toLocaleString("vi-VN");
+	};
+
+	// Handle price input change with formatting
+	const handlePriceInputChange = (
+		productId: string,
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const inputValue = e.target.value;
+		const numericValue = inputValue.replace(/\D/g, "");
+
+		if (numericValue === "") {
+			setDisplayPrices((prev) => ({ ...prev, [productId]: "" }));
+			handleItemChange(productId, "importPrice", 0);
+			return;
+		}
+
+		const parsedValue = parseInt(numericValue, 10);
+		setDisplayPrices((prev) => ({
+			...prev,
+			[productId]: formatCurrencyInput(parsedValue),
+		}));
+		handleItemChange(productId, "importPrice", parsedValue);
+	};
 
 	// Initialize actual items from purchase items
 	useEffect(() => {
@@ -100,6 +131,14 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 				notes: "", // Ghi chú cho từng sản phẩm
 			}));
 			setActualItems(items);
+
+			// Initialize display prices
+			const prices: Record<string, string> = {};
+			items.forEach((item) => {
+				prices[item.productId] = formatCurrencyInput(item.importPrice);
+			});
+			setDisplayPrices(prices);
+
 			setNotes(purchase.notes || "");
 			setLotsToPrint(null);
 		}
@@ -107,6 +146,7 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 
 	const handleClose = () => {
 		setActualItems([]);
+		setDisplayPrices({});
 		setInvoiceData({
 			invoiceNumber: "",
 			invoiceDate: "",
@@ -124,7 +164,9 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 	) => {
 		setActualItems((prev) =>
 			prev.map((item) =>
-				item.productId === productId ? { ...item, [field]: value } : item,
+				item.productId === productId
+					? { ...item, [field]: value }
+					: item,
 			),
 		);
 	};
@@ -224,17 +266,17 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 		try {
 			// Helper function to convert date to backend format (dd-MM-yyyy)
 			const toBackendDateFormat = (date: Date | string): string => {
-				const d = typeof date === 'string' ? new Date(date) : date;
-				const day = String(d.getDate()).padStart(2, '0');
-				const month = String(d.getMonth() + 1).padStart(2, '0');
+				const d = typeof date === "string" ? new Date(date) : date;
+				const day = String(d.getDate()).padStart(2, "0");
+				const month = String(d.getMonth() + 1).padStart(2, "0");
 				const year = d.getFullYear();
 				return `${day}-${month}-${year}`;
 			};
 
 			// Convert HTML date input (yyyy-MM-dd) to backend format (dd-MM-yyyy)
 			const convertInputDate = (dateString: string): string => {
-				if (!dateString) return '';
-				const [year, month, day] = dateString.split('-');
+				if (!dateString) return "";
+				const [year, month, day] = dateString.split("-");
 				return `${day}-${month}-${year}`;
 			};
 
@@ -325,7 +367,8 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 									fontWeight="600"
 									color="green.700"
 									mb={2}>
-									Đơn hàng đã được xác nhận và kho đã được cập nhật
+									Đơn hàng đã được xác nhận và kho đã được cập
+									nhật
 								</Text>
 								<Text
 									fontSize="14px"
@@ -395,7 +438,8 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 								// TODO: Implement print labels
 								toast({
 									title: "Thông báo",
-									description: "Tính năng in tem đang phát triển",
+									description:
+										"Tính năng in tem đang phát triển",
 									status: "info",
 									duration: 2000,
 								});
@@ -506,11 +550,14 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 												Số hóa đơn
 											</FormLabel>
 											<Input
-												value={invoiceData.invoiceNumber}
+												value={
+													invoiceData.invoiceNumber
+												}
 												onChange={(e) =>
 													setInvoiceData((prev) => ({
 														...prev,
-														invoiceNumber: e.target.value,
+														invoiceNumber:
+															e.target.value,
 													}))
 												}
 												placeholder="VD: HD_1234"
@@ -528,7 +575,8 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 												onChange={(e) =>
 													setInvoiceData((prev) => ({
 														...prev,
-														invoiceDate: e.target.value,
+														invoiceDate:
+															e.target.value,
 													}))
 												}
 											/>
@@ -542,7 +590,9 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 										</FormLabel>
 										<HStack spacing={3}>
 											<Button
-												leftIcon={<Icon as={BsCamera} />}
+												leftIcon={
+													<Icon as={BsCamera} />
+												}
 												colorScheme="gray"
 												variant="outline"
 												onClick={handleFileSelect}>
@@ -562,32 +612,38 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 												columns={4}
 												spacing={2}
 												mt={3}>
-												{invoiceData.images.map((img, index) => (
-													<Box
-														key={index}
-														position="relative">
-														<Image
-															src={img}
-															alt={`Invoice ${index + 1}`}
-															borderRadius="md"
-															h="80px"
-															w="100%"
-															objectFit="cover"
-														/>
-														<IconButton
-															aria-label="Remove image"
-															icon={<DeleteIcon />}
-															size="xs"
-															colorScheme="red"
-															position="absolute"
-															top={1}
-															right={1}
-															onClick={() =>
-																handleRemoveImage(index)
-															}
-														/>
-													</Box>
-												))}
+												{invoiceData.images.map(
+													(img, index) => (
+														<Box
+															key={index}
+															position="relative">
+															<Image
+																src={img}
+																alt={`Invoice ${index + 1}`}
+																borderRadius="md"
+																h="80px"
+																w="100%"
+																objectFit="cover"
+															/>
+															<IconButton
+																aria-label="Remove image"
+																icon={
+																	<DeleteIcon />
+																}
+																size="xs"
+																colorScheme="red"
+																position="absolute"
+																top={1}
+																right={1}
+																onClick={() =>
+																	handleRemoveImage(
+																		index,
+																	)
+																}
+															/>
+														</Box>
+													),
+												)}
 											</SimpleGrid>
 										)}
 									</FormControl>
@@ -675,8 +731,13 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 													<Td isNumeric>
 														<NumberInput
 															size="sm"
-															value={item.quantityReceived}
-															onChange={(_, val) =>
+															value={
+																item.quantityReceived
+															}
+															onChange={(
+																_,
+																val,
+															) =>
 																handleItemChange(
 																	item.productId,
 																	"quantityReceived",
@@ -684,7 +745,10 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 																)
 															}
 															min={0}
-															max={item.quantityOrdered * 2}
+															max={
+																item.quantityOrdered *
+																2
+															}
 															maxW="80px">
 															<NumberInputField
 																textAlign="right"
@@ -693,34 +757,39 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 														</NumberInput>
 													</Td>
 													<Td isNumeric>
-														<NumberInput
+														<Input
 															size="sm"
-															value={item.importPrice}
-															onChange={(_, val) =>
-																handleItemChange(
+															value={
+																displayPrices[
+																	item
+																		.productId
+																] || ""
+															}
+															onChange={(e) =>
+																handlePriceInputChange(
 																	item.productId,
-																	"importPrice",
-																	val || 0,
+																	e,
 																)
 															}
-															min={0}
-															maxW="100px">
-															<NumberInputField
-																textAlign="right"
-																fontSize="13px"
-															/>
-														</NumberInput>
+															placeholder="0"
+															textAlign="right"
+															fontSize="13px"
+															maxW="100px"
+														/>
 													</Td>
 													<Td>
 														<Input
 															type="date"
 															size="sm"
-															value={item.manufactureDate}
+															value={
+																item.manufactureDate
+															}
 															onChange={(e) =>
 																handleItemChange(
 																	item.productId,
 																	"manufactureDate",
-																	e.target.value,
+																	e.target
+																		.value,
 																)
 															}
 															fontSize="13px"
@@ -730,12 +799,15 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 														<Input
 															type="date"
 															size="sm"
-															value={item.expirationDate}
+															value={
+																item.expirationDate
+															}
 															onChange={(e) =>
 																handleItemChange(
 																	item.productId,
 																	"expirationDate",
-																	e.target.value,
+																	e.target
+																		.value,
 																)
 															}
 															fontSize="13px"
@@ -758,7 +830,8 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 																handleItemChange(
 																	item.productId,
 																	"notes",
-																	e.target.value,
+																	e.target
+																		.value,
 																)
 															}
 															placeholder="VD: Thiếu 2, hư 1..."
@@ -788,7 +861,8 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 											fontSize="20px"
 											fontWeight="700"
 											color="brand.500">
-											{formatCurrency(calculateTotal())} VNĐ
+											{formatCurrency(calculateTotal())}{" "}
+											VNĐ
 										</Text>
 									</HStack>
 								</Flex>
@@ -812,7 +886,9 @@ export const ConfirmReceiptModal: React.FC<ConfirmReceiptModalProps> = ({
 					)}
 				</ModalBody>
 
-				<ModalFooter borderTop="1px solid" borderColor="gray.200">
+				<ModalFooter
+					borderTop="1px solid"
+					borderColor="gray.200">
 					<Button
 						variant="ghost"
 						mr={3}

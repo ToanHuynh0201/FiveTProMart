@@ -13,11 +13,6 @@ import {
 	Input,
 	Select,
 	VStack,
-	NumberInput,
-	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	NumberDecrementStepper,
 	useToast,
 	FormHelperText,
 } from "@chakra-ui/react";
@@ -45,6 +40,33 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 		sellingPrice: 0,
 	});
 
+	const [displayPrice, setDisplayPrice] = useState("");
+
+	// Format number with thousand separator
+	const formatCurrency = (value: number | string) => {
+		if (!value && value !== 0) return "";
+		const numValue = typeof value === "string" ? parseFloat(value) : value;
+		if (isNaN(numValue)) return "";
+		return numValue.toLocaleString("vi-VN");
+	};
+
+	// Handle price input change
+	const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const inputValue = e.target.value;
+		// Remove all non-digit characters
+		const numericValue = inputValue.replace(/\D/g, "");
+
+		if (numericValue === "") {
+			setDisplayPrice("");
+			setFormData({ ...formData, sellingPrice: 0 });
+			return;
+		}
+
+		const parsedValue = parseInt(numericValue, 10);
+		setFormData({ ...formData, sellingPrice: parsedValue });
+		setDisplayPrice(formatCurrency(parsedValue));
+	};
+
 	useEffect(() => {
 		if (!isOpen) {
 			// Reset form when modal closes
@@ -54,6 +76,7 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 				unitOfMeasure: "",
 				sellingPrice: 0,
 			});
+			setDisplayPrice("");
 		}
 	}, [isOpen]);
 
@@ -218,27 +241,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 								color="gray.700">
 								Giá bán (đ)
 							</FormLabel>
-							<NumberInput
-								min={1000}
-								value={formData.sellingPrice}
-								onChange={(_, value) =>
-									setFormData({
-										...formData,
-										sellingPrice: isNaN(value) ? 0 : value,
-									})
-								}>
-								<NumberInputField
-									placeholder="1,000"
-									fontSize="15px"
-									h="48px"
-								/>
-								<NumberInputStepper>
-									<NumberIncrementStepper />
-									<NumberDecrementStepper />
-								</NumberInputStepper>
-							</NumberInput>
+							<Input
+								placeholder="1,000"
+								value={displayPrice}
+								onChange={handlePriceChange}
+								fontSize="15px"
+								h="48px"
+							/>
 							<FormHelperText>
-								Giá bán tối thiểu là 1,000đ
+								Giá bán tối thiểu là 1.000đ
 							</FormHelperText>
 						</FormControl>
 					</VStack>

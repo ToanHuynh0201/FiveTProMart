@@ -94,7 +94,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				const result = await scheduleService.getWorkSchedules({
 					startDate: formatDateForAPI(today),
 					endDate: formatDateForAPI(endDate),
-					profileId: user.profileId,
+					profileId: user?.profileId,
 				});
 
 				if (result.success && result.data) {

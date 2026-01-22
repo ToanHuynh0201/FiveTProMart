@@ -35,7 +35,7 @@ const PromotionPage = () => {
 
 	// State for data from API
 	const [promotions, setPromotions] = useState<Promotion[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 	const [stats, setStats] = useState<PromotionStats | null>(null);
 	const [hasInitialLoad, setHasInitialLoad] = useState(false);
 

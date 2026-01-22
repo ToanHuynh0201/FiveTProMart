@@ -106,6 +106,10 @@ const PurchasePage = () => {
 	const fetchPurchases = useCallback(async () => {
 		setIsLoading(true);
 		try {
+			// Only apply date filter if both dates are provided
+			const shouldApplyDateFilter =
+				debouncedFilters.startDate && debouncedFilters.endDate;
+
 			const result = await purchaseService.getPurchaseOrders({
 				page: currentPage - 1, // Convert to zero-based
 				size: debouncedFilters.size,
@@ -114,8 +118,12 @@ const PurchasePage = () => {
 					debouncedFilters.status === "all"
 						? undefined
 						: debouncedFilters.status,
-				startDate: debouncedFilters.startDate || undefined,
-				endDate: debouncedFilters.endDate || undefined,
+				startDate: shouldApplyDateFilter
+					? debouncedFilters.startDate
+					: undefined,
+				endDate: shouldApplyDateFilter
+					? debouncedFilters.endDate
+					: undefined,
 				sortBy: debouncedFilters.sortBy,
 				order: debouncedFilters.order,
 			});
@@ -146,8 +154,18 @@ const PurchasePage = () => {
 
 	// Load purchases when filters or page change
 	useEffect(() => {
+		// Skip fetch if only one date is selected
+		const hasStartDateOnly =
+			debouncedFilters.startDate && !debouncedFilters.endDate;
+		const hasEndDateOnly =
+			!debouncedFilters.startDate && debouncedFilters.endDate;
+
+		if (hasStartDateOnly || hasEndDateOnly) {
+			return; // Don't fetch until both dates are selected or both are empty
+		}
+
 		fetchPurchases();
-	}, [fetchPurchases]);
+	}, [fetchPurchases, debouncedFilters.startDate, debouncedFilters.endDate]);
 
 	// Load suppliers on mount
 	useEffect(() => {

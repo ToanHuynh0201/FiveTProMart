@@ -46,7 +46,10 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
 				try {
 					const category =
 						await inventoryService.getCategoryById(categoryId);
-					setCategoryCode(category.categoryCode);
+
+					console.log(category);
+
+					setCategoryCode(category.categoryId);
 					setCategoryName(category.categoryName);
 				} catch (error) {
 					console.error("Error loading category:", error);

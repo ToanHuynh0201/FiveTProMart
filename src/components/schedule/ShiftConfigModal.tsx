@@ -203,7 +203,8 @@ const ShiftConfigModal = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể cập nhật cấu hình role",
+					description:
+						result.error || "Không thể cập nhật cấu hình role",
 					status: "error",
 					duration: 3000,
 				});
@@ -378,16 +379,22 @@ const ShiftConfigModal = ({
 		} else {
 			// For editing existing shifts, call update API
 			// Need to get the roleConfigId from the shift or use selected one
-			const roleConfigIdToUse = selectedRoleConfigId ||
-				roleConfigs.find(config =>
-					config.requirements.some(req =>
-						req.accountType === "WarehouseStaff" &&
-						req.quantity === editingShift.requiredWarehouseStaff
-					) &&
-					config.requirements.some(req =>
-						req.accountType === "SalesStaff" &&
-						req.quantity === editingShift.requiredSalesStaff
-					)
+			const roleConfigIdToUse =
+				selectedRoleConfigId ||
+				roleConfigs.find(
+					(config) =>
+						config.requirements.some(
+							(req) =>
+								req.accountType === "WarehouseStaff" &&
+								req.quantity ===
+									editingShift.requiredWarehouseStaff,
+						) &&
+						config.requirements.some(
+							(req) =>
+								req.accountType === "SalesStaff" &&
+								req.quantity ===
+									editingShift.requiredSalesStaff,
+						),
 				)?.id;
 
 			if (!roleConfigIdToUse) {
@@ -431,7 +438,8 @@ const ShiftConfigModal = ({
 					toast({
 						title: "Lỗi",
 						description:
-							updateResult.error || "Không thể cập nhật ca làm việc",
+							updateResult.error ||
+							"Không thể cập nhật ca làm việc",
 						status: "error",
 						duration: 3000,
 					});
@@ -486,7 +494,8 @@ const ShiftConfigModal = ({
 				} else {
 					toast({
 						title: "Lỗi",
-						description: result.error || "Không thể xóa ca làm việc",
+						description:
+							result.error || "Không thể xóa ca làm việc",
 						status: "error",
 						duration: 3000,
 					});
@@ -609,20 +618,24 @@ const ShiftConfigModal = ({
 														fontSize="15px"
 														fontWeight="600"
 														mb={1}>
-														Số ca tối đa mỗi nhân viên có thể
-														làm trong 1 tuần
+														Số ca tối đa mỗi nhân
+														viên có thể làm trong 1
+														tuần
 													</FormLabel>
 													<Text
 														fontSize="13px"
 														color="gray.600">
-														Nhân viên sẽ không xuất hiện trong
-														danh sách khi đã đạt giới hạn
+														Nhân viên sẽ không xuất
+														hiện trong danh sách khi
+														đã đạt giới hạn
 													</Text>
 												</Box>
 												<NumberInput
 													value={maxShiftsPerWeek}
 													onChange={(_, value) =>
-														setMaxShiftsPerWeek(value)
+														setMaxShiftsPerWeek(
+															value,
+														)
 													}
 													min={1}
 													max={14}
@@ -651,20 +664,23 @@ const ShiftConfigModal = ({
 														fontSize="15px"
 														fontWeight="600"
 														mb={1}>
-														Số giờ tối mỗi nhân viên có thể làm
-														trong 1 tuần
+														Số giờ tối mỗi nhân viên
+														có thể làm trong 1 tuần
 													</FormLabel>
 													<Text
 														fontSize="13px"
 														color="green.600">
-														Nhân viên sẽ không xuất hiện trong
-														danh sách khi đã đạt giới hạn
+														Nhân viên sẽ không xuất
+														hiện trong danh sách khi
+														đã đạt giới hạn
 													</Text>
 												</Box>
 												<NumberInput
 													value={maxShiftsPerWeek}
 													onChange={(_, value) =>
-														setMaxShiftsPerWeek(value)
+														setMaxShiftsPerWeek(
+															value,
+														)
 													}
 													min={1}
 													max={14}
@@ -683,677 +699,709 @@ const ShiftConfigModal = ({
 
 									{/* Shift List */}
 									<Box>
-							<HStack
-								justify="space-between"
-								mb={4}>
-								<Text
-									fontSize="18px"
-									fontWeight="600"
-									color="brand.600">
-									Danh sách ca làm việc
-								</Text>
-								<Button
-									leftIcon={<AddIcon />}
-									colorScheme="blue"
-									size="sm"
-									onClick={handleAddShift}
-									isDisabled={editingShift !== null}>
-									Thêm ca
-								</Button>
-							</HStack>
+										<HStack
+											justify="space-between"
+											mb={4}>
+											<Text
+												fontSize="18px"
+												fontWeight="600"
+												color="brand.600">
+												Danh sách ca làm việc
+											</Text>
+											<Button
+												leftIcon={<AddIcon />}
+												colorScheme="blue"
+												size="sm"
+												onClick={handleAddShift}
+												isDisabled={
+													editingShift !== null
+												}>
+												Thêm ca
+											</Button>
+										</HStack>
 
-							<VStack
-								spacing={3}
-								align="stretch">
-								{/* New Shift Form (when adding) */}
-								{isAddingNew && editingShift && (
-									<Box
-										p={4}
-										border="2px solid"
-										borderColor="blue.500"
-										borderRadius="md"
-										bg="blue.50">
-										<Text
-											fontSize="16px"
-											fontWeight="600"
-											color="blue.700"
-											mb={3}>
-											➕ Thêm ca làm việc mới
-										</Text>
 										<VStack
 											spacing={3}
 											align="stretch">
-											<FormControl>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600">
-													Tên ca
-												</FormLabel>
-												<Input
-													value={editingShift.name}
-													onChange={(e) =>
-														setEditingShift({
-															...editingShift,
-															name: e.target
-																.value,
-														})
-													}
-													placeholder="VD: Ca Sáng, Ca Chiều, Ca Tối"
-													bg="white"
-												/>
-											</FormControl>
-
-											<HStack spacing={4}>
-												<FormControl flex={1}>
-													<FormLabel
-														fontSize="14px"
-														fontWeight="600">
-														Giờ bắt đầu
-													</FormLabel>
-													<Input
-														type="time"
-														step="3600"
-														value={
-															editingShift.startTime
-														}
-														onChange={(e) =>
-															setEditingShift({
-																...editingShift,
-																startTime:
-																	e.target
-																		.value,
-															})
-														}
-														bg="white"
-													/>
-												</FormControl>
-
-												<FormControl flex={1}>
-													<FormLabel
-														fontSize="14px"
-														fontWeight="600">
-														Giờ kết thúc
-													</FormLabel>
-													<Input
-														type="time"
-														step="3600"
-														value={
-															editingShift.endTime
-														}
-														onChange={(e) =>
-															setEditingShift({
-																...editingShift,
-																endTime:
-																	e.target
-																		.value,
-															})
-														}
-														bg="white"
-													/>
-												</FormControl>
-											</HStack>
-
-											{/* Display calculated working hours */}
-											{editingShift.startTime &&
-												editingShift.endTime &&
-												editingShift.startTime <
-													editingShift.endTime && (
-													<Box
-														p={2}
-														bg="blue.50"
-														borderRadius="md"
-														border="1px solid"
-														borderColor="blue.200">
-														<Text
-															fontSize="14px"
-															color="blue.700"
-															fontWeight="600">
-															📋 Số giờ làm việc:{" "}
-															{calculateWorkingHours(
-																editingShift.startTime,
-																editingShift.endTime,
-															)}{" "}
-															giờ
-														</Text>
-													</Box>
-												)}
-
-											{/* Role Config Selection */}
-											<FormControl isRequired>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600">
-													Cấu hình role
+											{/* New Shift Form (when adding) */}
+											{isAddingNew && editingShift && (
+												<Box
+													p={4}
+													border="2px solid"
+													borderColor="blue.500"
+													borderRadius="md"
+													bg="blue.50">
 													<Text
-														as="span"
-														color="red.500"
-														ml={1}>
-														*
+														fontSize="16px"
+														fontWeight="600"
+														color="blue.700"
+														mb={3}>
+														➕ Thêm ca làm việc mới
 													</Text>
-												</FormLabel>
-												<Select
-													value={selectedRoleConfigId}
-													onChange={(e) => {
-														const configId =
-															e.target.value;
-														setSelectedRoleConfigId(
-															configId,
-														);
-
-														// Update shift requirements based on selected config
-														const selectedConfig =
-															roleConfigs.find(
-																(c) =>
-																	c.id ===
-																	configId,
-															);
-														if (
-															selectedConfig &&
-															editingShift
-														) {
-															const warehouseReq =
-																selectedConfig.requirements.find(
-																	(req) =>
-																		req.accountType ===
-																		"WarehouseStaff",
-																)?.quantity ||
-																0;
-															const salesReq =
-																selectedConfig.requirements.find(
-																	(req) =>
-																		req.accountType ===
-																		"SalesStaff",
-																)?.quantity ||
-																0;
-
-															setEditingShift({
-																...editingShift,
-																requiredWarehouseStaff:
-																	warehouseReq,
-																requiredSalesStaff:
-																	salesReq,
-															});
-														}
-													}}
-													placeholder="Chọn cấu hình role"
-													bg="white">
-													{roleConfigs.map(
-														(config) => (
-															<option
-																key={config.id}
+													<VStack
+														spacing={3}
+														align="stretch">
+														<FormControl>
+															<FormLabel
+																fontSize="14px"
+																fontWeight="600">
+																Tên ca
+															</FormLabel>
+															<Input
 																value={
-																	config.id
-																}>
-																{
-																	config.configName
-																}{" "}
-																(
-																{config.requirements
-																	.map(
-																		(req) =>
-																			`${req.accountType === "WarehouseStaff" ? "Kho" : "Bán hàng"}: ${req.quantity}`,
+																	editingShift.name
+																}
+																onChange={(e) =>
+																	setEditingShift(
+																		{
+																			...editingShift,
+																			name: e
+																				.target
+																				.value,
+																		},
 																	)
-																	.join(", ")}
-																)
-															</option>
-														),
+																}
+																placeholder="VD: Ca Sáng, Ca Chiều, Ca Tối"
+																bg="white"
+															/>
+														</FormControl>
+
+														<HStack spacing={4}>
+															<FormControl
+																flex={1}>
+																<FormLabel
+																	fontSize="14px"
+																	fontWeight="600">
+																	Giờ bắt đầu
+																</FormLabel>
+																<Input
+																	type="time"
+																	step="3600"
+																	value={
+																		editingShift.startTime
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingShift(
+																			{
+																				...editingShift,
+																				startTime:
+																					e
+																						.target
+																						.value,
+																			},
+																		)
+																	}
+																	bg="white"
+																/>
+															</FormControl>
+
+															<FormControl
+																flex={1}>
+																<FormLabel
+																	fontSize="14px"
+																	fontWeight="600">
+																	Giờ kết thúc
+																</FormLabel>
+																<Input
+																	type="time"
+																	step="3600"
+																	value={
+																		editingShift.endTime
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingShift(
+																			{
+																				...editingShift,
+																				endTime:
+																					e
+																						.target
+																						.value,
+																			},
+																		)
+																	}
+																	bg="white"
+																/>
+															</FormControl>
+														</HStack>
+
+														{/* Display calculated working hours */}
+														{editingShift.startTime &&
+															editingShift.endTime &&
+															editingShift.startTime <
+																editingShift.endTime && (
+																<Box
+																	p={2}
+																	bg="blue.50"
+																	borderRadius="md"
+																	border="1px solid"
+																	borderColor="blue.200">
+																	<Text
+																		fontSize="14px"
+																		color="blue.700"
+																		fontWeight="600">
+																		📋 Số
+																		giờ làm
+																		việc:{" "}
+																		{calculateWorkingHours(
+																			editingShift.startTime,
+																			editingShift.endTime,
+																		)}{" "}
+																		giờ
+																	</Text>
+																</Box>
+															)}
+
+														{/* Role Config Selection */}
+														<FormControl isRequired>
+															<FormLabel
+																fontSize="14px"
+																fontWeight="600">
+																Cấu hình role
+																<Text
+																	as="span"
+																	color="red.500"
+																	ml={1}>
+																	*
+																</Text>
+															</FormLabel>
+															<Select
+																value={
+																	selectedRoleConfigId
+																}
+																onChange={(
+																	e,
+																) => {
+																	const configId =
+																		e.target
+																			.value;
+																	setSelectedRoleConfigId(
+																		configId,
+																	);
+
+																	// Update shift requirements based on selected config
+																	const selectedConfig =
+																		roleConfigs.find(
+																			(
+																				c,
+																			) =>
+																				c.id ===
+																				configId,
+																		);
+																	if (
+																		selectedConfig &&
+																		editingShift
+																	) {
+																		const warehouseReq =
+																			selectedConfig.requirements.find(
+																				(
+																					req,
+																				) =>
+																					req.accountType ===
+																					"WarehouseStaff",
+																			)
+																				?.quantity ||
+																			0;
+																		const salesReq =
+																			selectedConfig.requirements.find(
+																				(
+																					req,
+																				) =>
+																					req.accountType ===
+																					"SalesStaff",
+																			)
+																				?.quantity ||
+																			0;
+
+																		setEditingShift(
+																			{
+																				...editingShift,
+																				requiredWarehouseStaff:
+																					warehouseReq,
+																				requiredSalesStaff:
+																					salesReq,
+																			},
+																		);
+																	}
+																}}
+																placeholder="Chọn cấu hình role"
+																bg="white">
+																{roleConfigs.map(
+																	(
+																		config,
+																	) => (
+																		<option
+																			key={
+																				config.id
+																			}
+																			value={
+																				config.id
+																			}>
+																			{
+																				config.configName
+																			}{" "}
+																			(
+																			{config.requirements
+																				.map(
+																					(
+																						req,
+																					) =>
+																						`${req.accountType === "WarehouseStaff" ? "Kho" : "Bán hàng"}: ${req.quantity}`,
+																				)
+																				.join(
+																					", ",
+																				)}
+																			)
+																		</option>
+																	),
+																)}
+															</Select>
+															<Text
+																fontSize="12px"
+																color="gray.600"
+																mt={1}>
+																💡 Chọn cấu hình
+																role sẽ tự động
+																điền số nhân
+																viên yêu cầu
+															</Text>
+														</FormControl>
+
+														<HStack
+															justify="flex-end"
+															spacing={2}>
+															<Button
+																size="sm"
+																onClick={
+																	handleCancel
+																}>
+																Hủy
+															</Button>
+															<Button
+																size="sm"
+																colorScheme="blue"
+																onClick={
+																	handleSaveShift
+																}>
+																Lưu ca mới
+															</Button>
+														</HStack>
+													</VStack>
+												</Box>
+											)}
+
+											{/* Existing Shifts List */}
+											{shifts.map((shift, index) => (
+												<Box
+													key={shift.id}
+													p={4}
+													border="1px solid"
+													borderColor={
+														editingShift?.id ===
+														shift.id
+															? "brand.500"
+															: "gray.200"
+													}
+													borderRadius="md"
+													bg={
+														editingShift?.id ===
+														shift.id
+															? "blue.50"
+															: "white"
+													}>
+													{editingShift?.id ===
+													shift.id ? (
+														// Edit Mode
+														<VStack
+															spacing={3}
+															align="stretch">
+															<FormControl>
+																<FormLabel
+																	fontSize="14px"
+																	fontWeight="600">
+																	Tên ca
+																</FormLabel>
+																<Input
+																	value={
+																		editingShift.name
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setEditingShift(
+																			{
+																				...editingShift,
+																				name: e
+																					.target
+																					.value,
+																			},
+																		)
+																	}
+																	placeholder="VD: Ca Sáng, Ca Chiều, Ca Tối"
+																/>
+															</FormControl>
+															<HStack spacing={4}>
+																<FormControl
+																	flex={1}>
+																	<FormLabel
+																		fontSize="14px"
+																		fontWeight="600">
+																		Giờ bắt
+																		đầu
+																	</FormLabel>
+																	<Input
+																		type="time"
+																		step="3600"
+																		value={
+																			editingShift.startTime
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setEditingShift(
+																				{
+																					...editingShift,
+																					startTime:
+																						e
+																							.target
+																							.value,
+																				},
+																			)
+																		}
+																	/>
+																</FormControl>
+
+																<FormControl
+																	flex={1}>
+																	<FormLabel
+																		fontSize="14px"
+																		fontWeight="600">
+																		Giờ kết
+																		thúc
+																	</FormLabel>
+																	<Input
+																		type="time"
+																		step="3600"
+																		value={
+																			editingShift.endTime
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setEditingShift(
+																				{
+																					...editingShift,
+																					endTime:
+																						e
+																							.target
+																							.value,
+																				},
+																			)
+																		}
+																	/>
+																</FormControl>
+															</HStack>
+
+															{/* Display calculated working hours */}
+															{editingShift.startTime &&
+																editingShift.endTime &&
+																editingShift.startTime <
+																	editingShift.endTime && (
+																	<Box
+																		p={2}
+																		bg="blue.50"
+																		borderRadius="md"
+																		border="1px solid"
+																		borderColor="blue.200">
+																		<Text
+																			fontSize="14px"
+																			color="blue.700"
+																			fontWeight="600">
+																			📋
+																			Số
+																			giờ
+																			làm
+																			việc:{" "}
+																			{calculateWorkingHours(
+																				editingShift.startTime,
+																				editingShift.endTime,
+																			)}{" "}
+																			giờ
+																		</Text>
+																	</Box>
+																)}
+
+															<HStack spacing={4}>
+																<FormControl
+																	flex={1}>
+																	<FormLabel
+																		fontSize="14px"
+																		fontWeight="600">
+																		Nhân
+																		viên kho
+																		cần
+																		thiết
+																	</FormLabel>
+																	<NumberInput
+																		value={
+																			editingShift.requiredWarehouseStaff
+																		}
+																		onChange={(
+																			_,
+																			value,
+																		) =>
+																			setEditingShift(
+																				{
+																					...editingShift,
+																					requiredWarehouseStaff:
+																						value ||
+																						0,
+																				},
+																			)
+																		}
+																		min={0}
+																		max={
+																			50
+																		}>
+																		<NumberInputField />
+																		<NumberInputStepper>
+																			<NumberIncrementStepper />
+																			<NumberDecrementStepper />
+																		</NumberInputStepper>
+																	</NumberInput>
+																</FormControl>
+
+																<FormControl
+																	flex={1}>
+																	<FormLabel
+																		fontSize="14px"
+																		fontWeight="600">
+																		Nhân
+																		viên bán
+																		hàng cần
+																		thiết
+																	</FormLabel>
+																	<NumberInput
+																		value={
+																			editingShift.requiredSalesStaff
+																		}
+																		onChange={(
+																			_,
+																			value,
+																		) =>
+																			setEditingShift(
+																				{
+																					...editingShift,
+																					requiredSalesStaff:
+																						value ||
+																						0,
+																				},
+																			)
+																		}
+																		min={0}
+																		max={
+																			50
+																		}>
+																		<NumberInputField />
+																		<NumberInputStepper>
+																			<NumberIncrementStepper />
+																			<NumberDecrementStepper />
+																		</NumberInputStepper>
+																	</NumberInput>
+																</FormControl>
+															</HStack>
+															<HStack
+																justify="flex-end"
+																spacing={2}>
+																<Button
+																	size="sm"
+																	onClick={
+																		handleCancel
+																	}>
+																	Hủy
+																</Button>
+																<Button
+																	size="sm"
+																	colorScheme="blue"
+																	onClick={
+																		handleSaveShift
+																	}>
+																	Lưu
+																</Button>
+															</HStack>
+														</VStack>
+													) : (
+														// View Mode
+														<HStack justify="space-between">
+															<VStack
+																align="start"
+																spacing={1}
+																flex={1}>
+																<HStack>
+																	<Text
+																		fontSize="16px"
+																		fontWeight="600">
+																		{shift.name ||
+																			"Chưa đặt tên"}
+																	</Text>
+																	<Text
+																		fontSize="14px"
+																		color="gray.600">
+																		(
+																		{
+																			shift.startTime
+																		}{" "}
+																		-{" "}
+																		{
+																			shift.endTime
+																		}
+																		)
+																	</Text>
+																	<Text
+																		fontSize="14px"
+																		color="blue.600"
+																		fontWeight="600">
+																		•{" "}
+																		{shift.workingHours ||
+																			calculateWorkingHours(
+																				shift.startTime,
+																				shift.endTime,
+																			)}{" "}
+																		giờ
+																	</Text>
+																</HStack>
+																<HStack
+																	spacing={4}
+																	fontSize="14px">
+																	<Text>
+																		<strong>
+																			Kho:
+																		</strong>{" "}
+																		{
+																			shift.requiredWarehouseStaff
+																		}{" "}
+																		người
+																	</Text>
+																	<Text>
+																		<strong>
+																			Bán
+																			hàng:
+																		</strong>{" "}
+																		{
+																			shift.requiredSalesStaff
+																		}{" "}
+																		người
+																	</Text>
+																</HStack>
+															</VStack>
+
+															<HStack spacing={1}>
+																<IconButton
+																	aria-label="Move up"
+																	icon={
+																		<Text fontSize="18px">
+																			↑
+																		</Text>
+																	}
+																	size="sm"
+																	variant="ghost"
+																	onClick={() =>
+																		moveShift(
+																			index,
+																			"up",
+																		)
+																	}
+																	isDisabled={
+																		index ===
+																			0 ||
+																		editingShift !==
+																			null
+																	}
+																/>
+																<IconButton
+																	aria-label="Move down"
+																	icon={
+																		<Text fontSize="18px">
+																			↓
+																		</Text>
+																	}
+																	size="sm"
+																	variant="ghost"
+																	onClick={() =>
+																		moveShift(
+																			index,
+																			"down",
+																		)
+																	}
+																	isDisabled={
+																		index ===
+																			shifts.length -
+																				1 ||
+																		editingShift !==
+																			null
+																	}
+																/>
+																<IconButton
+																	aria-label="Edit shift"
+																	icon={
+																		<EditIcon />
+																	}
+																	size="sm"
+																	colorScheme="blue"
+																	variant="ghost"
+																	onClick={() =>
+																		setEditingShift(
+																			shift,
+																		)
+																	}
+																	isDisabled={
+																		editingShift !==
+																		null
+																	}
+																/>
+																<IconButton
+																	aria-label="Delete shift"
+																	icon={
+																		<DeleteIcon />
+																	}
+																	size="sm"
+																	colorScheme="red"
+																	variant="ghost"
+																	onClick={() =>
+																		handleDeleteShift(
+																			shift.id,
+																			shift.name,
+																		)
+																	}
+																	isDisabled={
+																		editingShift !==
+																		null
+																	}
+																/>
+															</HStack>
+														</HStack>
 													)}
-												</Select>
-												<Text
-													fontSize="12px"
-													color="gray.600"
-													mt={1}>
-													💡 Chọn cấu hình role sẽ tự
-													động điền số nhân viên yêu
-													cầu
-												</Text>
-											</FormControl>
-
-											<HStack spacing={4}>
-												<FormControl flex={1}>
-													<FormLabel
-														fontSize="14px"
-														fontWeight="600">
-														Nhân viên kho cần thiết
-													</FormLabel>
-													<NumberInput
-														value={
-															editingShift.requiredWarehouseStaff
-														}
-														onChange={(_, value) =>
-															setEditingShift({
-																...editingShift,
-																requiredWarehouseStaff:
-																	value || 0,
-															})
-														}
-														min={0}
-														max={50}
-														bg="white"
-														isReadOnly>
-														<NumberInputField />
-														<NumberInputStepper>
-															<NumberIncrementStepper />
-															<NumberDecrementStepper />
-														</NumberInputStepper>
-													</NumberInput>
-												</FormControl>
-
-												<FormControl flex={1}>
-													<FormLabel
-														fontSize="14px"
-														fontWeight="600">
-														Nhân viên bán hàng cần
-														thiết
-													</FormLabel>
-													<NumberInput
-														value={
-															editingShift.requiredSalesStaff
-														}
-														onChange={(_, value) =>
-															setEditingShift({
-																...editingShift,
-																requiredSalesStaff:
-																	value || 0,
-															})
-														}
-														min={0}
-														max={50}
-														bg="white"
-														isReadOnly>
-														<NumberInputField />
-														<NumberInputStepper>
-															<NumberIncrementStepper />
-															<NumberDecrementStepper />
-														</NumberInputStepper>
-													</NumberInput>
-												</FormControl>
-											</HStack>
-
-											<HStack
-												justify="flex-end"
-												spacing={2}>
-												<Button
-													size="sm"
-													onClick={handleCancel}>
-													Hủy
-												</Button>
-												<Button
-													size="sm"
-													colorScheme="blue"
-													onClick={handleSaveShift}>
-													Lưu ca mới
-												</Button>
-											</HStack>
+												</Box>
+											))}
 										</VStack>
 									</Box>
-								)}
 
-								{/* Existing Shifts List */}
-								{shifts.map((shift, index) => (
-									<Box
-										key={shift.id}
-										p={4}
-										border="1px solid"
-										borderColor={
-											editingShift?.id === shift.id
-												? "brand.500"
-												: "gray.200"
-										}
-										borderRadius="md"
-										bg={
-											editingShift?.id === shift.id
-												? "blue.50"
-												: "white"
-										}>
-										{editingShift?.id === shift.id ? (
-											// Edit Mode
-											<VStack
-												spacing={3}
-												align="stretch">
-												<FormControl>
-													<FormLabel
-														fontSize="14px"
-														fontWeight="600">
-														Tên ca
-													</FormLabel>
-													<Input
-														value={
-															editingShift.name
-														}
-														onChange={(e) =>
-															setEditingShift({
-																...editingShift,
-																name: e.target
-																	.value,
-															})
-														}
-														placeholder="VD: Ca Sáng, Ca Chiều, Ca Tối"
-													/>
-												</FormControl>
-												<HStack spacing={4}>
-													<FormControl flex={1}>
-														<FormLabel
-															fontSize="14px"
-															fontWeight="600">
-															Giờ bắt đầu
-														</FormLabel>
-														<Input
-															type="time"
-															step="3600"
-															value={
-																editingShift.startTime
-															}
-															onChange={(e) =>
-																setEditingShift(
-																	{
-																		...editingShift,
-																		startTime:
-																			e
-																				.target
-																				.value,
-																	},
-																)
-															}
-														/>
-													</FormControl>
+									<Divider my={4} />
 
-													<FormControl flex={1}>
-														<FormLabel
-															fontSize="14px"
-															fontWeight="600">
-															Giờ kết thúc
-														</FormLabel>
-														<Input
-															type="time"
-															step="3600"
-															value={
-																editingShift.endTime
-															}
-															onChange={(e) =>
-																setEditingShift(
-																	{
-																		...editingShift,
-																		endTime:
-																			e
-																				.target
-																				.value,
-																	},
-																)
-															}
-														/>
-													</FormControl>
-												</HStack>
-
-												{/* Display calculated working hours */}
-												{editingShift.startTime &&
-													editingShift.endTime &&
-													editingShift.startTime <
-														editingShift.endTime && (
-														<Box
-															p={2}
-															bg="blue.50"
-															borderRadius="md"
-															border="1px solid"
-															borderColor="blue.200">
-															<Text
-																fontSize="14px"
-																color="blue.700"
-																fontWeight="600">
-																📋 Số giờ làm
-																việc:{" "}
-																{calculateWorkingHours(
-																	editingShift.startTime,
-																	editingShift.endTime,
-																)}{" "}
-																giờ
-															</Text>
-														</Box>
-													)}
-
-												<HStack spacing={4}>
-													<FormControl flex={1}>
-														<FormLabel
-															fontSize="14px"
-															fontWeight="600">
-															Nhân viên kho cần
-															thiết
-														</FormLabel>
-														<NumberInput
-															value={
-																editingShift.requiredWarehouseStaff
-															}
-															onChange={(
-																_,
-																value,
-															) =>
-																setEditingShift(
-																	{
-																		...editingShift,
-																		requiredWarehouseStaff:
-																			value ||
-																			0,
-																	},
-																)
-															}
-															min={0}
-															max={50}>
-															<NumberInputField />
-															<NumberInputStepper>
-																<NumberIncrementStepper />
-																<NumberDecrementStepper />
-															</NumberInputStepper>
-														</NumberInput>
-													</FormControl>
-
-													<FormControl flex={1}>
-														<FormLabel
-															fontSize="14px"
-															fontWeight="600">
-															Nhân viên bán hàng
-															cần thiết
-														</FormLabel>
-														<NumberInput
-															value={
-																editingShift.requiredSalesStaff
-															}
-															onChange={(
-																_,
-																value,
-															) =>
-																setEditingShift(
-																	{
-																		...editingShift,
-																		requiredSalesStaff:
-																			value ||
-																			0,
-																	},
-																)
-															}
-															min={0}
-															max={50}>
-															<NumberInputField />
-															<NumberInputStepper>
-																<NumberIncrementStepper />
-																<NumberDecrementStepper />
-															</NumberInputStepper>
-														</NumberInput>
-													</FormControl>
-												</HStack>
-												<HStack
-													justify="flex-end"
-													spacing={2}>
-													<Button
-														size="sm"
-														onClick={handleCancel}>
-														Hủy
-													</Button>
-													<Button
-														size="sm"
-														colorScheme="blue"
-														onClick={
-															handleSaveShift
-														}>
-														Lưu
-													</Button>
-												</HStack>
-											</VStack>
-										) : (
-											// View Mode
-											<HStack justify="space-between">
-												<VStack
-													align="start"
-													spacing={1}
-													flex={1}>
-													<HStack>
-														<Text
-															fontSize="16px"
-															fontWeight="600">
-															{shift.name ||
-																"Chưa đặt tên"}
-														</Text>
-														<Text
-															fontSize="14px"
-															color="gray.600">
-															({shift.startTime} -{" "}
-															{shift.endTime})
-														</Text>
-														<Text
-															fontSize="14px"
-															color="blue.600"
-															fontWeight="600">
-															•{" "}
-															{shift.workingHours ||
-																calculateWorkingHours(
-																	shift.startTime,
-																	shift.endTime,
-																)}{" "}
-															giờ
-														</Text>
-													</HStack>
-													<HStack
-														spacing={4}
-														fontSize="14px">
-														<Text>
-															<strong>
-																Kho:
-															</strong>{" "}
-															{
-																shift.requiredWarehouseStaff
-															}{" "}
-															người
-														</Text>
-														<Text>
-															<strong>
-																Bán hàng:
-															</strong>{" "}
-															{
-																shift.requiredSalesStaff
-															}{" "}
-															người
-														</Text>
-													</HStack>
-												</VStack>
-
-												<HStack spacing={1}>
-													<IconButton
-														aria-label="Move up"
-														icon={
-															<Text fontSize="18px">
-																↑
-															</Text>
-														}
-														size="sm"
-														variant="ghost"
-														onClick={() =>
-															moveShift(
-																index,
-																"up",
-															)
-														}
-														isDisabled={
-															index === 0 ||
-															editingShift !==
-																null
-														}
-													/>
-													<IconButton
-														aria-label="Move down"
-														icon={
-															<Text fontSize="18px">
-																↓
-															</Text>
-														}
-														size="sm"
-														variant="ghost"
-														onClick={() =>
-															moveShift(
-																index,
-																"down",
-															)
-														}
-														isDisabled={
-															index ===
-																shifts.length -
-																	1 ||
-															editingShift !==
-																null
-														}
-													/>
-													<IconButton
-														aria-label="Edit shift"
-														icon={<EditIcon />}
-														size="sm"
-														colorScheme="blue"
-														variant="ghost"
-														onClick={() =>
-															setEditingShift(
-																shift,
-															)
-														}
-														isDisabled={
-															editingShift !==
-															null
-														}
-													/>
-													<IconButton
-														aria-label="Delete shift"
-														icon={<DeleteIcon />}
-														size="sm"
-														colorScheme="red"
-														variant="ghost"
-														onClick={() =>
-															handleDeleteShift(
-																shift.id,
-																shift.name,
-															)
-														}
-														isDisabled={
-															editingShift !==
-															null
-														}
-													/>
-												</HStack>
-											</HStack>
-										)}
-									</Box>
-								))}
-							</VStack>
-						</Box>
-
-						<Divider my={4} />
-
-						{/* Action Buttons */}
-						<HStack
-							justify="flex-end"
-							spacing={3}>
-							<Button onClick={onClose}>Hủy</Button>
-							<Button
-								colorScheme="blue"
-								onClick={handleSaveConfig}>
-								Lưu cấu hình
-							</Button>
-						</HStack>
+									{/* Action Buttons */}
+									<HStack
+										justify="flex-end"
+										spacing={3}>
+										<Button onClick={onClose}>Hủy</Button>
+										<Button
+											colorScheme="blue"
+											onClick={handleSaveConfig}>
+											Lưu cấu hình
+										</Button>
+									</HStack>
 								</VStack>
 							</TabPanel>
 
@@ -1386,11 +1434,14 @@ const ShiftConfigModal = ({
 													Tên cấu hình
 												</FormLabel>
 												<Input
-													value={newRoleConfig.configName}
+													value={
+														newRoleConfig.configName
+													}
 													onChange={(e) =>
 														setNewRoleConfig({
 															...newRoleConfig,
-															configName: e.target.value,
+															configName:
+																e.target.value,
 														})
 													}
 													placeholder="VD: Cấu hình ca tiêu chuẩn"
@@ -1407,11 +1458,14 @@ const ShiftConfigModal = ({
 														Số nhân viên kho
 													</FormLabel>
 													<NumberInput
-														value={newRoleConfig.warehouseStaff}
+														value={
+															newRoleConfig.warehouseStaff
+														}
 														onChange={(_, value) =>
 															setNewRoleConfig({
 																...newRoleConfig,
-																warehouseStaff: value || 1,
+																warehouseStaff:
+																	value || 1,
 															})
 														}
 														min={0}
@@ -1433,11 +1487,14 @@ const ShiftConfigModal = ({
 														Số nhân viên bán hàng
 													</FormLabel>
 													<NumberInput
-														value={newRoleConfig.salesStaff}
+														value={
+															newRoleConfig.salesStaff
+														}
 														onChange={(_, value) =>
 															setNewRoleConfig({
 																...newRoleConfig,
-																salesStaff: value || 2,
+																salesStaff:
+																	value || 2,
 															})
 														}
 														min={0}
@@ -1528,18 +1585,22 @@ const ShiftConfigModal = ({
 																	<FormLabel
 																		fontSize="13px"
 																		fontWeight="600">
-																		Tên cấu hình
+																		Tên cấu
+																		hình
 																	</FormLabel>
 																	<Input
 																		value={
 																			editingRoleConfig.configName
 																		}
-																		onChange={(e) =>
+																		onChange={(
+																			e,
+																		) =>
 																			setEditingRoleConfig(
 																				{
 																					...editingRoleConfig,
 																					configName:
-																						e.target
+																						e
+																							.target
 																							.value,
 																				},
 																			)
@@ -1549,12 +1610,18 @@ const ShiftConfigModal = ({
 																	/>
 																</FormControl>
 
-																<HStack spacing={3}>
-																	<FormControl flex={1}>
+																<HStack
+																	spacing={3}>
+																	<FormControl
+																		flex={
+																			1
+																		}>
 																		<FormLabel
 																			fontSize="13px"
 																			fontWeight="600">
-																			Nhân viên kho
+																			Nhân
+																			viên
+																			kho
 																		</FormLabel>
 																		<NumberInput
 																			value={
@@ -1595,8 +1662,12 @@ const ShiftConfigModal = ({
 																					},
 																				);
 																			}}
-																			min={0}
-																			max={50}
+																			min={
+																				0
+																			}
+																			max={
+																				50
+																			}
 																			bg="white"
 																			size="sm">
 																			<NumberInputField />
@@ -1607,11 +1678,17 @@ const ShiftConfigModal = ({
 																		</NumberInput>
 																	</FormControl>
 
-																	<FormControl flex={1}>
+																	<FormControl
+																		flex={
+																			1
+																		}>
 																		<FormLabel
 																			fontSize="13px"
 																			fontWeight="600">
-																			Nhân viên bán hàng
+																			Nhân
+																			viên
+																			bán
+																			hàng
 																		</FormLabel>
 																		<NumberInput
 																			value={
@@ -1652,8 +1729,12 @@ const ShiftConfigModal = ({
 																					},
 																				);
 																			}}
-																			min={0}
-																			max={50}
+																			min={
+																				0
+																			}
+																			max={
+																				50
+																			}
 																			bg="white"
 																			size="sm">
 																			<NumberInputField />
@@ -1726,7 +1807,9 @@ const ShiftConfigModal = ({
 																	</HStack>
 
 																	<HStack
-																		spacing={3}
+																		spacing={
+																			3
+																		}
 																		fontSize="13px"
 																		color="gray.700">
 																		{config.requirements.map(
@@ -1743,6 +1826,7 @@ const ShiftConfigModal = ({
 																						"WarehouseStaff"
 																							? "Kho"
 																							: "Bán hàng"}
+
 																						:
 																					</strong>{" "}
 																					{
@@ -1754,7 +1838,8 @@ const ShiftConfigModal = ({
 																	</HStack>
 																</VStack>
 
-																<HStack spacing={1}>
+																<HStack
+																	spacing={1}>
 																	<IconButton
 																		aria-label="Edit config"
 																		icon={

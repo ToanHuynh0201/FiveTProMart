@@ -60,7 +60,6 @@ export interface CreateCategoryDTO {
 export interface UpdateCategoryDTO {
 	categoryCode?: string;
 	categoryName?: string;
-	description?: string;
 }
 
 export const inventoryService = {
@@ -166,6 +165,7 @@ export const inventoryService = {
 			message: string;
 			data: CategoryDTO;
 		}>(`/product-categories/${id}`, data);
+
 		return response.data;
 	},
 

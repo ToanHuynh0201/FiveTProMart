@@ -1,5 +1,6 @@
-// Stock Inventory status type
-export type StockInventoryStatus = "active" | "expired" | "sold-out";
+// Stock Inventory status type - MUST match backend BatchStatus enum exactly
+// Backend values: "AVAILABLE", "OUT_OF_STOCK", "EXPIRED", "DISPOSED"
+export type StockInventoryStatus = "AVAILABLE" | "OUT_OF_STOCK" | "EXPIRED" | "DISPOSED";
 
 // Stock inventory item (Lot/Batch)
 export interface StockInventoryItem {

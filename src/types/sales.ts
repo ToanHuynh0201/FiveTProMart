@@ -33,6 +33,11 @@ export interface OrderItem {
 	savings?: number; // Amount saved per unit
 	promotionName?: string; // e.g., "Mua 2 tặng 1", "Giảm 10%"
 	promotionType?: "Discount" | "Buy X Get Y";
+	promotionId?: string; // ID of applied promotion (for persistence)
+	isFreeItem?: boolean; // True if this is a free item from Buy X Get Y
+	// Buy X Get Y specific fields
+	buyQuantity?: number; // e.g., Buy 2
+	getQuantity?: number; // e.g., Get 1 free
 }
 
 export type PaymentMethod = "cash" | "card" | "transfer";
@@ -147,6 +152,14 @@ export interface CreateOrderRequest {
 	items: Array<{
 		lotId: string;
 		quantity: number;
+		// Optional price override for promotional prices
+		unitPrice?: number;
+		// Original price before promotion (for tracking)
+		originalUnitPrice?: number;
+		// Applied promotion ID
+		promotionId?: string;
+		// Flag for free items (Buy X Get Y)
+		isFreeItem?: boolean;
 	}>;
 	// Optional discount (loyalty points, percentage, or fixed amount)
 	discount?: DiscountRequest;

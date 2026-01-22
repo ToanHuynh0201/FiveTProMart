@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import type {
 	StockInventoryItem,
+	StockInventoryStatus,
 	UpdateStockInventoryRequest,
 } from "@/types/stockInventory";
 
@@ -41,11 +42,11 @@ const EditBatchModal = ({
 }: EditBatchModalProps) => {
 	const [loading, setLoading] = useState(false);
 
-	// Form state
+	// Form state - use backend enum values
 	const [formData, setFormData] = useState({
 		quantityStorage: 0,
 		quantityShelf: 0,
-		status: "active" as "active" | "expired" | "sold-out",
+		status: "AVAILABLE" as StockInventoryStatus,
 	});
 
 	// Populate form when batch changes
@@ -54,7 +55,7 @@ const EditBatchModal = ({
 			setFormData({
 				quantityStorage: batch.quantityStorage ?? 0,
 				quantityShelf: batch.quantityShelf ?? 0,
-				status: batch.status,
+				status: batch.status || "AVAILABLE",
 			});
 		}
 	}, [batch]);
@@ -160,15 +161,13 @@ const EditBatchModal = ({
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										status: e.target.value as
-											| "active"
-											| "expired"
-											| "sold-out",
+										status: e.target.value as StockInventoryStatus,
 									})
 								}>
-								<option value="active">Đang hoạt động</option>
-								<option value="expired">Hết hạn</option>
-								<option value="sold-out">Đã bán hết</option>
+								<option value="AVAILABLE">Còn hàng</option>
+								<option value="OUT_OF_STOCK">Hết hàng</option>
+								<option value="EXPIRED">Hết hạn</option>
+								<option value="DISPOSED">Đã hủy</option>
 							</Select>
 						</FormControl>
 

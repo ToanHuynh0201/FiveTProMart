@@ -1,5 +1,6 @@
 import type { NavItem } from "@/types/layout";
 import {
+	FiActivity,
 	FiUsers,
 	FiCalendar,
 	FiShoppingCart,
@@ -14,6 +15,12 @@ import {
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
+	{
+		label: "Tổng quan",
+		path: "/dashboard",
+		icon: FiActivity,
+		module: "dashboard",
+	},
 	{
 		label: "Bán hàng",
 		path: "/sales",

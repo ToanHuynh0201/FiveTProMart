@@ -14,20 +14,23 @@ import {
 	Select,
 	VStack,
 	HStack,
-	NumberInput,
-	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	NumberDecrementStepper,
 	useToast,
 	Text,
 } from "@chakra-ui/react";
-import type { Customer } from "@/types";
+import { mapGenderToAPI } from "@/utils";
+import { customerService } from "@/services/customerService";
 
 interface AddCustomerModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (customer: Omit<Customer, "customerId">) => Promise<void>;
+	onAdd: (customer: {
+		fullName: string;
+		phoneNumber: string;
+		email?: string;
+		address?: string;
+		gender: "Male" | "Female" | "Other";
+		dateOfBirth?: string;
+	}) => Promise<void>;
 }
 
 export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
@@ -40,15 +43,13 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 	const [formData, setFormData] = useState({
 		fullName: "",
 		phoneNumber: "",
-		gender: "Nam" as string,
-		dateOfBirth: "" as string, // Required by backend
-		loyaltyPoints: 0,
+		gender: "Nam" as "Nam" | "Nữ" | "Khác",
+		dateOfBirth: "",
 	});
 
 	const [errors, setErrors] = useState({
 		fullName: "",
 		phoneNumber: "",
-		gender: "",
 		dateOfBirth: "",
 	});
 
@@ -60,12 +61,10 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 				phoneNumber: "",
 				gender: "Nam",
 				dateOfBirth: "",
-				loyaltyPoints: 0,
 			});
 			setErrors({
 				fullName: "",
 				phoneNumber: "",
-				gender: "",
 				dateOfBirth: "",
 			});
 		}
@@ -77,12 +76,17 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 		return phoneRegex.test(phone);
 	};
 
+	const validateEmail = (email: string): boolean => {
+		// Basic email validation
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		return emailRegex.test(email);
+	};
+
 	const handleSubmit = async () => {
 		// Reset errors
 		const newErrors = {
 			fullName: "",
 			phoneNumber: "",
-			gender: "",
 			dateOfBirth: "",
 		};
 
@@ -100,37 +104,51 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
-		if (!formData.gender.trim()) {
-			newErrors.gender = "Vui lòng chọn giới tính";
-		}
-
-		if (!formData.dateOfBirth) {
-			newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
+		if (!formData.dateOfBirth.trim()) {
+			newErrors.dateOfBirth = "Vui lòng chọn ngày sinh";
 		} else {
-			// Validate date is in the past
-			const dob = new Date(formData.dateOfBirth);
-			if (dob >= new Date()) {
+			const birthDate = new Date(formData.dateOfBirth);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			
+			if (birthDate >= today) {
 				newErrors.dateOfBirth = "Ngày sinh phải là ngày trong quá khứ";
+			} else {
+				// Check if age is at least reasonable (not more than 150 years old)
+				const age = today.getFullYear() - birthDate.getFullYear();
+				if (age > 150) {
+					newErrors.dateOfBirth = "Ngày sinh không hợp lệ";
+				}
 			}
 		}
 
 		setErrors(newErrors);
 
 		// If there are errors, don't submit
-		if (newErrors.fullName || newErrors.phoneNumber || newErrors.gender || newErrors.dateOfBirth) {
+		if (newErrors.fullName || newErrors.phoneNumber || newErrors.dateOfBirth) {
 			return;
 		}
 
 		setIsLoading(true);
 
 		try {
+			// Check if phone number already exists
+			const existingCustomer = await customerService.findByPhone(formData.phoneNumber.trim());
+			if (existingCustomer) {
+				setErrors({
+					...newErrors,
+					phoneNumber: "Số điện thoại này đã được đăng ký",
+				});
+				setIsLoading(false);
+				return;
+			}
+
+			// Send date in YYYY-MM-DD format (ISO format for Java LocalDate)
+			// Map gender to API format and submit
 			await onAdd({
-				fullName: formData.fullName,
-				phoneNumber: formData.phoneNumber,
-				gender: formData.gender,
-				dateOfBirth: formData.dateOfBirth,
-				registrationDate: null,
-				loyaltyPoints: formData.loyaltyPoints,
+				...formData,
+				dateOfBirth: formData.dateOfBirth, // Already in YYYY-MM-DD from HTML input
+				gender: mapGenderToAPI(formData.gender),
 			});
 			toast({
 				title: "Thành công",
@@ -141,9 +159,10 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 			});
 			onClose();
 		} catch (error) {
+			console.error("Error adding customer:", error);
 			toast({
 				title: "Lỗi",
-				description: "Có lỗi xảy ra khi thêm khách hàng",
+				description: error instanceof Error ? error.message : "Có lỗi xảy ra khi thêm khách hàng",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -288,140 +307,89 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({
 								</Text>
 							)}
 						</FormControl>
+					{/* Ngày sinh */}
+					<FormControl
+						isRequired
+						isInvalid={!!errors.dateOfBirth}>
+						<FormLabel
+							fontSize={{ base: "16px", md: "18px" }}
+							fontWeight="600"
+							color="gray.700"
+							mb={2}>
+							Ngày sinh
+						</FormLabel>
+						<Input
+							type="date"
+							value={formData.dateOfBirth}
+							onChange={(e) => {
+								setFormData({
+									...formData,
+									dateOfBirth: e.target.value,
+								});
+								setErrors({ ...errors, dateOfBirth: "" });
+							}}
+							size="lg"
+							fontSize={{ base: "14px", md: "16px" }}
+							borderColor={
+								errors.dateOfBirth ? "red.500" : "gray.300"
+							}
+							_hover={{
+								borderColor: errors.dateOfBirth
+									? "red.600"
+									: "gray.400",
+							}}
+							_focus={{
+								borderColor: errors.dateOfBirth
+									? "red.500"
+									: "brand.500",
+								boxShadow: errors.dateOfBirth
+									? "0 0 0 1px var(--chakra-colors-red-500)"
+									: "0 0 0 1px var(--chakra-colors-brand-500)",
+							}}
+						/>
+						{errors.dateOfBirth && (
+							<Text
+								color="red.500"
+								fontSize="14px"
+								mt={1}>
+								{errors.dateOfBirth}
+							</Text>
+						)}
+					</FormControl>
 
-						{/* Ngày sinh */}
-						<FormControl isRequired isInvalid={!!errors.dateOfBirth}>
-							<FormLabel
-								fontSize={{ base: "16px", md: "18px" }}
-								fontWeight="600"
-								color="gray.700"
-								mb={2}>
-								Ngày sinh
-							</FormLabel>
-							<Input
-								type="date"
-								value={formData.dateOfBirth}
+					{/* Giới tính */}
+					<FormControl isRequired>
+						<FormLabel
+							fontSize={{ base: "16px", md: "18px" }}
+							fontWeight="600"
+							color="gray.700"
+							mb={2}>
+							Giới tính
+						</FormLabel>
+						<Select
+							value={formData.gender}
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										dateOfBirth: e.target.value,
+										gender: e.target.value as
+											| "Nam"
+											| "Nữ"
+											| "Khác",
 									})
 								}
 								size="lg"
 								fontSize={{ base: "14px", md: "16px" }}
-								borderColor={errors.dateOfBirth ? "red.500" : "gray.300"}
-								_hover={{
-									borderColor: errors.dateOfBirth
-										? "red.600"
-										: "gray.400",
-								}}
+								borderColor="gray.300"
+								_hover={{ borderColor: "gray.400" }}
 								_focus={{
-									borderColor: errors.dateOfBirth
-										? "red.500"
-										: "brand.500",
-									boxShadow: errors.dateOfBirth
-										? "0 0 0 1px var(--chakra-colors-red-500)"
-										: "0 0 0 1px var(--chakra-colors-brand-500)",
-								}}
-							/>
-							{errors.dateOfBirth && (
-								<Text
-									color="red.500"
-									fontSize="14px"
-									mt={1}>
-									{errors.dateOfBirth}
-								</Text>
-							)}
-						</FormControl>
-
-						{/* Giới tính */}
-						<FormControl isRequired isInvalid={!!errors.gender}>
-							<FormLabel
-								fontSize={{ base: "16px", md: "18px" }}
-								fontWeight="600"
-								color="gray.700"
-								mb={2}>
-								Giới tính
-							</FormLabel>
-							<Select
-								value={formData.gender}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										gender: e.target.value,
-									})
-								}
-								size="lg"
-								fontSize={{ base: "14px", md: "16px" }}
-								borderColor={errors.gender ? "red.500" : "gray.300"}
-								_hover={{
-									borderColor: errors.gender
-										? "red.600"
-										: "gray.400",
-								}}
-								_focus={{
-									borderColor: errors.gender
-										? "red.500"
-										: "brand.500",
-									boxShadow: errors.gender
-										? "0 0 0 1px var(--chakra-colors-red-500)"
-										: "0 0 0 1px var(--chakra-colors-brand-500)",
+									borderColor: "brand.500",
+									boxShadow:
+										"0 0 0 1px var(--chakra-colors-brand-500)",
 								}}>
 								<option value="Nam">Nam</option>
 								<option value="Nữ">Nữ</option>
 								<option value="Khác">Khác</option>
 							</Select>
-							{errors.gender && (
-								<Text
-									color="red.500"
-									fontSize="14px"
-									mt={1}>
-									{errors.gender}
-								</Text>
-							)}
-						</FormControl>
-
-						{/* Điểm tích lũy */}
-						<FormControl>
-							<FormLabel
-								fontSize={{ base: "16px", md: "18px" }}
-								fontWeight="600"
-								color="gray.700"
-								mb={2}>
-								Điểm tích lũy ban đầu
-							</FormLabel>
-							<NumberInput
-								value={formData.loyaltyPoints}
-								onChange={(_, value) =>
-									setFormData({
-										...formData,
-										loyaltyPoints: value || 0,
-									})
-								}
-								min={0}
-								max={10000}
-								size="lg">
-								<NumberInputField
-									fontSize={{ base: "14px", md: "16px" }}
-									borderColor="gray.300"
-									_hover={{ borderColor: "gray.400" }}
-									_focus={{
-										borderColor: "brand.500",
-										boxShadow:
-											"0 0 0 1px var(--chakra-colors-brand-500)",
-									}}
-								/>
-								<NumberInputStepper>
-									<NumberIncrementStepper />
-									<NumberDecrementStepper />
-								</NumberInputStepper>
-							</NumberInput>
-							<Text
-								fontSize="13px"
-								color="gray.500"
-								mt={1}>
-								Thường để 0 cho khách hàng mới
-							</Text>
 						</FormControl>
 					</VStack>
 				</ModalBody>

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { ChartCard } from "./ChartCard";
 import type { OrdersReport } from "@/types/reports";
+import { formatDateDDMMYYYYToDisplay } from "@/utils/date";
 
 interface OrdersChartProps {
 	data: OrdersReport;
@@ -18,8 +19,7 @@ interface OrdersChartProps {
 
 export const OrdersChart: React.FC<OrdersChartProps> = ({ data, onExpand }) => {
 	const formatDate = (dateStr: string) => {
-		const date = new Date(dateStr);
-		return `${date.getDate()}/${date.getMonth() + 1}`;
+		return formatDateDDMMYYYYToDisplay(dateStr);
 	};
 
 	const CustomTooltip = ({ active, payload, label }: any) => {

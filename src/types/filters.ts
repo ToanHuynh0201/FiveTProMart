@@ -4,6 +4,11 @@ export type PaginationFilters = BaseFilters;
 
 // Main pages
 export interface CustomerFilters extends BaseFilters {
+	id?: string; // Customer ID filter
+	fullName?: string; // Full name contains filter
+	sortBy?: string; // Sort by field (e.g., 'loyaltyPoints')
+	order?: "asc" | "desc"; // Sort order
+	// Legacy support
 	searchQuery?: string;
 	gender?: string;
 	pointRange?: string;
@@ -47,6 +52,10 @@ export interface SupplierFilters extends BaseFilters {
 export interface ExpenseFilters extends BaseFilters {
 	searchQuery?: string;
 	category?: string;
+	startDate?: string; // Format: dd-MM-yyyy
+	endDate?: string;   // Format: dd-MM-yyyy
+	sortBy?: string;    // Sort by field (e.g., 'payDate')
+	order?: "asc" | "desc";
 }
 
 // Modal filters

@@ -209,3 +209,34 @@ export const getExpiryStatus = (expiryDate?: Date | string | number) => {
 		status: "normal",
 	};
 };
+
+/**
+ * Parse date from dd-MM-yyyy format
+ * @param {string} dateStr - Date string in dd-MM-yyyy format
+ * @returns {Date} Parsed date object
+ */
+export const parseDateDDMMYYYY = (dateStr: string): Date => {
+	try {
+		const [day, month, year] = dateStr.split("-");
+		// Month is 0-indexed in JavaScript Date
+		return new Date(Number(year), Number(month) - 1, Number(day));
+	} catch (error) {
+		console.warn("Error parsing date:", error);
+		return new Date();
+	}
+};
+
+/**
+ * Format date from dd-MM-yyyy to display format (dd/MM)
+ * @param {string} dateStr - Date string in dd-MM-yyyy format
+ * @returns {string} Formatted date string (dd/MM)
+ */
+export const formatDateDDMMYYYYToDisplay = (dateStr: string): string => {
+	try {
+		const date = parseDateDDMMYYYY(dateStr);
+		return `${date.getDate()}/${date.getMonth() + 1}`;
+	} catch (error) {
+		console.warn("Error formatting date:", error);
+		return dateStr;
+	}
+};

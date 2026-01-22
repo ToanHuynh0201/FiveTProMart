@@ -1,11 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Pagination, LoadingSpinner } from "@/components/common";
-import { AddExpenseModal, ExpenseDetailModal } from "@/components/expenses";
-import { usePagination, useFilters } from "@/hooks";
-import type { Expense } from "@/types/reports";
+import {
+	AddExpenseModal,
+	EditExpenseModal,
+	ExpenseDetailModal,
+	ExpenseTable,
+} from "@/components/expenses";
+import { useFilters, usePagination } from "@/hooks";
+import type { Expense } from "@/types/expense";
 import type { ExpenseFilters } from "@/types/filters";
 import { expenseService } from "@/services/expenseService";
+import { EXPENSE_CATEGORIES } from "@/constants";
 
 import {
 	Box,
@@ -15,29 +21,6 @@ import {
 	useDisclosure,
 	Container,
 	Heading,
-	Table,
-	Thead,
-	Tbody,
-	Tr,
-	Th,
-	Td,
-	Badge,
-	IconButton,
-	useToast,
-	Select,
-	Input,
-	InputGroup,
-	InputLeftElement,
-	Menu,
-	MenuButton,
-	MenuList,
-	MenuItem,
-	AlertDialog,
-	AlertDialogBody,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogContent,
-	AlertDialogOverlay,
 	Card,
 	CardBody,
 	Stat,
@@ -45,15 +28,14 @@ import {
 	StatNumber,
 	StatHelpText,
 	SimpleGrid,
+	Input,
+	InputGroup,
+	InputLeftElement,
+	useToast,
+ 	Select,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
-import {
-	FiSearch,
-	FiMoreVertical,
-	FiTrash2,
-	FiBarChart2,
-} from "react-icons/fi";
-import { useRef } from "react";
+import { FiSearch, FiBarChart2 } from "react-icons/fi";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -63,9 +45,9 @@ const ExpensesPage = () => {
 	// State for data from API
 	const [expenseList, setExpenseList] = useState<Expense[]>([]);
 	const [totalItems, setTotalItems] = useState(0);
-	const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
-	const cancelRef = useRef<HTMLButtonElement>(null);
+	const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
+	// Modals
 	const {
 		isOpen: isAddModalOpen,
 		onOpen: onAddModalOpen,
@@ -73,9 +55,9 @@ const ExpensesPage = () => {
 	} = useDisclosure();
 
 	const {
-		isOpen: isDeleteAlertOpen,
-		onOpen: onDeleteAlertOpen,
-		onClose: onDeleteAlertClose,
+		isOpen: isEditModalOpen,
+		onOpen: onEditModalOpen,
+		onClose: onEditModalClose,
 	} = useDisclosure();
 
 	const {
@@ -84,12 +66,65 @@ const ExpensesPage = () => {
 		onClose: onDetailModalClose,
 	} = useDisclosure();
 
-	// Fetch function for API call
-	const fetchExpenses = async (filters: ExpenseFilters) => {
-		const response = await expenseService.getExpenses(filters);
-		setExpenseList(response.data);
-		setTotalItems(response.pagination.totalItems);
-	};
+	// Fetch function with client-side filtering
+	const fetchExpenses = useCallback(
+		async (filters: ExpenseFilters) => {
+			try {
+				const response = await expenseService.getExpenses(filters);
+				let filtered = response.data || [];
+
+				// Client-side filtering by category
+				if (filters.category && filters.category !== "all") {
+					filtered = filtered.filter(
+						(e) => e.category === filters.category,
+					);
+				}
+
+				// Client-side filtering by search query
+				if (filters.searchQuery) {
+					const searchLower = filters.searchQuery.toLowerCase();
+					filtered = filtered.filter(
+						(e) =>
+							e.description
+								.toLowerCase()
+								.includes(searchLower) ||
+							e.category
+								.toLowerCase()
+								.includes(searchLower),
+					);
+				}
+
+				setExpenseList(filtered);
+				setTotalItems(filtered.length);
+			} catch (error: any) {
+				console.error("Error fetching expenses:", error);
+				
+				let errorMessage = "Không thể tải dữ liệu chi phí";
+				
+				// Check for specific error types
+				if (error.message?.includes("404")) {
+					errorMessage = "Backend API chưa có endpoint /api/v1/stats/. Vui lòng kiểm tra backend Spring Boot đã chạy và implement endpoint này chưa.";
+				} else if (error.message?.includes("401")) {
+					errorMessage = "Vui lòng đăng nhập để xem chi phí";
+				} else if (error.message?.includes("Network Error")) {
+					errorMessage = "Backend không chạy. Vui lòng khởi động Spring Boot server tại localhost:8080";
+				}
+				
+				toast({
+					title: "Lỗi kết nối API",
+					description: errorMessage,
+					status: "error",
+					duration: 5000,
+					isClosable: true,
+				});
+				
+				// Set empty data to prevent loading forever
+				setExpenseList([]);
+				setTotalItems(0);
+			}
+		},
+		[toast],
+	);
 
 	// useFilters for filtering + pagination state
 	const { filters, loading, handleFilterChange, handlePageChange } =
@@ -104,96 +139,36 @@ const ExpensesPage = () => {
 			500,
 		);
 
-	// usePagination for metadata only
-	const { currentPage, pageSize, pagination, goToPage } = usePagination({
-		initialPage: filters.page,
-		pageSize: filters.pageSize,
+	// usePagination for metadata
+	const { currentPage, pageSize, pagination } = usePagination({
+		initialPage: filters.page || 1,
+		pageSize: filters.pageSize || ITEMS_PER_PAGE,
 		initialTotal: totalItems,
 	});
 
-	// Sync pagination with filters
-	useEffect(() => {
-		if (currentPage !== filters.page) {
-			goToPage(filters.page);
-		}
-	}, [filters.page, currentPage, goToPage]);
+	// Paginate expenses
+	const paginatedExpenses = expenseList.slice(
+		(currentPage - 1) * pageSize,
+		currentPage * pageSize,
+	);
 
 	// Calculate statistics
 	const totalExpense = expenseList.reduce(
 		(sum, expense) => sum + expense.amount,
 		0,
 	);
-	const monthExpense = expenseList
-		.filter((expense) => {
-			const expenseDate = new Date(expense.date);
-			const now = new Date();
-			return (
-				expenseDate.getMonth() === now.getMonth() &&
-				expenseDate.getFullYear() === now.getFullYear()
-			);
-		})
-		.reduce((sum, expense) => sum + expense.amount, 0);
 
-	// Calculate average expense per month
-	const uniqueMonths = new Set(
-		expenseList.map((expense) => {
-			const date = new Date(expense.date);
-			return `${date.getFullYear()}-${date.getMonth()}`;
-		}),
+	// Get category breakdown
+	const categoryBreakdown = expenseList.reduce(
+		(acc, expense) => {
+			if (!acc[expense.category]) {
+				acc[expense.category] = 0;
+			}
+			acc[expense.category] += expense.amount;
+			return acc;
+		},
+		{} as Record<string, number>,
 	);
-	const monthCount = uniqueMonths.size > 0 ? uniqueMonths.size : 1;
-	const averagePerMonth = totalExpense / monthCount;
-
-	const handleAddExpense = async (_expense: Omit<Expense, "id">) => {
-		try {
-			await expenseService.createExpense(_expense);
-			await fetchExpenses(filters);
-			onAddModalClose();
-			toast({
-				title: "Thành công",
-				description: "Đã thêm chi phí mới",
-				status: "success",
-				duration: 3000,
-			});
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Không thể thêm chi phí",
-				status: "error",
-				duration: 3000,
-			});
-		}
-	};
-
-	const handleDeleteClick = (id: string) => {
-		setExpenseToDelete(id);
-		onDeleteAlertOpen();
-	};
-
-	const handleDeleteConfirm = async () => {
-		if (!expenseToDelete) return;
-
-		try {
-			await expenseService.deleteExpense(expenseToDelete);
-			await fetchExpenses(filters);
-			toast({
-				title: "Thành công",
-				description: "Đã xóa chi phí",
-				status: "success",
-				duration: 3000,
-			});
-		} catch (error) {
-			toast({
-				title: "Lỗi",
-				description: "Không thể xóa chi phí",
-				status: "error",
-				duration: 3000,
-			});
-		} finally {
-			setExpenseToDelete(null);
-			onDeleteAlertClose();
-		}
-	};
 
 	const formatCurrency = (value: number) => {
 		return new Intl.NumberFormat("vi-VN", {
@@ -202,29 +177,29 @@ const ExpensesPage = () => {
 		}).format(value);
 	};
 
-	const formatDate = (date: Date) => {
-		return new Date(date).toLocaleDateString("vi-VN");
+	const handleEdit = (expense: Expense) => {
+		setSelectedExpense(expense);
+		onEditModalOpen();
 	};
 
-	const getExpenseCategoryLabel = (category: string): string => {
-		const labels: Record<string, string> = {
-			electricity: "Điện",
-			water: "Nước",
-			supplies: "Nhu yếu phẩm",
-			repairs: "Sửa chữa",
-			other: "Khác",
-		};
-		return labels[category] || category;
+	const handleViewDetail = (expense: Expense) => {
+		setSelectedExpense(expense);
+		onDetailModalOpen();
 	};
 
-	if (loading) {
+	const handleRefresh = () => {
+		fetchExpenses(filters);
+	};
+
+	if (loading && expenseList.length === 0) {
 		return (
 			<MainLayout>
 				<Box
 					minH="100vh"
 					display="flex"
 					alignItems="center"
-					justifyContent="center">
+					justifyContent="center"
+				>
 					<LoadingSpinner />
 				</Box>
 			</MainLayout>
@@ -233,10 +208,7 @@ const ExpensesPage = () => {
 
 	return (
 		<MainLayout>
-			<Box
-				minH="100vh"
-				bg="gray.50"
-				py={8}>
+			<Box minH="100vh" bg="gray.50" py={8}>
 				<Container maxW="container.2xl">
 					{/* Header */}
 					<Flex
@@ -244,92 +216,88 @@ const ExpensesPage = () => {
 						justify="space-between"
 						align={{ base: "flex-start", md: "center" }}
 						gap={{ base: 4, md: 0 }}
-						mb={8}>
+						mb={8}
+					>
 						<Box>
 							<Heading
 								size={{ base: "lg", md: "xl" }}
 								fontWeight="800"
 								color="gray.800"
-								mb={2}>
+								mb={2}
+							>
 								Quản Lý Chi Phí Phát Sinh
 							</Heading>
 							<Text
 								color="gray.600"
-								fontSize={{ base: "md", md: "lg" }}>
-								Quản lý các chi phí điện nước, nhu yếu phẩm, sửa
-								chữa
+								fontSize={{ base: "sm", md: "md" }}
+							>
+								Quản lý các chi phí điện nước, nhu yếu phẩm,
+								sửa chữa
 							</Text>
 						</Box>
 						<Button
 							leftIcon={<AddIcon />}
 							colorScheme="blue"
 							onClick={onAddModalOpen}
-							size={{ base: "md", md: "lg" }}>
+							size={{ base: "md", md: "lg" }}
+						>
 							Thêm Chi Phí
 						</Button>
 					</Flex>
 
 					{/* Statistics Cards */}
 					<SimpleGrid
-						columns={{ base: 1, md: 2, lg: 5 }}
+						columns={{ base: 1, md: 2, lg: 4 }}
 						spacing={6}
-						mb={8}>
+						mb={8}
+					>
 						<Card>
 							<CardBody>
 								<Stat>
 									<StatLabel>Tổng Chi Phí</StatLabel>
-									<StatNumber color="red.600">
+									<StatNumber color="red.600" fontSize="2xl">
 										{formatCurrency(totalExpense)}
 									</StatNumber>
-									<StatHelpText>
-										Tất cả thời gian
-									</StatHelpText>
+									<StatHelpText>Tất cả thời gian</StatHelpText>
 								</Stat>
 							</CardBody>
 						</Card>
+
 						<Card>
 							<CardBody>
 								<Stat>
-									<StatLabel>Chi Phí Tháng Này</StatLabel>
-									<StatNumber color="orange.600">
-										{formatCurrency(monthExpense)}
-									</StatNumber>
-									<StatHelpText>
-										{new Date().toLocaleDateString(
-											"vi-VN",
-											{
-												month: "long",
-												year: "numeric",
-											},
-										)}
-									</StatHelpText>
-								</Stat>
-							</CardBody>
-						</Card>
-						<Card>
-							<CardBody>
-								<Stat>
-									<StatLabel>TB / Tháng</StatLabel>
-									<StatNumber color="teal.600">
-										{formatCurrency(averagePerMonth)}
-									</StatNumber>
-									<StatHelpText>
-										{monthCount} tháng
-									</StatHelpText>
-								</Stat>
-							</CardBody>
-						</Card>
-						<Card>
-							<CardBody>
-								<Stat>
-									<StatLabel>Tổng Số Khoản Chi</StatLabel>
-									<StatNumber color="blue.600">
+									<StatLabel>Số lượng khoản chi</StatLabel>
+									<StatNumber color="blue.600" fontSize="2xl">
 										{expenseList.length}
 									</StatNumber>
 									<StatHelpText>Khoản chi phí</StatHelpText>
 								</Stat>
 							</CardBody>
 						</Card>
+
+						<Card>
+							<CardBody>
+								<Stat>
+									<StatLabel>Chi phí cao nhất</StatLabel>
+									<StatNumber
+										color="orange.600"
+										fontSize="2xl"
+									>
+										{expenseList.length > 0
+											? formatCurrency(
+													Math.max(
+														...expenseList.map(
+															(e) => e.amount,
+														),
+													),
+												)
+											: "0 VND"}
+									</StatNumber>
+									<StatHelpText>Trong danh sách</StatHelpText>
+								</Stat>
+							</CardBody>
+						</Card>
+
 						<Card
 							cursor="pointer"
 							transition="all 0.2s"
@@ -337,21 +305,26 @@ const ExpensesPage = () => {
 								shadow: "md",
 								transform: "translateY(-2px)",
 							}}
-							onClick={onDetailModalOpen}>
+							onClick={onDetailModalOpen}
+						>
 							<CardBody>
 								<Stat>
 									<Flex
 										justify="space-between"
-										align="center">
+										align="center"
+									>
 										<Box>
-											<StatLabel>Xem Biểu Đồ</StatLabel>
+											<StatLabel>Phân tích</StatLabel>
 											<StatNumber
 												color="purple.600"
-												fontSize="md">
-												Chi tiết
+												fontSize="lg"
+											>
+												{Object.keys(categoryBreakdown)
+													.length}{" "}
+												loại
 											</StatNumber>
 											<StatHelpText>
-												Phân tích chi phí
+												Chi tiết chi phí
 											</StatHelpText>
 										</Box>
 										<FiBarChart2
@@ -364,176 +337,98 @@ const ExpensesPage = () => {
 						</Card>
 					</SimpleGrid>
 
+					{/* Category Breakdown Stats */}
+					{Object.keys(categoryBreakdown).length > 0 && (
+						<SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mb={8}>
+							{Object.entries(categoryBreakdown).map(
+								([category, amount]) => (
+									<Card key={category} bg="white" shadow="sm">
+										<CardBody>
+											<Text
+												fontSize="sm"
+												fontWeight="semibold"
+												textTransform="capitalize"
+												mb={2}
+											>
+												{category}
+											</Text>
+											<Text
+												fontSize="lg"
+												fontWeight="bold"
+												color="blue.600"
+											>
+												{formatCurrency(amount)}
+											</Text>
+										</CardBody>
+									</Card>
+								),
+							)}
+						</SimpleGrid>
+					)}
+
 					{/* Filters */}
 					<Card mb={6}>
 						<CardBody>
 							<Flex
 								gap={4}
-								direction={{ base: "column", md: "row" }}>
-								<InputGroup flex={1}>
-									<InputLeftElement pointerEvents="none">
-										<FiSearch color="gray" />
-									</InputLeftElement>
-									<Input
-										placeholder="Tìm kiếm theo mô tả, ghi chú..."
-										value={filters.searchQuery || ""}
-										onChange={(e) =>
-											handleFilterChange(
-												"searchQuery",
-												e.target.value,
-											)
-										}
-										bg="white"
-									/>
-								</InputGroup>
-								<Select
-									value={filters.category || "all"}
-									onChange={(e) =>
-										handleFilterChange(
-											"category",
-											e.target.value,
-										)
-									}
-									bg="white"
-									w={{ base: "full", md: "250px" }}>
-									<option value="all">Tất cả loại</option>
-									<option value="electricity">Điện</option>
-									<option value="water">Nước</option>
-									<option value="supplies">
-										Nhu yếu phẩm
+								direction={{ base: "column", md: "row" }}
+								align="flex-end"
+							>
+								<Box flex={1}>
+									<InputGroup>
+										<InputLeftElement pointerEvents="none">
+											<FiSearch color="gray" />
+										</InputLeftElement>
+										<Input
+											placeholder="Tìm kiếm theo mô tả..."
+											value={
+												filters.searchQuery || ""
+											}
+											onChange={(e) =>
+												handleFilterChange(
+													"searchQuery",
+													e.target.value,
+												)
+											}
+											bg="white"
+										/>
+									</InputGroup>
+								</Box>
+							<Select
+								value={filters.category || "all"}
+								onChange={(e) =>
+									handleFilterChange(
+										"category",
+										e.target.value,
+									)
+								}
+								bg="white"
+								w={{ base: "full", md: "200px" }}
+							>
+								<option value="all">Tất cả loại</option>
+								{EXPENSE_CATEGORIES.map((cat) => (
+									<option key={cat} value={cat}>
+										{cat}
 									</option>
-									<option value="repairs">Sửa chữa</option>
-									<option value="other">Khác</option>
-								</Select>
-							</Flex>
+								))}
+							</Select>
+						</Flex>
 						</CardBody>
 					</Card>
 
 					{/* Expense Table */}
 					<Card>
 						<CardBody>
-							<Box overflowX="auto">
-								<Table variant="simple">
-									<Thead bg="gray.50">
-										<Tr>
-											<Th>Ngày</Th>
-											<Th>Loại</Th>
-											<Th>Mô tả</Th>
-											<Th isNumeric>Số tiền</Th>
-											<Th>Ghi chú</Th>
-											<Th>Người tạo</Th>
-											<Th></Th>
-										</Tr>
-									</Thead>
-									<Tbody>
-										{expenseList.length === 0 ? (
-											<Tr>
-												<Td
-													colSpan={7}
-													textAlign="center"
-													py={8}>
-													<Text color="gray.500">
-														Không tìm thấy chi phí
-														nào
-													</Text>
-												</Td>
-											</Tr>
-										) : (
-											expenseList.map((expense) => (
-												<Tr key={expense.id}>
-													<Td>
-														{formatDate(
-															expense.date,
-														)}
-													</Td>
-													<Td>
-														<Badge
-															colorScheme={
-																expense.category ===
-																"electricity"
-																	? "orange"
-																	: expense.category ===
-																	  "water"
-																	? "blue"
-																	: expense.category ===
-																	  "supplies"
-																	? "green"
-																	: expense.category ===
-																	  "repairs"
-																	? "red"
-																	: "gray"
-															}>
-															{getExpenseCategoryLabel(
-																expense.category,
-															)}
-														</Badge>
-													</Td>
-													<Td>
-														{expense.description}
-													</Td>
-													<Td
-														isNumeric
-														fontWeight="600">
-														{formatCurrency(
-															expense.amount,
-														)}
-													</Td>
-													<Td>
-														<Text
-															fontSize="sm"
-															color="gray.600"
-															noOfLines={1}
-															maxW="200px">
-															{expense.notes ||
-																"-"}
-														</Text>
-													</Td>
-													<Td>
-														<Text
-															fontSize="sm"
-															color="gray.600">
-															{expense.createdBy ||
-																"-"}
-														</Text>
-													</Td>
-													<Td>
-														<Menu>
-															<MenuButton
-																as={IconButton}
-																icon={
-																	<FiMoreVertical />
-																}
-																variant="ghost"
-																size="sm"
-															/>
-															<MenuList>
-																<MenuItem
-																	icon={
-																		<FiTrash2 />
-																	}
-																	onClick={() =>
-																		handleDeleteClick(
-																			expense.id,
-																		)
-																	}
-																	color="red.500">
-																	Xóa
-																</MenuItem>
-															</MenuList>
-														</Menu>
-													</Td>
-												</Tr>
-											))
-										)}
-									</Tbody>
-								</Table>
-							</Box>
+							<ExpenseTable
+								expenses={paginatedExpenses}
+								onEdit={handleEdit}
+								onViewDetail={handleViewDetail}
+								onDelete={handleRefresh}
+							/>
 
 							{/* Pagination */}
-							{expenseList.length > 0 && (
-								<Flex
-									justify="center"
-									mt={6}>
+							{paginatedExpenses.length > 0 && (
+								<Flex justify="center" mt={6}>
 									<Pagination
 										currentPage={currentPage}
 										totalPages={pagination.totalPages}
@@ -554,49 +449,23 @@ const ExpensesPage = () => {
 			<AddExpenseModal
 				isOpen={isAddModalOpen}
 				onClose={onAddModalClose}
-				onAdd={handleAddExpense}
+				onSuccess={handleRefresh}
 			/>
 
-			{/* Expense Detail Modal with Chart */}
+			{/* Edit Expense Modal */}
+			<EditExpenseModal
+				isOpen={isEditModalOpen}
+				onClose={onEditModalClose}
+				expense={selectedExpense}
+				onSuccess={handleRefresh}
+			/>
+
+			{/* Expense Detail Modal */}
 			<ExpenseDetailModal
 				isOpen={isDetailModalOpen}
 				onClose={onDetailModalClose}
+				expense={selectedExpense}
 			/>
-
-			{/* Delete Confirmation Dialog */}
-			<AlertDialog
-				isOpen={isDeleteAlertOpen}
-				leastDestructiveRef={cancelRef}
-				onClose={onDeleteAlertClose}>
-				<AlertDialogOverlay>
-					<AlertDialogContent>
-						<AlertDialogHeader
-							fontSize="lg"
-							fontWeight="bold">
-							Xóa Chi Phí
-						</AlertDialogHeader>
-
-						<AlertDialogBody>
-							Bạn có chắc chắn muốn xóa chi phí này? Hành động này
-							không thể hoàn tác.
-						</AlertDialogBody>
-
-						<AlertDialogFooter>
-							<Button
-								ref={cancelRef}
-								onClick={onDeleteAlertClose}>
-								Hủy
-							</Button>
-							<Button
-								colorScheme="red"
-								onClick={handleDeleteConfirm}
-								ml={3}>
-								Xóa
-							</Button>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialogOverlay>
-			</AlertDialog>
 		</MainLayout>
 	);
 };

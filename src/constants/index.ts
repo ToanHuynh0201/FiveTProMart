@@ -113,6 +113,15 @@ export const SUCCESS_MESSAGES = {
 	ACTION_COMPLETED: "Action completed successfully!",
 };
 
+// Expense Categories
+export const EXPENSE_CATEGORIES = [
+	"Tiền điện",
+	"Tiền nước",
+	"Nhu yếu phẩm",
+	"Sửa chữa",
+	"Khác",
+];
+
 export default {
 	API_CONFIG,
 	AUTH_CONFIG,
@@ -123,4 +132,5 @@ export default {
 	ERROR_MESSAGES,
 	SUCCESS_MESSAGES,
 	ROLES,
+	EXPENSE_CATEGORIES,
 };

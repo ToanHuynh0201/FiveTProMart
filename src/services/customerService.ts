@@ -1,40 +1,46 @@
 import apiService from "@/lib/api";
-import type { Customer } from "@/types";
+import type { Customer, CreateCustomerRequest, UpdateCustomerRequest } from "@/types";
 import type { CustomerFilters } from "@/types/filters";
-import type { ApiResponse } from "@/types/api";
-import { buildQueryParams } from "@/utils/queryParams";
-
-/**
- * Request type for creating/updating customers
- * Matches backend CustomerRequest.java exactly
- * ALL fields are REQUIRED - backend has @NotNull/@NotBlank on all
- */
-interface CustomerRequest {
-	fullName: string;
-	gender: string;
-	dateOfBirth: string; // ISO date string - REQUIRED by backend
-	phoneNumber: string;
-}
+import type { ApiResponse, ApiSingleResponse, ApiDeleteResponse } from "@/types/api";
 
 export const customerService = {
 	/**
-	 * Fetch customers with server-side filtering and pagination
-	 * Returns Customer[] matching backend CustomerResponse.java exactly
+	 * 1.1 Get customers with query parameters
+	 * GET /api/customers
 	 */
 	async getCustomers(
 		filters: CustomerFilters,
 	): Promise<ApiResponse<Customer>> {
-		return apiService.get<ApiResponse<Customer>>(
-			`/customers?${buildQueryParams(filters).toString()}`,
+		const params = new URLSearchParams();
+		
+		// API query parameters
+		// NOTE: Backend search is not working well, we do full filter client-side
+		// if (filters.id) params.append('customerId', filters.id);
+		// if (filters.searchQuery) params.append('customerName', filters.searchQuery);
+		
+		if (filters.sortBy) params.append('sortBy', filters.sortBy);
+		if (filters.order) params.append('order', filters.order);
+		
+		// Pagination - backend uses 0-based indexing
+		const pageNumber = (filters.page || 1) - 1; // Convert 1-based to 0-based
+		params.append('page', pageNumber.toString());
+		if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
+		
+		const queryString = params.toString();
+		console.log('Query params:', params.toString());
+		console.log('Full URL:', `/customers${queryString ? `?${queryString}` : ''}`);
+		const response = await apiService.get<ApiResponse<Customer>>(
+			`/customers${queryString ? `?${queryString}` : ''}`,
 		);
+		return response;
 	},
 
+	/**
+	 * 1.2 Get customer by ID
+	 * GET /api/customers/{id}
+	 */
 	async getCustomerById(id: string): Promise<Customer> {
-		const response = await apiService.get<{
-			success: boolean;
-			message: string;
-			data: Customer;
-		}>(`/customers/${id}`);
+		const response = await apiService.get<ApiSingleResponse<Customer>>(`/customers/${id}`);
 		return response.data;
 	},
 
@@ -44,6 +50,21 @@ export const customerService = {
 	 */
 	async findByPhone(phone: string): Promise<Customer | null> {
 		try {
+// <<<<<<< HEAD
+// 			// Use fullName search which also searches phone numbers
+// 			const response = await apiService.get<ApiResponse<Customer>>(
+// 				`/customers?fullName=${encodeURIComponent(phone)}`
+// 			);
+
+// 			if (response.success && response.data.length > 0) {
+// 				// Find exact phone match
+// 				const match = response.data.find(
+// 					(c) => c.phoneNumber === phone,
+// 				);
+// 				if (match) {
+// 					return match;
+// 				}
+// =======
 			// Use exact phoneNumber match - backend supports this param
 			const response = await apiService.get<{
 				success: boolean;
@@ -53,35 +74,41 @@ export const customerService = {
 			if (response.success && response.data.length > 0) {
 				// Backend returns exact match, return first result
 				return response.data[0];
+// >>>>>>> feat/tho
 			}
 			return null;
 		} catch {
+			// API error or no results
 			return null;
 		}
 	},
 
-	async createCustomer(data: CustomerRequest): Promise<Customer> {
-		const response = await apiService.post<{
-			success: boolean;
-			message: string;
-			data: Customer;
-		}>("/customers", data);
+	/**
+	 * 1.3 Add new customer
+	 * POST /api/customers
+	 */
+	async createCustomer(data: CreateCustomerRequest): Promise<Customer> {
+		const response = await apiService.post<ApiSingleResponse<Customer>>("/customers", data);
 		return response.data;
 	},
 
+	/**
+	 * 1.4 Update a customer
+	 * PUT /api/customers/{id}
+	 */
 	async updateCustomer(
 		id: string,
-		data: Partial<CustomerRequest>,
+		data: UpdateCustomerRequest,
 	): Promise<Customer> {
-		const response = await apiService.put<{
-			success: boolean;
-			message: string;
-			data: Customer;
-		}>(`/customers/${id}`, data);
+		const response = await apiService.put<ApiSingleResponse<Customer>>(`/customers/${id}`, data);
 		return response.data;
 	},
 
+	/**
+	 * 1.5 Delete a customer
+	 * DELETE /api/customers/{id}
+	 */
 	async deleteCustomer(id: string): Promise<void> {
-		return apiService.delete(`/customers/${id}`);
+		await apiService.delete<ApiDeleteResponse>(`/customers/${id}`);
 	},
 };

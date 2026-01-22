@@ -50,6 +50,7 @@ import {
 	FiEdit2,
 	FiTrash2,
 	FiCalendar,
+	FiDollarSign,
 } from "react-icons/fi";
 
 interface StaffViewEditModalProps {
@@ -58,6 +59,7 @@ interface StaffViewEditModalProps {
 	staffId: string | null;
 	mode: "view" | "edit";
 	onSuccess?: () => void;
+	onViewSalary?: (staffId: string) => void;
 }
 
 export const StaffViewEditModal: React.FC<StaffViewEditModalProps> = ({
@@ -66,6 +68,7 @@ export const StaffViewEditModal: React.FC<StaffViewEditModalProps> = ({
 	staffId,
 	mode: initialMode,
 	onSuccess,
+	onViewSalary,
 }) => {
 	const toast = useToast();
 	const [mode, setMode] = useState<"view" | "edit">(initialMode);
@@ -803,20 +806,30 @@ export const StaffViewEditModal: React.FC<StaffViewEditModalProps> = ({
 						justify="space-between"
 						w="full">
 						{/* Left side - Delete button (only in view mode) */}
-						<Box>
-							{mode === "view" && staffData && (
-								<Button
-									leftIcon={<Icon as={FiTrash2} />}
-									colorScheme="red"
-									variant="ghost"
-									size="lg"
-									onClick={onDeleteDialogOpen}
-									_hover={{ bg: "red.50" }}>
-									Xóa
-								</Button>
-							)}
-						</Box>
-
+					<HStack spacing={3}>
+						{mode === "view" && staffData && onViewSalary && (
+							<Button
+								leftIcon={<Icon as={FiDollarSign} />}
+								colorScheme="green"
+								variant="ghost"
+								size="lg"
+								onClick={() => onViewSalary(staffData.userId)}
+								_hover={{ bg: "green.50" }}>
+								Xem lương
+							</Button>
+						)}
+						{mode === "view" && staffData && (
+							<Button
+								leftIcon={<Icon as={FiTrash2} />}
+								colorScheme="red"
+								variant="ghost"
+								size="lg"
+								onClick={onDeleteDialogOpen}
+								_hover={{ bg: "red.50" }}>
+								Xóa
+							</Button>
+						)}
+					</HStack>
 						{/* Right side - Action buttons */}
 						<HStack spacing={3}>
 							<Button

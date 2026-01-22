@@ -5,6 +5,7 @@ export { inventoryService } from "./inventoryService";
 export { promotionService } from "./promotionService";
 export { purchaseService } from "./purchaseService";
 export { reportService } from "./reportService";
+export { salaryService } from "./salaryService";
 export { salesService } from "./salesService";
 export { scheduleService } from "./scheduleService";
 export { staffService } from "./staffService";

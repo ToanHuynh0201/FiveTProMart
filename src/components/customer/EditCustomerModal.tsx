@@ -14,24 +14,20 @@ import {
 	Select,
 	VStack,
 	HStack,
-	NumberInput,
-	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	NumberDecrementStepper,
 	useToast,
 	Text,
 	Spinner,
 	Flex,
 } from "@chakra-ui/react";
-import type { Customer } from "@/types";
+import type { Customer, UpdateCustomerRequest } from "@/types";
 import { customerService } from "@/services/customerService";
+import { getCustomerName, getCustomerPhone, getCustomerGender, mapGenderToAPI } from "@/utils";
 
 interface EditCustomerModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	customerId: string | null;
-	onUpdate: (id: string, customer: Partial<Customer>) => Promise<void>;
+	onUpdate: (id: string, customer: UpdateCustomerRequest) => Promise<void>;
 }
 
 export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
@@ -44,16 +40,17 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [isFetching, setIsFetching] = useState(false);
 	const [formData, setFormData] = useState({
-		name: "",
-		phone: "",
+		fullName: "",
+		phoneNumber: "",
 		gender: "Nam" as "Nam" | "Nữ" | "Khác",
-		dateOfBirth: "" as string, // Required by backend
-		loyaltyPoints: 0,
+		dateOfBirth: "",
 	});
 
+	const [originalPhoneNumber, setOriginalPhoneNumber] = useState("");
+
 	const [errors, setErrors] = useState({
-		name: "",
-		phone: "",
+		fullName: "",
+		phoneNumber: "",
 		dateOfBirth: "",
 	});
 
@@ -70,12 +67,13 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 		try {
 			const customer = await customerService.getCustomerById(customerId);
 			if (customer) {
+				const phoneNum = getCustomerPhone(customer);
+				setOriginalPhoneNumber(phoneNum);
 				setFormData({
-					name: customer.fullName,
-					phone: customer.phoneNumber,
-					gender: (customer.gender || "Nam") as "Nam" | "Nữ" | "Khác",
+					fullName: getCustomerName(customer),
+					phoneNumber: phoneNum,
+					gender: getCustomerGender(customer),
 					dateOfBirth: customer.dateOfBirth || "",
-					loyaltyPoints: customer.loyaltyPoints || 0,
 				});
 			}
 		} catch (error) {
@@ -103,52 +101,73 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 
 		// Reset errors
 		const newErrors = {
-			name: "",
-			phone: "",
+			fullName: "",
+			phoneNumber: "",
 			dateOfBirth: "",
 		};
 
 		// Validation
-		if (!formData.name.trim()) {
-			newErrors.name = "Vui lòng nhập tên khách hàng";
-		} else if (formData.name.trim().length < 2) {
-			newErrors.name = "Tên khách hàng phải có ít nhất 2 ký tự";
+		if (!formData.fullName.trim()) {
+			newErrors.fullName = "Vui lòng nhập tên khách hàng";
+		} else if (formData.fullName.trim().length < 2) {
+			newErrors.fullName = "Tên khách hàng phải có ít nhất 2 ký tự";
 		}
 
-		if (!formData.phone.trim()) {
-			newErrors.phone = "Vui lòng nhập số điện thoại";
-		} else if (!validatePhone(formData.phone)) {
-			newErrors.phone =
+		if (!formData.phoneNumber.trim()) {
+			newErrors.phoneNumber = "Vui lòng nhập số điện thoại";
+		} else if (!validatePhone(formData.phoneNumber)) {
+			newErrors.phoneNumber =
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
 		}
 
+		// Validate date of birth
 		if (!formData.dateOfBirth) {
-			newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
+			newErrors.dateOfBirth = "Vui lòng chọn ngày sinh";
 		} else {
-			// Validate date is in the past
-			const dob = new Date(formData.dateOfBirth);
-			if (dob >= new Date()) {
+			const birthDate = new Date(formData.dateOfBirth);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			
+			if (birthDate >= today) {
 				newErrors.dateOfBirth = "Ngày sinh phải là ngày trong quá khứ";
+			} else {
+				// Check if age is at least reasonable (not more than 150 years old)
+				const age = today.getFullYear() - birthDate.getFullYear();
+				if (age > 150) {
+					newErrors.dateOfBirth = "Ngày sinh không hợp lệ";
+				}
 			}
 		}
 
 		setErrors(newErrors);
 
 		// If there are errors, don't submit
-		if (newErrors.name || newErrors.phone || newErrors.dateOfBirth) {
+		if (newErrors.fullName || newErrors.phoneNumber || newErrors.dateOfBirth) {
 			return;
 		}
 
 		setIsLoading(true);
 
 		try {
-			// Transform formData to match Customer type field names
+			// Check if phone number changed and already exists in another customer
+			if (formData.phoneNumber !== originalPhoneNumber) {
+				const existingCustomer = await customerService.findByPhone(formData.phoneNumber.trim());
+				if (existingCustomer) {
+					setErrors({
+						...newErrors,
+						phoneNumber: "Số điện thoại này đã được đăng ký",
+					});
+					setIsLoading(false);
+					return;
+				}
+			}
+			// Map gender to API format and submit
+			// Backend requires ALL fields: fullName, gender, dateOfBirth, phoneNumber
 			await onUpdate(customerId, {
-				fullName: formData.name,
-				phoneNumber: formData.phone,
-				gender: formData.gender,
+				fullName: formData.fullName,
+				phoneNumber: formData.phoneNumber,
+				gender: mapGenderToAPI(formData.gender),
 				dateOfBirth: formData.dateOfBirth,
-				loyaltyPoints: formData.loyaltyPoints,
 			});
 			toast({
 				title: "Thành công",
@@ -159,9 +178,10 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 			});
 			onClose();
 		} catch (error) {
+			console.error("Error updating customer:", error);
 			toast({
 				title: "Lỗi",
-				description: "Có lỗi xảy ra khi cập nhật khách hàng",
+				description: error instanceof Error ? error.message : "Có lỗi xảy ra khi cập nhật khách hàng",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -220,7 +240,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 							{/* Tên khách hàng */}
 							<FormControl
 								isRequired
-								isInvalid={!!errors.name}>
+								isInvalid={!!errors.fullName}>
 								<FormLabel
 									fontSize={{ base: "16px", md: "18px" }}
 									fontWeight="600"
@@ -230,39 +250,39 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 								</FormLabel>
 								<Input
 									placeholder="Nhập tên khách hàng"
-									value={formData.name}
+									value={formData.fullName}
 									onChange={(e) => {
 										setFormData({
 											...formData,
-											name: e.target.value,
+											fullName: e.target.value,
 										});
-										setErrors({ ...errors, name: "" });
+										setErrors({ ...errors, fullName: "" });
 									}}
 									size="lg"
 									fontSize={{ base: "14px", md: "16px" }}
 									borderColor={
-										errors.name ? "red.500" : "gray.300"
+										errors.fullName ? "red.500" : "gray.300"
 									}
 									_hover={{
-										borderColor: errors.name
+										borderColor: errors.fullName
 											? "red.600"
 											: "gray.400",
 									}}
 									_focus={{
-										borderColor: errors.name
+										borderColor: errors.fullName
 											? "red.500"
 											: "brand.500",
-										boxShadow: errors.name
+										boxShadow: errors.fullName
 											? "0 0 0 1px var(--chakra-colors-red-500)"
 											: "0 0 0 1px var(--chakra-colors-brand-500)",
 									}}
 								/>
-								{errors.name && (
+								{errors.fullName && (
 									<Text
 										color="red.500"
 										fontSize="14px"
 										mt={1}>
-										{errors.name}
+										{errors.fullName}
 									</Text>
 								)}
 							</FormControl>
@@ -270,7 +290,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 							{/* Số điện thoại */}
 							<FormControl
 								isRequired
-								isInvalid={!!errors.phone}>
+								isInvalid={!!errors.phoneNumber}>
 								<FormLabel
 									fontSize={{ base: "16px", md: "18px" }}
 									fontWeight="600"
@@ -280,89 +300,41 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 								</FormLabel>
 								<Input
 									placeholder="Nhập số điện thoại (10 chữ số)"
-									value={formData.phone}
+									value={formData.phoneNumber}
 									onChange={(e) => {
 										const value = e.target.value.replace(
 											/\D/g,
 											"",
 										); // Only allow digits
-										setFormData({ ...formData, phone: value });
-										setErrors({ ...errors, phone: "" });
+										setFormData({ ...formData, phoneNumber: value });
+										setErrors({ ...errors, phoneNumber: "" });
 									}}
 									maxLength={10}
 									size="lg"
 									fontSize={{ base: "14px", md: "16px" }}
 									borderColor={
-										errors.phone ? "red.500" : "gray.300"
+										errors.phoneNumber ? "red.500" : "gray.300"
 									}
 									_hover={{
-										borderColor: errors.phone
+										borderColor: errors.phoneNumber
 											? "red.600"
 											: "gray.400",
 									}}
 									_focus={{
-										borderColor: errors.phone
+										borderColor: errors.phoneNumber
 											? "red.500"
 											: "brand.500",
-										boxShadow: errors.phone
+										boxShadow: errors.phoneNumber
 											? "0 0 0 1px var(--chakra-colors-red-500)"
 											: "0 0 0 1px var(--chakra-colors-brand-500)",
 									}}
 								/>
-								{errors.phone && (
+								{errors.phoneNumber && (
 									<Text
 										color="red.500"
 										fontSize="14px"
 										mt={1}>
-										{errors.phone}
-									</Text>
-								)}
-							</FormControl>
-
-							{/* Ngày sinh */}
-							<FormControl isRequired isInvalid={!!errors.dateOfBirth}>
-								<FormLabel
-									fontSize={{ base: "16px", md: "18px" }}
-									fontWeight="600"
-									color="gray.700"
-									mb={2}>
-									Ngày sinh
-								</FormLabel>
-								<Input
-									type="date"
-									value={formData.dateOfBirth}
-									onChange={(e) => {
-										setFormData({
-											...formData,
-											dateOfBirth: e.target.value,
-										});
-										setErrors({ ...errors, dateOfBirth: "" });
-									}}
-									size="lg"
-									fontSize={{ base: "14px", md: "16px" }}
-									borderColor={
-										errors.dateOfBirth ? "red.500" : "gray.300"
-									}
-									_hover={{
-										borderColor: errors.dateOfBirth
-											? "red.600"
-											: "gray.400",
-									}}
-									_focus={{
-										borderColor: errors.dateOfBirth
-											? "red.500"
-											: "brand.500",
-										boxShadow: errors.dateOfBirth
-											? "0 0 0 1px var(--chakra-colors-red-500)"
-											: "0 0 0 1px var(--chakra-colors-brand-500)",
-									}}
-								/>
-								{errors.dateOfBirth && (
-									<Text
-										color="red.500"
-										fontSize="14px"
-										mt={1}>
-										{errors.dateOfBirth}
+										{errors.phoneNumber}
 									</Text>
 								)}
 							</FormControl>
@@ -402,47 +374,46 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 								</Select>
 							</FormControl>
 
-							{/* Điểm tích lũy */}
-							<FormControl>
+							{/* Ngày sinh */}
+							<FormControl 
+								isRequired
+								isInvalid={!!errors.dateOfBirth}>
 								<FormLabel
 									fontSize={{ base: "16px", md: "18px" }}
 									fontWeight="600"
 									color="gray.700"
 									mb={2}>
-									Điểm tích lũy
+									Ngày sinh
 								</FormLabel>
-								<NumberInput
-									value={formData.loyaltyPoints}
-									onChange={(_, value) =>
+								<Input
+									type="date"
+									value={formData.dateOfBirth}
+									onChange={(e) => {
 										setFormData({
 											...formData,
-											loyaltyPoints: value || 0,
-										})
-									}
-									min={0}
-									max={100000}
-									size="lg">
-									<NumberInputField
-										fontSize={{ base: "14px", md: "16px" }}
-										borderColor="gray.300"
-										_hover={{ borderColor: "gray.400" }}
-										_focus={{
-											borderColor: "brand.500",
-											boxShadow:
-												"0 0 0 1px var(--chakra-colors-brand-500)",
-										}}
-									/>
-									<NumberInputStepper>
-										<NumberIncrementStepper />
-										<NumberDecrementStepper />
-									</NumberInputStepper>
-								</NumberInput>
-								<Text
-									fontSize="13px"
-									color="gray.500"
-									mt={1}>
-									Điều chỉnh điểm tích lũy của khách hàng
-								</Text>
+											dateOfBirth: e.target.value,
+										});
+										setErrors({ ...errors, dateOfBirth: "" });
+									}}
+									size="lg"
+									fontSize={{ base: "14px", md: "16px" }}
+									borderColor={errors.dateOfBirth ? "red.500" : "gray.300"}
+									_hover={{ borderColor: errors.dateOfBirth ? "red.600" : "gray.400" }}
+									_focus={{
+										borderColor: errors.dateOfBirth ? "red.500" : "brand.500",
+										boxShadow: errors.dateOfBirth
+											? "0 0 0 1px var(--chakra-colors-red-500)"
+											: "0 0 0 1px var(--chakra-colors-brand-500)",
+									}}
+								/>
+								{errors.dateOfBirth && (
+									<Text
+										color="red.500"
+										fontSize="14px"
+										mt={1}>
+										{errors.dateOfBirth}
+									</Text>
+								)}
 							</FormControl>
 						</VStack>
 					)}

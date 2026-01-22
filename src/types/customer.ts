@@ -1,26 +1,36 @@
-/**
- * Customer type matching backend CustomerResponse.java EXACTLY
- * Backend is source of truth - DO NOT add fields the backend doesn't send
- */
 export interface Customer {
 	customerId: string;
 	fullName: string;
-	gender: string | null;
-	dateOfBirth: string | null;
+	gender: "Male" | "Female" | "Other";
+	dateOfBirth: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
 	phoneNumber: string;
-	registrationDate: string | null;
+	registrationDate: string; // Format: DD-MM-YYYY (display from API)
 	loyaltyPoints: number;
 }
 
-export interface CustomerDetail extends Customer {}
-
-/**
- * Request type for creating/updating customers
- * Matches backend CreateCustomerRequest.java
- */
-export interface UpdateCustomerData {
-	fullName?: string;
-	phoneNumber?: string;
-	gender?: string;
-	dateOfBirth?: string | null;
+export interface CustomerDetail extends Customer {
+	email?: string;
+	address?: string;
+	status?: "active" | "inactive";
+	registeredDate?: string; // Display format
+	purchaseCount?: number;
+	lastPurchaseDate?: string;
+	totalSpent?: number;
 }
+
+export interface CreateCustomerRequest {
+	fullName: string;
+	gender: "Male" | "Female" | "Other";
+	dateOfBirth: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
+	phoneNumber: string;
+}
+
+export interface UpdateCustomerRequest {
+	fullName?: string;
+	gender?: "Male" | "Female" | "Other";
+	dateOfBirth?: string; // Format: YYYY-MM-DD (ISO format for Java LocalDate)
+	phoneNumber?: string;
+}
+
+// Legacy support - kept for backward compatibility
+export interface UpdateCustomerData extends UpdateCustomerRequest {}

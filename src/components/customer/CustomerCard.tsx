@@ -23,6 +23,7 @@ import {
 import type { Customer } from "@/types";
 import { useState } from "react";
 import { FiUser, FiPhone, FiStar } from "react-icons/fi";
+import { getCustomerId, getCustomerName, getCustomerPhone, getCustomerGender } from "@/utils";
 
 interface CustomerCardProps {
 	customer: Customer;
@@ -44,7 +45,7 @@ const CustomerCard = ({
 
 		setIsDeleting(true);
 		try {
-			await onDelete(customer.customerId);
+			await onDelete(getCustomerId(customer));
 			onClose();
 			toast({
 				title: "Thành công",
@@ -80,7 +81,7 @@ const CustomerCard = ({
 			}}
 			cursor="pointer"
 			position="relative"
-			onClick={() => onViewDetails?.(customer.customerId)}
+			onClick={() => onViewDetails?.(getCustomerId(customer))}
 			h="100%"
 			isolation="auto">
 			{/* Menu dropdown */}
@@ -115,7 +116,7 @@ const CustomerCard = ({
 							<MenuItem
 								onClick={(e) => {
 									e.stopPropagation();
-									onViewDetails?.(customer.customerId);
+									onViewDetails?.(getCustomerId(customer));
 								}}>
 								Xem chi tiết
 							</MenuItem>
@@ -164,7 +165,7 @@ const CustomerCard = ({
 				color="brand.600"
 				mb={1}
 				lineHeight="1.2">
-				{customer.fullName}
+				{getCustomerName(customer)}
 			</Text>
 
 			{/* Gender Badge */}
@@ -173,9 +174,9 @@ const CustomerCard = ({
 				mb={3}>
 				<Badge
 					colorScheme={
-						customer.gender === "Nam"
+						getCustomerGender(customer) === "Nam"
 							? "blue"
-							: customer.gender === "Nữ"
+							: getCustomerGender(customer) === "Nữ"
 							? "pink"
 							: "gray"
 					}
@@ -183,7 +184,7 @@ const CustomerCard = ({
 					borderRadius="full"
 					px={3}
 					py={1}>
-					{customer.gender}
+					{getCustomerGender(customer)}
 				</Badge>
 			</Flex>
 
@@ -202,7 +203,7 @@ const CustomerCard = ({
 					fontSize="15px"
 					fontWeight="500"
 					color="gray.700">
-					{customer.phoneNumber}
+					{getCustomerPhone(customer)}
 				</Text>
 			</Flex>
 
@@ -252,7 +253,7 @@ const CustomerCard = ({
 					textDecoration: "underline",
 					color: "brand.500",
 				}}
-				onClick={() => onViewDetails?.(customer.customerId)}>
+				onClick={() => onViewDetails?.(getCustomerId(customer))}>
 				Xem chi tiết
 			</Text>
 
@@ -280,7 +281,7 @@ const CustomerCard = ({
 							fontSize="14px"
 							color="gray.700">
 							Bạn có chắc chắn muốn xóa khách hàng{" "}
-							<strong>{customer.fullName}</strong>? Hành động này
+							<strong>{getCustomerName(customer)}</strong>? Hành động này
 							không thể hoàn tác.
 						</Text>
 					</ModalBody>

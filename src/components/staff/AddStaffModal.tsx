@@ -104,7 +104,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		// Password validation (at least 8 characters with uppercase, lowercase, and number)
 		const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 		if (!passwordRegex.test(formData.password)) {
 			toast({
@@ -112,7 +111,7 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 				description:
 					"Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số",
 				status: "error",
-				duration: 3000,
+				duration: 4000,
 				isClosable: true,
 			});
 			return;
@@ -306,6 +305,7 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 													password: e.target.value,
 												})
 											}
+
 											placeholder="Ít nhất 8 ký tự (A-Z, a-z, 0-9)"
 											size="md"
 										/>

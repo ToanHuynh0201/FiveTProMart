@@ -193,3 +193,66 @@ export interface ReportDetail {
 	data: unknown;
 	generatedAt: Date;
 }
+
+// ============================================================
+// Statistics API Types (New API v1)
+// ============================================================
+
+// 1.1 Dashboard Summary
+export interface DashboardSummary {
+	totalRevenue: number; // Tổng doanh thu
+	netProfit: number; // Lợi nhuận
+	totalOrders: number; // Tổng số đơn hàng
+	totalProductsSold: number; // Tổng số lượng sản phẩm bán ra
+	averageOrderValue: number; // Giá trị trung bình đơn
+	totalCustomers: number; // Số khách đã mua hàng trong kỳ
+	newCustomers: number; // Số khách đăng ký mới trong kỳ
+	incurredStats: number; // Chi phí phát sinh
+}
+
+// 1.2 Revenue & Profit Chart
+export interface RevenueProfitChartDataPoint {
+	date: string; // Format: dd-MM-yyyy
+	revenue: number;
+	expense: number;
+	profit: number;
+}
+
+// 1.3 Orders Chart
+export interface OrdersChartDataPoint {
+	date: string; // Format: dd-MM-yyyy
+	completedOrders: number;
+}
+
+// 1.4 Category Revenue
+export interface CategoryRevenue {
+	categoryId: string;
+	categoryName: string;
+	totalRevenue: number;
+	totalQuantitySold: number;
+	orderCount: number;
+}
+
+// 1.5 Top Selling Products
+export interface TopSellingProduct {
+	productId: string;
+	productName: string;
+	categoryName: string;
+	totalRevenue: number;
+	totalQuantitySold: number;
+	totalStockQuantity: number | string; // Có thể là số hoặc đơn vị như "Gói"
+}
+
+// Statistics Request Parameters
+export interface StatisticsDateRange {
+	startDate: string; // Format: dd-MM-yyyy
+	endDate: string; // Format: dd-MM-yyyy
+}
+
+export interface CategoryRevenueRequest extends StatisticsDateRange {
+	limit: number;
+}
+
+export interface TopProductsRequest extends StatisticsDateRange {
+	limit: number;
+}

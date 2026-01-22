@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
 	CustomerTable,
@@ -10,7 +10,7 @@ import {
 } from "@/components/customer";
 import { Pagination } from "@/components/common";
 import { usePagination, useFilters } from "@/hooks";
-import type { Customer } from "@/types";
+import type { Customer, UpdateCustomerRequest } from "@/types";
 import type { CustomerFilters } from "@/types/filters";
 import { customerService } from "@/services/customerService";
 import {
@@ -45,11 +45,73 @@ const CustomersPage = () => {
 	} = useDisclosure();
 
 	// Fetch function for API call
-	const fetchCustomers = async (filters: CustomerFilters) => {
-		const response = await customerService.getCustomers(filters);
-		setCustomerList(response.data);
-		setTotalItems(response.pagination.totalItems);
-	};
+	const fetchCustomers = useCallback(async (filters: CustomerFilters) => {
+		try {
+			const response = await customerService.getCustomers(filters);
+			console.log('Full API Response:', response);
+			console.log('Data:', response.data);
+			console.log('Pagination:', response.pagination);
+			console.log('Data is Array:', Array.isArray(response.data));
+			console.log('Data length:', response.data?.length);
+			
+			// Filter data client-side for search (name + phone), gender and pointRange
+			let filteredData = response.data || [];
+			
+			// Re-filter by search query on client-side to support phone search
+			// Backend only searches by customerName, so we filter by phone here too
+			if (filters.searchQuery) {
+				const searchLower = filters.searchQuery.toLowerCase();
+				filteredData = filteredData.filter((customer) => {
+					const name = customer.fullName?.toLowerCase() || "";
+					const phone = customer.phoneNumber?.toLowerCase() || "";
+					return name.includes(searchLower) || phone.includes(searchLower);
+				});
+			}
+			
+			// Filter by gender
+			if (filters.gender && filters.gender !== "all") {
+				const genderMap: Record<string, string> = {
+					"Nam": "Male",
+					"Nữ": "Female",
+					"Khác": "Other",
+				};
+				const apiGender = genderMap[filters.gender];
+				if (apiGender) {
+					filteredData = filteredData.filter(
+						(customer) => customer.gender === apiGender
+					);
+				}
+			}
+			
+			// Filter by pointRange
+			if (filters.pointRange && filters.pointRange !== "all") {
+				filteredData = filteredData.filter((customer) => {
+					const points = customer.loyaltyPoints || 0;
+					switch (filters.pointRange) {
+						case "0-500":
+							return points >= 0 && points <= 500;
+						case "501-1000":
+							return points >= 501 && points <= 1000;
+						case "1001-1500":
+							return points >= 1001 && points <= 1500;
+						case "1501-2000":
+							return points >= 1501 && points <= 2000;
+						case "2001+":
+							return points >= 2001;
+						default:
+							return true;
+					}
+				});
+			}
+			
+			setCustomerList(filteredData);
+			setTotalItems(response.pagination?.totalItems || 0);
+		} catch (error) {
+			console.error('Error fetching customers:', error);
+			setCustomerList([]);
+			setTotalItems(0);
+		}
+	}, []); // Empty dependency array - function doesn't need to change
 
 	// useFilters for filtering + pagination state
 	const { filters, loading, error, handleFilterChange, handlePageChange } =
@@ -67,17 +129,17 @@ const CustomersPage = () => {
 
 	// usePagination for metadata only
 	const { currentPage, pageSize, pagination, goToPage } = usePagination({
-		initialPage: filters.page,
-		pageSize: filters.pageSize,
+		initialPage: 1,
+		pageSize: ITEMS_PER_PAGE,
 		initialTotal: totalItems,
 	});
 
-	// Sync pagination with filters
+	// Update pagination total when data changes
 	useEffect(() => {
-		if (currentPage !== filters.page) {
-			goToPage(filters.page);
+		if (pagination.totalItems !== totalItems) {
+			// Only update if different to avoid loops
 		}
-	}, [filters.page, currentPage, goToPage]);
+	}, [totalItems, pagination.totalItems]);
 
 	const handleSearchChange = (query: string) => {
 		handleFilterChange("searchQuery", query);
@@ -112,43 +174,51 @@ const CustomersPage = () => {
 		await fetchCustomers(filters);
 	};
 
-	const handleAddCustomer = async (customer: Omit<Customer, "customerId">) => {
-		// Transform to match CustomerRequest - ensure required fields are not null
-		// AddCustomerModal validates that these fields are never null before calling this
-		if (!customer.dateOfBirth || !customer.gender) {
-			throw new Error("Date of birth and gender are required");
+	const handleAddCustomer = async (customer: {
+		fullName: string;
+		phoneNumber: string;
+		email?: string;
+		address?: string;
+		gender: "Male" | "Female" | "Other";
+		loyaltyPoints?: number;
+		dateOfBirth?: string;
+	}) => {
+		try {
+			// dateOfBirth is in YYYY-MM-DD format (ISO format for Java LocalDate)
+			const customerData = {
+				fullName: customer.fullName,
+				phoneNumber: customer.phoneNumber,
+				gender: customer.gender,
+				dateOfBirth: customer.dateOfBirth || "2000-01-01", // ISO format default
+			};
+			console.log('Adding customer:', customerData);
+			const result = await customerService.createCustomer(customerData);
+			console.log('Customer added successfully:', result);
+			
+			// Refresh data after adding
+			console.log('Refreshing customer list...');
+			await fetchCustomers(filters);
+			onAddModalClose();
+		} catch (error) {
+			console.error('Error in handleAddCustomer:', error);
+			throw error;
 		}
-		const request = {
-			fullName: customer.fullName,
-			phoneNumber: customer.phoneNumber,
-			gender: customer.gender,
-			dateOfBirth: customer.dateOfBirth,
-		};
-		await customerService.createCustomer(request);
-		// Refresh data after adding
-		await fetchCustomers(filters);
-		onAddModalClose();
 	};
 
 	const handleUpdateCustomer = async (
 		id: string,
-		updates: Partial<Customer>,
+		updates: UpdateCustomerRequest,
 	) => {
-		// Transform to match CustomerRequest
-		// EditCustomerModal validates that required fields are not null before calling this
-		if (!updates.dateOfBirth || !updates.gender) {
-			throw new Error("Date of birth and gender are required");
+		try {
+			console.log('Updating customer:', id, updates);
+			await customerService.updateCustomer(id, updates);
+			// Refresh data after updating
+			await fetchCustomers(filters);
+			onEditModalClose();
+		} catch (error) {
+			console.error('Error in handleUpdateCustomer:', error);
+			throw error;
 		}
-		const request = {
-			fullName: updates.fullName ?? "",
-			phoneNumber: updates.phoneNumber ?? "",
-			gender: updates.gender,
-			dateOfBirth: updates.dateOfBirth,
-		};
-		await customerService.updateCustomer(id, request);
-		// Refresh data after updating
-		await fetchCustomers(filters);
-		onEditModalClose();
 	};
 
 	return (
@@ -264,23 +334,26 @@ const CustomersPage = () => {
 
 				{/* Empty State */}
 				{!loading && !error && customerList.length === 0 && (
-					<Flex
-						direction="column"
-						justify="center"
-						align="center"
-						minH="400px"
-						gap={4}>
-						<Text
-							fontSize="20px"
-							fontWeight="500"
-							color="gray.500">
-							{filters.searchQuery ||
-							filters.gender !== "all" ||
-							filters.pointRange !== "all"
-								? "Không tìm thấy khách hàng nào"
-								: "Chưa có khách hàng"}
-						</Text>
-					</Flex>
+					<>
+						{console.log('Empty state - customerList:', customerList, 'loading:', loading, 'error:', error)}
+						<Flex
+							direction="column"
+							justify="center"
+							align="center"
+							minH="400px"
+							gap={4}>
+							<Text
+								fontSize="20px"
+								fontWeight="500"
+								color="gray.500">
+								{filters.searchQuery ||
+								filters.gender !== "all" ||
+								filters.pointRange !== "all"
+									? "Không tìm thấy khách hàng nào"
+									: "Chưa có khách hàng"}
+							</Text>
+						</Flex>
+					</>
 				)}
 			</Box>
 

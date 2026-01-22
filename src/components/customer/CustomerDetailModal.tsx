@@ -19,11 +19,17 @@ import {
 	Icon,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
+import { customerService } from "../../services";
 import type { CustomerDetail } from "@/types";
+import { getCustomerName, getCustomerPhone, getCustomerGender } from "@/utils";
 import {
 	FiPhone,
+	FiMail,
+	FiMapPin,
 	FiCalendar,
 	FiStar,
+	FiShoppingBag,
+	FiDollarSign,
 } from "react-icons/fi";
 
 interface CustomerDetailModalProps {
@@ -54,14 +60,11 @@ const CustomerDetailModal = ({
 
 		setIsLoading(true);
 		try {
-			// TODO: Implement API call to fetch customer detail by ID
-			// const data = await customerService.getCustomerDetailById(customerId);
-			// setCustomerDetail(data || null);
-
-			// Placeholder until API is implemented
-			setCustomerDetail(null);
+			const data = await customerService.getCustomerById(customerId);
+			setCustomerDetail(data || null);
 		} catch (error) {
 			console.error("Error loading customer detail:", error);
+			setCustomerDetail(null);
 		} finally {
 			setIsLoading(false);
 		}
@@ -177,7 +180,7 @@ const CustomerDetailModal = ({
 									fontWeight="700"
 									color="brand.500"
 									flexShrink={0}>
-									{customerDetail.fullName.charAt(0)}
+									{getCustomerName(customerDetail).charAt(0)}
 								</Box>
 								{/* Basic Info */}
 								<VStack
@@ -188,16 +191,16 @@ const CustomerDetailModal = ({
 										fontSize="24px"
 										fontWeight="900"
 										color="brand.600">
-										{customerDetail.fullName}
+										{getCustomerName(customerDetail)}
 									</Text>
 									<Flex
 										gap={2}
 										align="center">
 										<Badge
 											colorScheme={
-												customerDetail.gender === "Nam"
+												getCustomerGender(customerDetail) === "Nam"
 													? "blue"
-													: customerDetail.gender ===
+													: getCustomerGender(customerDetail) ===
 													  "Nữ"
 													? "pink"
 													: "gray"
@@ -206,8 +209,26 @@ const CustomerDetailModal = ({
 											borderRadius="full"
 											px={3}
 											py={1}>
-											{customerDetail.gender || "Không rõ"}
+											{getCustomerGender(customerDetail)}
 										</Badge>
+										{customerDetail.status && (
+											<Badge
+												colorScheme={
+													customerDetail.status ===
+													"active"
+														? "green"
+														: "gray"
+												}
+												fontSize="13px"
+												borderRadius="full"
+												px={3}
+												py={1}>
+												{customerDetail.status ===
+												"active"
+													? "Hoạt động"
+													: "Không hoạt động"}
+											</Badge>
+										)}
 									</Flex>
 								</VStack>
 								{/* Loyalty Points */}
@@ -276,8 +297,22 @@ const CustomerDetailModal = ({
 										<InfoRow
 											icon={FiPhone}
 											label="Số điện thoại"
-											value={customerDetail.phoneNumber}
+											value={getCustomerPhone(customerDetail)}
 										/>
+										{customerDetail.email && (
+											<InfoRow
+												icon={FiMail}
+												label="Email"
+												value={customerDetail.email}
+											/>
+										)}
+										{customerDetail.address && (
+											<InfoRow
+												icon={FiMapPin}
+												label="Địa chỉ"
+												value={customerDetail.address}
+											/>
+										)}
 									</VStack>
 								</GridItem>
 
@@ -297,15 +332,56 @@ const CustomerDetailModal = ({
 											icon={FiCalendar}
 											label="Ngày đăng ký"
 											value={
-												customerDetail.registrationDate ?? undefined
+												customerDetail.registrationDate || customerDetail.registeredDate
 											}
 										/>
 										<InfoRow
 											icon={FiCalendar}
 											label="Ngày sinh"
-											value={customerDetail.dateOfBirth ?? undefined}
+											value={customerDetail.dateOfBirth}
 										/>
+										{customerDetail.purchaseCount !== undefined && (
+											<InfoRow
+												icon={FiShoppingBag}
+												label="Số lần mua hàng"
+												value={customerDetail.purchaseCount}
+											/>
+										)}
 									</VStack>
+								</GridItem>
+
+								{/* Span across both columns */}
+								<GridItem colSpan={2}>
+									<Grid
+										templateColumns="repeat(2, 1fr)"
+										gap={2}>
+										{customerDetail.lastPurchaseDate && (
+											<GridItem>
+												<InfoRow
+													icon={FiCalendar}
+													label="Lần mua gần nhất"
+													value={
+														customerDetail.lastPurchaseDate
+													}
+												/>
+											</GridItem>
+										)}
+										{customerDetail.totalSpent !== undefined && (
+											<GridItem>
+												<InfoRow
+													icon={FiDollarSign}
+													label="Tổng chi tiêu"
+													value={
+														customerDetail.totalSpent
+															? `${customerDetail.totalSpent.toLocaleString(
+																	"vi-VN",
+															  )} VNĐ`
+															: undefined
+													}
+												/>
+											</GridItem>
+										)}
+									</Grid>
 								</GridItem>
 							</Grid>
 						</VStack>

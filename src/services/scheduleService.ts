@@ -102,7 +102,10 @@ class ScheduleService {
 	 */
 	updateWorkShift = withErrorHandling(
 		async (id: string, data: UpdateWorkShiftDTO) => {
-			return await apiService.put(`/work-shift-templates/${id}`, data);
+			return await apiService.put(`/work-shift-templates/${id}`, {
+				...data,
+				isActive: true,
+			});
 		},
 	);
 
@@ -115,7 +118,7 @@ class ScheduleService {
 		async (id: string, data: Omit<UpdateWorkShiftDTO, "isActive">) => {
 			return await apiService.put(`/work-shift-templates/${id}`, {
 				...data,
-				is_active: false,
+				isActive: false,
 			});
 		},
 	);

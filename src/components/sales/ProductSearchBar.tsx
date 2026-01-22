@@ -151,7 +151,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					border="2px solid transparent"
 					borderRadius="10px"
 					fontSize="15px"
-					placeholder="T�m theo t�n s?n ph?m ho?c m� l� (VD: B�nh, LOT001)..."
+					placeholder="Tìm theo tên sản phẩm hoặc mã lô (VD: Bánh, LOT001)..."
 					value={searchQuery}
 					onChange={(e) => handleSearch(e.target.value)}
 					onFocus={() =>

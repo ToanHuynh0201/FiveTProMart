@@ -46,7 +46,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					borderColor="gray.200"
 					borderRadius="12px"
 					fontSize="16px"
-					placeholder="Tìm kiếm theo tên, mã hàng hoặc mã vạch..."
+					placeholder="Tìm kiếm theo tên hoặc mã hàng..."
 					value={filters.searchQuery}
 					onChange={(e) =>
 						handleFilterChange("searchQuery", e.target.value)
@@ -84,7 +84,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				{categories.map((cat) => (
 					<option
 						key={cat.categoryId}
-						value={cat.categoryName}>
+						value={cat.categoryId}>
 						{cat.categoryName}
 					</option>
 				))}

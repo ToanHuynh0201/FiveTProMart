@@ -17,11 +17,12 @@ import {
 	FormHelperText,
 } from "@chakra-ui/react";
 import type { InventoryCategory } from "@/types/inventory";
+import type { ProductRequest } from "@/services/inventoryService";
 
 interface AddProductModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onAdd: (product: any) => Promise<void>;
+	onAdd: (product: ProductRequest) => Promise<void>;
 	categories: InventoryCategory[];
 }
 

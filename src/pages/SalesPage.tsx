@@ -99,7 +99,6 @@ const SalesPage = () => {
 	const [activeTabIndex, setActiveTabIndex] = useState(0);
 
 	// Order history states
-	const [orders, setOrders] = useState<SalesOrder[]>([]);
 	const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
 	const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
 	const [orderPage, setOrderPage] = useState(1);
@@ -303,14 +302,35 @@ const SalesPage = () => {
 		loadOrders();
 
 		// Restore current order state from localStorage
+		// NOTE: We clear reservationIds because they're likely expired (15-min TTL)
+		// The items can still be checked out, but without reservation protection
 		try {
 			const saved = localStorage.getItem("salesPage_currentOrder");
 			if (saved && orderItems.length === 0) {
 				const currentOrderState = JSON.parse(saved);
-				setOrderItems(currentOrderState.orderItems || []);
+				// Clear stale reservation IDs - they've likely expired
+				const itemsWithoutReservations = (currentOrderState.orderItems || []).map(
+					(item: OrderItem) => ({
+						...item,
+						reservationId: undefined, // Clear potentially stale reservation
+					})
+				);
+				setOrderItems(itemsWithoutReservations);
 				setPaymentMethod(currentOrderState.paymentMethod);
 				if (currentOrderState.customer) {
 					setCustomer(currentOrderState.customer);
+				}
+				
+				// Warn user if there were items restored
+				if (itemsWithoutReservations.length > 0) {
+					toast({
+						title: "Giỏ hàng đã được khôi phục",
+						description: "Lưu ý: Hàng có thể đã được bán bởi quầy khác. Vui lòng kiểm tra.",
+						status: "warning",
+						duration: 5000,
+						isClosable: true,
+						position: "top",
+					});
 				}
 			}
 		} catch (error) {
@@ -362,12 +382,26 @@ const SalesPage = () => {
 
 	const loadOrders = async () => {
 		try {
+			const statusMap: Record<string, string> = {
+				completed: "Đã thanh toán",
+				draft: "Chưa thanh toán",
+				cancelled: "Đã huỷ",
+			};
+			const paymentMethodMap: Record<string, string> = {
+				cash: "Tiền mặt",
+				transfer: "Chuyển khoản",
+			};
+
 			// Convert UI filters to API format
 			const apiFilters: ApiOrderFilters = {
 				search: filters.searchQuery || undefined,
-				status: filters.status as ApiOrderFilters["status"],
+				status: filters.status
+					? (statusMap[filters.status] as ApiOrderFilters["status"])
+					: undefined,
 				paymentMethod:
-					filters.paymentMethod as ApiOrderFilters["paymentMethod"],
+					filters.paymentMethod
+						? (paymentMethodMap[filters.paymentMethod] as ApiOrderFilters["paymentMethod"])
+						: undefined,
 				startDate: filters.dateFrom || undefined,
 				endDate: filters.dateTo || undefined,
 				page: orderPage - 1,
@@ -407,7 +441,6 @@ const SalesPage = () => {
 				}),
 			);
 
-			setOrders(uiOrders);
 			setFilteredOrders(uiOrders);
 			setOrderTotalItems(response.pagination.totalItems);
 			setOrderTotalPages(response.pagination.totalPages);
@@ -419,7 +452,6 @@ const SalesPage = () => {
 				status: "error",
 				duration: 3000,
 			});
-			setOrders([]);
 			setFilteredOrders([]);
 			setOrderTotalItems(0);
 			setOrderTotalPages(1);
@@ -594,27 +626,6 @@ const SalesPage = () => {
 				),
 			);
 		} else {
-
-							// Re-validate stock availability to avoid stale reservations
-							const stockChecks = await Promise.all(
-								apiItems.map((item) =>
-									salesService.checkProduct(item.lotId, item.quantity),
-								),
-							);
-							const insufficient = stockChecks.find(
-								(result, index) => result.currentStock < apiItems[index].quantity,
-							);
-
-							if (insufficient) {
-								toast({
-									title: "Tồn kho không đủ",
-									description:
-										"Một hoặc nhiều lô hàng không còn đủ số lượng. Vui lòng quét lại.",
-									status: "error",
-									duration: 4000,
-								});
-								return;
-							}
 			// Reserve stock for new item
 			let reservationId: string | undefined;
 			if (batchId && user?.userId) {
@@ -657,32 +668,95 @@ const SalesPage = () => {
 		}
 	};
 
-	const handleUpdateQuantity = (itemId: string, quantity: number) => {
+	const handleUpdateQuantity = async (itemId: string, quantity: number) => {
 		if (quantity < 1) return;
 
-		setOrderItems((prevItems) =>
-			prevItems.map((item) => {
-				if (item.id === itemId) {
-					// Tìm số lượng tồn kho của lô hàng cụ thể
-					let maxQuantity = item.product.stock;
-					if (item.batchId) {
-						const batch = item.product.batches?.find(
-							(b) => b.id === item.batchId,
-						);
-						if (batch) {
-							maxQuantity = batch.quantity;
-						}
-					}
+		const item = orderItems.find((i) => i.id === itemId);
+		if (!item) return;
 
-					const newQuantity = Math.min(quantity, maxQuantity);
-					return {
-						...item,
-						quantity: newQuantity,
-						totalPrice: item.unitPrice * newQuantity,
-					};
+		// Calculate max quantity from batch
+		let maxQuantity = item.product.stock;
+		if (item.batchId) {
+			const batch = item.product.batches?.find((b) => b.id === item.batchId);
+			if (batch) {
+				maxQuantity = batch.quantity;
+			}
+		}
+
+		const newQuantity = Math.min(quantity, maxQuantity);
+		const quantityDelta = newQuantity - item.quantity;
+
+		// If no change, skip
+		if (quantityDelta === 0) return;
+
+		// Handle reservation sync for batch items
+		if (item.batchId && user?.userId) {
+			if (quantityDelta > 0) {
+				// INCREASING quantity: reserve additional units
+				try {
+					await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: quantityDelta,
+						reservedBy: user.userId,
+					});
+				} catch (error) {
+					toast({
+						title: "Không thể đặt thêm hàng",
+						description: "Số lượng yêu cầu vượt quá tồn kho khả dụng",
+						status: "error",
+						duration: 3000,
+						position: "top",
+					});
+					return; // Don't update if can't reserve
 				}
-				return item;
-			}),
+			} else if (quantityDelta < 0 && item.reservationId) {
+				// DECREASING quantity: release old reservation, create new one
+				// (Backend doesn't support partial release, so we do release + re-reserve)
+				try {
+					await reservationService.release({
+						reservationId: item.reservationId,
+						reason: "Quantity decreased",
+					});
+					
+					// Re-reserve with new quantity
+					const reservation = await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: newQuantity,
+						reservedBy: user.userId,
+					});
+					
+					// Update with new reservation ID
+					setOrderItems((prevItems) =>
+						prevItems.map((i) =>
+							i.id === itemId
+								? {
+										...i,
+										quantity: newQuantity,
+										totalPrice: (i.promotionalPrice ?? i.unitPrice) * newQuantity,
+										reservationId: reservation.reservationId,
+								  }
+								: i,
+						),
+					);
+					return; // Exit early, we've already updated
+				} catch (error) {
+					console.error("Failed to adjust reservation:", error);
+					// Continue with UI update even if reservation fails
+				}
+			}
+		}
+
+		// Update UI
+		setOrderItems((prevItems) =>
+			prevItems.map((i) =>
+				i.id === itemId
+					? {
+							...i,
+							quantity: newQuantity,
+							totalPrice: (i.promotionalPrice ?? i.unitPrice) * newQuantity,
+					  }
+					: i,
+			),
 		);
 	};
 
@@ -742,7 +816,10 @@ const SalesPage = () => {
 		return Math.floor(calculateFinalTotal() / 100);
 	};
 
-	const printReceipt = (response: CreateOrderResponse) => {
+	const printReceipt = (
+		response: CreateOrderResponse,
+		localData: { subTotal: number; discountAmount: number; amountGiven: number }
+	) => {
 		const receiptWindow = window.open(
 			"",
 			"_blank",
@@ -790,10 +867,10 @@ const SalesPage = () => {
 							${itemsHtml}
 						</tbody>
 					</table>
-					<div class="total">Tạm tính: ${response.subTotal.toLocaleString("vi-VN")}đ</div>
-					<div>Giảm giá: ${response.discountAmount.toLocaleString("vi-VN")}đ</div>
+					<div class="total">Tạm tính: ${localData.subTotal.toLocaleString("vi-VN")}đ</div>
+					<div>Giảm giá: ${localData.discountAmount.toLocaleString("vi-VN")}đ</div>
 					<div class="total">Tổng: ${response.totalAmount.toLocaleString("vi-VN")}đ</div>
-					<div>Tiền khách đưa: ${response.amountGiven.toLocaleString("vi-VN")}đ</div>
+					<div>Tiền khách đưa: ${localData.amountGiven.toLocaleString("vi-VN")}đ</div>
 					<div>Tiền thối: ${response.changeReturned.toLocaleString("vi-VN")}đ</div>
 				</body>
 			</html>
@@ -861,6 +938,10 @@ const SalesPage = () => {
 			const amountGiven =
 				cashReceived > 0 ? cashReceived : calculateFinalTotal();
 
+			// Calculate local values for receipt (BE doesn't return these)
+			const subTotal = calculateSubtotal();
+			const discountAmount = calculateDiscountAmount(subTotal);
+
 			// Call API to create order
 			const response = await salesService.createOrder({
 				staffId,
@@ -871,7 +952,7 @@ const SalesPage = () => {
 				discount: discount || undefined,
 			});
 
-			printReceipt(response);
+			printReceipt(response, { subTotal, discountAmount, amountGiven });
 
 			// Success notification - brief, professional confirmation
 			celebrate({
@@ -976,7 +1057,7 @@ const SalesPage = () => {
 	handlePauseOrderRef.current = handlePauseOrder;
 
 	// Khôi phục hóa đơn tạm dừng
-	const handleRestoreOrder = (order: PendingOrder) => {
+	const handleRestoreOrder = async (order: PendingOrder) => {
 		// Nếu đang có hóa đơn, tự động lưu vào danh sách pending
 		if (orderItems.length > 0) {
 			const currentPendingOrder: PendingOrder = {
@@ -1010,8 +1091,46 @@ const SalesPage = () => {
 			setPendingOrders(pendingOrders.filter((po) => po.id !== order.id));
 		}
 
+		// Re-reserve stock for restored items (old reservations are likely expired)
+		// This is critical for data integrity - pending orders can be restored hours later
+		const restoredItems: OrderItem[] = [];
+		const failedItems: string[] = [];
+
+		for (const item of order.items) {
+			if (item.batchId && user?.userId) {
+				try {
+					// Create fresh reservation (ignore old reservationId - it's expired)
+					const reservation = await reservationService.reserve({
+						lotId: item.batchId,
+						quantity: item.quantity,
+						reservedBy: user.userId,
+					});
+					
+					// Add item with fresh reservation ID
+					restoredItems.push({
+						...item,
+						reservationId: reservation.reservationId,
+					});
+				} catch (error) {
+					// Stock no longer available - add without reservation but warn user
+					console.error(`Failed to reserve stock for ${item.product.name}:`, error);
+					failedItems.push(item.product.name);
+					restoredItems.push({
+						...item,
+						reservationId: undefined, // Clear stale reservation
+					});
+				}
+			} else {
+				// No batch (shouldn't happen in normal flow) - add as-is
+				restoredItems.push({
+					...item,
+					reservationId: undefined,
+				});
+			}
+		}
+
 		// Khôi phục dữ liệu từ pending order
-		setOrderItems(order.items);
+		setOrderItems(restoredItems);
 		if (order.customer) {
 			setCustomer({
 				id: order.customer.id,
@@ -1029,14 +1148,26 @@ const SalesPage = () => {
 		}
 		setPaymentMethod(order.paymentMethod);
 
-		toast({
-			title: "Đã khôi phục hóa đơn",
-			description: `Hóa đơn ${order.orderNumber} đã được khôi phục`,
-			status: "success",
-			duration: 3000,
-			isClosable: true,
-			position: "top",
-		});
+		// Show appropriate toast based on results
+		if (failedItems.length > 0) {
+			toast({
+				title: "Khôi phục hóa đơn - Cảnh báo",
+				description: `Một số sản phẩm có thể đã hết hàng: ${failedItems.join(", ")}. Vui lòng kiểm tra lại.`,
+				status: "warning",
+				duration: 5000,
+				isClosable: true,
+				position: "top",
+			});
+		} else {
+			toast({
+				title: "Đã khôi phục hóa đơn",
+				description: `Hóa đơn ${order.orderNumber} đã được khôi phục`,
+				status: "success",
+				duration: 3000,
+				isClosable: true,
+				position: "top",
+			});
+		}
 	};
 
 	// Xóa hóa đơn tạm dừng

@@ -54,7 +54,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	onCustomerChange,
 	cashReceived,
 	onCashReceivedChange,
-	discount,
+	discount: _discount, // Currently unused - parent tracks discount state
 	onDiscountChange,
 }) => {
 	// Get sidebar width for proper positioning

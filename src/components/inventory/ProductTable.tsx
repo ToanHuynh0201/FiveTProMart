@@ -31,6 +31,7 @@ interface ProductTableProps {
 	onViewDetail: (id: string) => void;
 	onEdit: (id: string) => void;
 	onDelete: (id: string) => void;
+	onManageBatches?: (id: string) => void;
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({
@@ -39,6 +40,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	onViewDetail,
 	onEdit,
 	onDelete,
+	onManageBatches,
 }) => {
 	const toast = useToast();
 	// Create a key based o
@@ -227,7 +229,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 											);
 											toast({
 												title: "Đã copy",
-												description: `Đã copy mã lô: ${product.productId}`,
+												description: `Đã copy mã sản phẩm: ${product.productId}`,
 												status: "success",
 												duration: 1500,
 											});
@@ -288,10 +290,10 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 										justify="center"
 										gap={1}>
 										<Tooltip
-											label="Xem chi tiß║┐t"
+											label="Xem chi tiết"
 											fontSize="xs">
 											<IconButton
-												aria-label="Xem chi tiß║┐t"
+												aria-label="Xem chi tiết"
 												icon={<ViewIcon />}
 												size="sm"
 												variant="ghost"
@@ -306,12 +308,18 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 										<Menu>
 											<MenuButton
 												as={IconButton}
-												aria-label="Thao t├íc kh├íc"
+												aria-label="Thao tác khác"
 												icon={<BsThreeDotsVertical />}
 												size="sm"
 												variant="ghost"
 											/>
 											<MenuList>
+												{onManageBatches && (
+													<MenuItem
+														onClick={() => onManageBatches(product.productId)}>
+														Quản lý lô hàng
+													</MenuItem>
+												)}
 												<MenuItem
 													icon={<EditIcon />}
 													onClick={() =>
@@ -346,7 +354,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 					variant="no-search-results"
 					size="md"
 					title="Không tìm thấy sản phẩm"
-					description="Thß╗¡ thay ─æß╗òi bß╗Ö lß╗ìc hoß║╖c tß╗½ kh├│a t├¼m kiß║┐m"
+					description="Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
 				/>
 			)}
 		</Box>

@@ -9,7 +9,7 @@ import { buildQueryParams } from "@/utils/queryParams";
  * Request type for creating/updating products
  * Matches backend ProductRequest.java exactly
  */
-interface ProductRequest {
+export interface ProductRequest {
 	categoryId: string;
 	productName: string;
 	unitOfMeasure: string;
@@ -70,7 +70,36 @@ export const inventoryService = {
 	async getProducts(
 		filters: InventoryFilters,
 	): Promise<ApiResponse<InventoryProduct>> {
-		const params = buildQueryParams(filters);
+		const isUuid = (value?: string) =>
+			!!value &&
+			/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+				value,
+			);
+
+		const derivedStockLevel =
+			filters.status === "out-of-stock" ? "out" : filters.stockLevel;
+
+		const mappedFilters = {
+			page: filters.page,
+			size: filters.size,
+			productId: isUuid(filters.searchQuery)
+				? filters.searchQuery
+				: undefined,
+			productName:
+				filters.searchQuery && !isUuid(filters.searchQuery)
+					? filters.searchQuery
+					: undefined,
+			categoryId: filters.category,
+			stockLevel: derivedStockLevel,
+			isActive:
+				filters.status === "active"
+					? true
+					: filters.status === "inactive"
+						? false
+						: undefined,
+		};
+
+		const params = buildQueryParams(mappedFilters);
 		return apiService.get<ApiResponse<InventoryProduct>>(
 			`/products?${params.toString()}`,
 		);

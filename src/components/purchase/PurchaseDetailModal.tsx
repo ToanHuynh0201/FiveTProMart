@@ -46,16 +46,6 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 		}).format(amount);
 	};
 
-	const formatDate = (dateString?: string) => {
-		if (!dateString) return "-";
-		try {
-			const date = new Date(dateString);
-			return date.toLocaleDateString("vi-VN");
-		} catch {
-			return dateString;
-		}
-	};
-
 	const getStatusBadge = (status: PurchaseStatus) => {
 		const statusConfig = {
 			Draft: { color: "gray", label: "Nháp" },
@@ -162,9 +152,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 													as="span"
 													fontWeight="600"
 													color="gray.800">
-													{formatDate(
-														purchase.purchaseDate,
-													)}
+													{purchase.purchaseDate}
 												</Text>
 											</Text>
 											{purchase.checkDate && (
@@ -176,9 +164,7 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 														as="span"
 														fontWeight="600"
 														color="gray.800">
-														{formatDate(
-															purchase.checkDate,
-														)}
+														{purchase.checkDate}
 													</Text>
 												</Text>
 											)}

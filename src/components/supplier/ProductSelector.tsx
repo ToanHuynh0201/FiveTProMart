@@ -74,9 +74,9 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 			if (response.data) {
 				// Filter out already selected products
 				const selectedIds = selectedProducts.map((p) => p.productId);
-				const filtered = (response.data as unknown as InventoryProduct[]).filter(
-					(p) => !selectedIds.includes(p.productId),
-				);
+				const filtered = (
+					response.data as unknown as InventoryProduct[]
+				).filter((p) => !selectedIds.includes(p.productId));
 				setSearchResults(filtered);
 				setShowResults(true);
 			}
@@ -110,26 +110,45 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 
 	const handleRemoveProduct = useCallback(
 		(productId: string) => {
-			onProductsChange(selectedProducts.filter((p) => p.productId !== productId));
+			onProductsChange(
+				selectedProducts.filter((p) => p.productId !== productId),
+			);
 		},
 		[selectedProducts, onProductsChange],
 	);
 
 	return (
-		<Box position="relative">
+		<Box
+			position="relative"
+			marginBottom="20px">
 			{/* Search Input */}
-			<InputGroup size="md">
-				<InputLeftElement pointerEvents="none">
-					<Icon as={FiSearch} color="gray.400" />
+			<InputGroup size="lg">
+				<InputLeftElement
+					pointerEvents="none"
+					h="52px">
+					<Icon
+						as={FiSearch}
+						color="gray.400"
+						boxSize={5}
+					/>
 				</InputLeftElement>
 				<Input
 					placeholder="Tìm kiếm sản phẩm theo tên hoặc mã..."
 					value={searchQuery}
 					onChange={(e) => setSearchQuery(e.target.value)}
-					onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
+					onFocus={() =>
+						searchQuery.length >= 2 && setShowResults(true)
+					}
 					isDisabled={isDisabled}
 					borderColor="gray.300"
-					_focus={{ borderColor: "#161f70", boxShadow: "0 0 0 1px #161f70" }}
+					fontSize="16px"
+					h="52px"
+					bg="white"
+					_hover={{ borderColor: "gray.400" }}
+					_focus={{
+						borderColor: "#161f70",
+						boxShadow: "0 0 0 1px #161f70",
+					}}
 				/>
 			</InputGroup>
 
@@ -140,44 +159,61 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 					top="100%"
 					left={0}
 					right={0}
-					mt={1}
+					mt={2}
 					bg="white"
-					borderRadius="md"
+					borderRadius="lg"
 					border="1px solid"
 					borderColor="gray.200"
-					boxShadow="lg"
-					maxH="200px"
+					boxShadow="xl"
+					maxH="320px"
 					overflowY="auto"
-					zIndex={10}>
+					zIndex={1000}>
 					{isSearching ? (
-						<Center py={4}>
-							<Spinner size="sm" color="#161f70" />
+						<Center py={8}>
+							<Spinner
+								size="md"
+								color="#161f70"
+								thickness="3px"
+							/>
 						</Center>
 					) : searchResults.length > 0 ? (
-						<VStack align="stretch" spacing={0}>
+						<VStack
+							align="stretch"
+							spacing={0}
+							p={2}>
 							{searchResults.map((product) => (
 								<Flex
 									key={product.productId}
-									px={3}
-									py={2}
+									px={4}
+									py={3}
 									align="center"
 									justify="space-between"
-									_hover={{ bg: "gray.50" }}
+									borderRadius="md"
+									_hover={{ bg: "blue.50" }}
 									cursor="pointer"
-									onClick={() => handleAddProduct(product)}>
-									<Box>
-										<Text fontSize="13px" fontWeight="600" color="gray.800">
+									onClick={() => handleAddProduct(product)}
+									transition="all 0.2s">
+									<Box flex="1">
+										<Text
+											fontSize="15px"
+											fontWeight="600"
+											color="gray.800"
+											mb={1}>
 											{product.productName}
 										</Text>
 										<HStack spacing={2}>
-											<Text fontSize="11px" color="gray.500">
-												{product.productId}
+											<Text
+												fontSize="13px"
+												color="gray.500"
+												fontWeight="500">
+												Mã: {product.productId}
 											</Text>
 											<Badge
 												colorScheme="purple"
-												fontSize="10px"
-												px={1.5}
-												borderRadius="sm">
+												fontSize="11px"
+												px={2}
+												py={0.5}
+												borderRadius="md">
 												{product.categoryId}
 											</Badge>
 										</HStack>
@@ -185,19 +221,29 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 									<IconButton
 										aria-label="Thêm sản phẩm"
 										icon={<FiPlus />}
-										size="xs"
+										size="sm"
 										variant="ghost"
 										color="#161f70"
-										_hover={{ bg: "blue.50" }}
+										_hover={{ bg: "blue.100" }}
 									/>
 								</Flex>
 							))}
 						</VStack>
 					) : (
-						<Center py={4}>
-							<Text fontSize="13px" color="gray.500">
-								Không tìm thấy sản phẩm
-							</Text>
+						<Center py={8}>
+							<VStack spacing={2}>
+								<Icon
+									as={FiSearch}
+									boxSize={8}
+									color="gray.300"
+								/>
+								<Text
+									fontSize="14px"
+									color="gray.500"
+									fontWeight="500">
+									Không tìm thấy sản phẩm
+								</Text>
+							</VStack>
 						</Center>
 					)}
 				</Box>
@@ -205,37 +251,60 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 
 			{/* Selected Products Table */}
 			{selectedProducts.length > 0 && (
-				<Box mt={3}>
-					<Text fontSize="12px" fontWeight="600" color="gray.600" mb={2}>
+				<Box mt={4}>
+					<Text
+						fontSize="14px"
+						fontWeight="600"
+						color="gray.700"
+						mb={3}>
 						Sản phẩm đã chọn ({selectedProducts.length})
 					</Text>
 					<Box
 						border="1px solid"
 						borderColor="gray.200"
-						borderRadius="8px"
-						overflow="hidden">
-						<Table size="sm">
+						borderRadius="lg"
+						overflow="hidden"
+						boxShadow="sm">
+						<Table size="md">
 							<Thead bg="gray.50">
 								<Tr>
-									<Th width="60px">STT</Th>
-									<Th>Tên sản phẩm</Th>
-									<Th width="50px"></Th>
+									<Th
+										width="70px"
+										fontSize="13px">
+										STT
+									</Th>
+									<Th fontSize="13px">Tên sản phẩm</Th>
+									<Th width="60px"></Th>
 								</Tr>
 							</Thead>
 							<Tbody>
 								{selectedProducts.map((product, index) => (
-									<Tr key={product.productId}>
-										<Td fontSize="13px">{index + 1}</Td>
-										<Td fontSize="13px">{product.productName}</Td>
+									<Tr
+										key={product.productId}
+										_hover={{ bg: "gray.50" }}>
+										<Td
+											fontSize="14px"
+											fontWeight="500">
+											{index + 1}
+										</Td>
+										<Td
+											fontSize="14px"
+											fontWeight="500">
+											{product.productName}
+										</Td>
 										<Td>
 											{!isDisabled && (
 												<IconButton
 													aria-label="Xóa sản phẩm"
 													icon={<DeleteIcon />}
-													size="xs"
+													size="sm"
 													colorScheme="red"
 													variant="ghost"
-													onClick={() => handleRemoveProduct(product.productId)}
+													onClick={() =>
+														handleRemoveProduct(
+															product.productId,
+														)
+													}
 												/>
 											)}
 										</Td>
@@ -255,7 +324,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
 					left={0}
 					right={0}
 					bottom={0}
-					zIndex={5}
+					zIndex={999}
 					onClick={() => setShowResults(false)}
 				/>
 			)}

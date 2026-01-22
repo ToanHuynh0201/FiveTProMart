@@ -1,4 +1,12 @@
-import { Box, Flex, Select, Input, HStack, Text } from "@chakra-ui/react";
+import {
+	Box,
+	Flex,
+	Select,
+	Input,
+	HStack,
+	Text,
+	useToast,
+} from "@chakra-ui/react";
 import type { PurchaseFilter } from "@/types/purchase";
 
 interface PurchaseFilterBarProps {
@@ -10,7 +18,32 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 	filters,
 	onFiltersChange,
 }) => {
+	const toast = useToast();
+
 	const handleFilterChange = (key: keyof PurchaseFilter, value: string) => {
+		// Validate date range when either date changes
+		if (key === "startDate" || key === "endDate") {
+			const startDate = key === "startDate" ? value : filters.startDate;
+			const endDate = key === "endDate" ? value : filters.endDate;
+
+			// Check if both dates are provided and endDate is before startDate
+			if (
+				startDate &&
+				endDate &&
+				new Date(endDate) < new Date(startDate)
+			) {
+				toast({
+					title: "Lỗi",
+					description:
+						"Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
+				});
+				return; // Don't update the filter
+			}
+		}
+
 		onFiltersChange({
 			...filters,
 			[key]: value,
@@ -31,7 +64,9 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 				{/* Status Filter */}
 				<Select
 					value={filters.status || "all"}
-					onChange={(e) => handleFilterChange("status", e.target.value)}
+					onChange={(e) =>
+						handleFilterChange("status", e.target.value)
+					}
 					bg="gray.50"
 					border="1px solid"
 					borderColor="gray.200"
@@ -78,7 +113,8 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 							_focus={{
 								bg: "white",
 								borderColor: "brand.500",
-								boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)",
+								boxShadow:
+									"0 0 0 1px var(--chakra-colors-brand-500)",
 							}}
 						/>
 					</Box>
@@ -105,7 +141,8 @@ export const PurchaseFilterBar: React.FC<PurchaseFilterBarProps> = ({
 							_focus={{
 								bg: "white",
 								borderColor: "brand.500",
-								boxShadow: "0 0 0 1px var(--chakra-colors-brand-500)",
+								boxShadow:
+									"0 0 0 1px var(--chakra-colors-brand-500)",
 							}}
 						/>
 					</Box>

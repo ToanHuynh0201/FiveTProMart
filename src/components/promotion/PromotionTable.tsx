@@ -175,7 +175,8 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 								fontWeight="700"
 								color="gray.700"
 								textTransform="none"
-								py={4}>
+								py={4}
+								maxW="50px">
 								Tên chương trình
 							</Th>
 							<Th
@@ -338,7 +339,9 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 												variant="ghost"
 												colorScheme="orange"
 												onClick={() =>
-													onEdit(promotion.promotionId)
+													onEdit(
+														promotion.promotionId,
+													)
 												}
 												isDisabled={
 													!canEdit(promotion.status)
@@ -360,7 +363,9 @@ export const PromotionTable: React.FC<PromotionTableProps> = ({
 												variant="ghost"
 												colorScheme="red"
 												onClick={() =>
-													onCancel(promotion.promotionId)
+													onCancel(
+														promotion.promotionId,
+													)
 												}
 												isDisabled={
 													!canCancel(promotion.status)

@@ -1,4 +1,5 @@
 import type { IconType } from "react-icons";
+import type { PermissionModule } from "./permissions";
 
 export interface NavItemBadge {
 	count: number;
@@ -13,6 +14,8 @@ export interface NavItem {
 	children?: NavItem[];
 	/** Optional badge to display alert counts */
 	badge?: NavItemBadge;
+	/** Required permission module to access this nav item */
+	module?: PermissionModule;
 }
 
 export interface User {

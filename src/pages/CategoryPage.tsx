@@ -36,7 +36,7 @@ const CategoryPage = () => {
 
 	// State
 	const [categories, setCategories] = useState<CategoryDTO[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
 		null,
@@ -68,7 +68,6 @@ const CategoryPage = () => {
 		setIsLoading(true);
 		try {
 			const categories = await inventoryService.getCategories(search);
-			console.log(categories);
 
 			setCategories(categories);
 		} catch (error) {
@@ -84,12 +83,7 @@ const CategoryPage = () => {
 		}
 	};
 
-	// Load categories on mount
-	useEffect(() => {
-		fetchCategories();
-	}, []);
-
-	// Handle search with debounce
+	// Handle search with debounce (also handles initial load)
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			fetchCategories(searchQuery);

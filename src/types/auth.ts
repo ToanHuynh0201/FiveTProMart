@@ -1,10 +1,15 @@
 export interface User {
-    id: string;
-    name: string;
+    profileId: string;
+    userId: string;
+    username: string;
+    fullName: string;
     email: string;
-    position: string;
-    avatar?: string;
-    phone?: string;
+    phoneNumber: string;
+    dateOfBirth: string; // Format: DD-MM-YYYY
+    location: string;
+    bio: string;
+    accountType: string;
+    avatarUrl: string;
 }
 
 export interface LoginCredentials {

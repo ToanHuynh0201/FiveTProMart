@@ -292,7 +292,7 @@ const InventoryPage = () => {
 	) => {
 		try {
 			// Process each disposal item
-			const staffId = user?.id ?? "guest_staff";
+			const staffId = user?.userId ?? "guest_staff";
 
 			for (const item of items) {
 				await inventoryService.disposeLot(

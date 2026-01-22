@@ -2,9 +2,9 @@ import { Box, Flex, Text, Avatar, Tooltip } from "@chakra-ui/react";
 
 interface SidebarUserProfileProps {
 	user: {
-		name?: string;
+		fullName?: string;
 		email?: string;
-		role?: string;
+		accountType?: string;
 	};
 	isCollapsed: boolean;
 }
@@ -16,7 +16,7 @@ export function SidebarUserProfile({
 	if (isCollapsed) {
 		return (
 			<Tooltip
-				label={`${user.name} - ${user.role}`}
+				label={`${user.fullName} - ${user.accountType}`}
 				placement="right"
 				hasArrow>
 				<Flex
@@ -25,7 +25,7 @@ export function SidebarUserProfile({
 					py={3}>
 					<Avatar
 						size="sm"
-						name={user.name || "User"}
+						name={user.fullName || "User"}
 						bg="brand.100"
 						color="brand.500"
 						w="40px"
@@ -58,7 +58,7 @@ export function SidebarUserProfile({
 			{/* Avatar */}
 			<Avatar
 				size="md"
-				name={user.name || "User"}
+				name={user.fullName || "User"}
 				bg="brand.100"
 				color="brand.500"
 				w="45px"
@@ -80,10 +80,10 @@ export function SidebarUserProfile({
 					fontWeight="600"
 					lineHeight="1.21"
 					noOfLines={1}>
-					{user.name || "Người dùng"}
+					{user.fullName || "Người dùng"}
 				</Text>
 				{/* Role với underline màu xanh */}
-				{user.role && (
+				{user.accountType && (
 					<Box mt={1}>
 						<Text
 							color="brand.100"
@@ -91,7 +91,7 @@ export function SidebarUserProfile({
 							fontWeight="700"
 							lineHeight="1.21"
 							noOfLines={1}>
-							{user.role}
+							{user.accountType}
 						</Text>
 					</Box>
 				)}

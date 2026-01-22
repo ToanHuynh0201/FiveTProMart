@@ -15,7 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 class AuthService {
 	/**
 	 * Login user with credentials
-	 * 
+	 *
 	 * DEFENSIVE: Validates Content-Type, wraps JSON parsing, provides actionable errors
 	 */
 	async login(credentials: LoginCredentials): Promise<LoginResponse> {
@@ -34,7 +34,7 @@ class AuthService {
 			const contentType = response.headers.get("content-type");
 			if (!contentType?.includes("application/json")) {
 				throw new Error(
-					`Server returned unexpected format (${response.status} ${response.statusText}). Expected JSON but got ${contentType || "unknown type"}.`
+					`Server returned unexpected format (${response.status} ${response.statusText}). Expected JSON but got ${contentType || "unknown type"}.`,
 				);
 			}
 
@@ -44,13 +44,16 @@ class AuthService {
 				apiResponse = await response.json();
 			} catch (parseError) {
 				throw new Error(
-					`Failed to parse server response (${response.status}). The server may be experiencing issues.`
+					`Failed to parse server response (${response.status}). The server may be experiencing issues.`,
 				);
 			}
 
 			// Handle error responses (4xx/5xx)
 			if (!response.ok) {
-				const errorMessage = apiResponse?.message || apiResponse?.error?.message || "Login failed";
+				const errorMessage =
+					apiResponse?.message ||
+					apiResponse?.error?.message ||
+					"Login failed";
 				throw new Error(errorMessage);
 			}
 
@@ -63,8 +66,8 @@ class AuthService {
 				throw new Error("No access token in login response");
 			}
 
-			// Fetch user profile (backend doesn't return it in login response)
-			// await this.getUserDetail();
+			// Fetch user profile and store it (backend doesn't return it in login response)
+			await this.getUserDetail();
 
 			return apiResponse;
 		} catch (error) {
@@ -101,8 +104,16 @@ class AuthService {
 	 */
 	async getUserDetail(): Promise<User | null> {
 		try {
-			const response = await apiService.get<User>("/auth/me");
-			const user: User = response;
+			// apiService.get unwraps res.data, so response = { success, message, data: User }
+			const response = await apiService.get<{
+				success: boolean;
+				message: string;
+				data: User;
+			}>("/auth/me");
+
+			console.log(response);
+
+			const user: User = response.data;
 
 			// Update store with fresh user data
 			useAuthStore.getState().setUser(user);
@@ -145,8 +156,16 @@ class AuthService {
 	/**
 	 * Reset password with OTP verification
 	 */
-	async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
-		await apiService.post("/auth/reset-password", { email, otp, newPassword });
+	async resetPassword(
+		email: string,
+		otp: string,
+		newPassword: string,
+	): Promise<void> {
+		await apiService.post("/auth/reset-password", {
+			email,
+			otp,
+			newPassword,
+		});
 	}
 }
 

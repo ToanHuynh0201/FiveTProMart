@@ -79,6 +79,20 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
+		// Username validation (3-50 characters, only letters, numbers, underscores)
+		const usernameRegex = /^[a-zA-Z0-9_]{3,50}$/;
+		if (!usernameRegex.test(formData.username.trim())) {
+			toast({
+				title: "Lỗi",
+				description:
+					"Tên đăng nhập phải có 3-50 ký tự và chỉ chứa chữ cái, số, và dấu gạch dưới",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+			return;
+		}
+
 		if (!formData.password.trim()) {
 			toast({
 				title: "Lỗi",
@@ -90,7 +104,6 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 			return;
 		}
 
-		// Password validation - must match backend requirements
 		const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 		if (!passwordRegex.test(formData.password)) {
 			toast({
@@ -155,7 +168,8 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 		if (!phoneRegex.test(formData.phoneNumber)) {
 			toast({
 				title: "Lỗi",
-				description: "Số điện thoại phải có 10 chữ số và bắt đầu bằng 0",
+				description:
+					"Số điện thoại phải có 10 chữ số và bắt đầu bằng 0",
 				status: "error",
 				duration: 3000,
 				isClosable: true,
@@ -263,7 +277,7 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 												username: e.target.value,
 											})
 										}
-										placeholder="username123"
+										placeholder="3-50 ký tự (chữ, số, _)"
 										size="md"
 									/>
 								</FormControl>
@@ -291,7 +305,8 @@ const AddStaffModal = ({ isOpen, onClose, onAdd }: AddStaffModalProps) => {
 													password: e.target.value,
 												})
 											}
-										placeholder="Ít nhất 8 ký tự, có chữ hoa, thường, số"
+
+											placeholder="Ít nhất 8 ký tự (A-Z, a-z, 0-9)"
 											size="md"
 										/>
 										<InputRightElement>

@@ -1,7 +1,7 @@
 /**
  * Account type enum - matches backend enum
  */
-export type AccountType = "SalesStaff" | "WarehouseStaff";
+export type AccountType = "SalesStaff" | "WarehouseStaff" | "Admin";
 
 /**
  * Staff model - matches backend response from GET /api/staffs/
@@ -62,6 +62,7 @@ export interface UpdateStaffDTO {
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 	SalesStaff: "Nhân viên bán hàng",
 	WarehouseStaff: "Nhân viên kho",
+	Admin: "Admin",
 };
 
 /**
@@ -70,4 +71,5 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
 export const ACCOUNT_TYPE_OPTIONS: { value: AccountType; label: string }[] = [
 	{ value: "SalesStaff", label: "Nhân viên bán hàng" },
 	{ value: "WarehouseStaff", label: "Nhân viên kho" },
+	{ value: "Admin", label: "Admin" },
 ];

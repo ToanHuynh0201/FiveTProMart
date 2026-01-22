@@ -79,7 +79,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 	useEffect(() => {
 		const fetchShifts = async () => {
 			// Only fetch if user is logged in
-			if (!user?.id) {
+			if (!user?.profileId) {
 				setIsLoading(false);
 				setShifts([]);
 				return;
@@ -94,7 +94,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				const result = await scheduleService.getWorkSchedules({
 					startDate: formatDateForAPI(today),
 					endDate: formatDateForAPI(endDate),
-					profileId: user.id,
+					profileId: user?.profileId,
 				});
 
 				if (result.success && result.data) {
@@ -141,7 +141,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 		};
 
 		fetchShifts();
-	}, [user?.id]);
+	}, [user?.profileId]);
 
 	const nearestShift = shifts[0];
 

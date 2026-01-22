@@ -9,43 +9,65 @@ import { SidebarUserProfile } from "./SidebarUserProfile";
 import { UpcomingShifts } from "./UpcomingShifts";
 import { navItems } from "./sidebarConfig";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useInventoryAlerts } from "@/hooks";
-import { useSidebar, SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "@/contexts/SidebarContext";
+import {
+	useSidebar,
+	SIDEBAR_WIDTH_EXPANDED,
+	SIDEBAR_WIDTH_COLLAPSED,
+} from "@/contexts/SidebarContext";
 import type { NavItem } from "@/types/layout";
 
 function Sidebar() {
 	const location = useLocation();
 	const { user, logout } = useAuth();
+	const { hasAccess } = usePermissions();
 	const { criticalCount, warningCount } = useInventoryAlerts();
 	const { isCollapsed, toggleSidebar } = useSidebar();
 
 	const isActivePath = (path: string) => location.pathname === path;
 
-	// Inject dynamic badges into nav items
+	// Filter nav items based on permissions and inject dynamic badges
 	const navItemsWithBadges: NavItem[] = useMemo(() => {
-		return navItems.map((item) => {
-			// Add badge to inventory page for critical/warning alerts
-			if (item.path === "/inventory") {
-				const totalAlerts = criticalCount + warningCount;
-				if (totalAlerts > 0) {
-					return {
-						...item,
-						badge: {
-							count: totalAlerts,
-							// Red for critical, orange if only warnings
-							colorScheme: criticalCount > 0 ? "red" : "orange",
-						},
-					};
-				}
-			}
-			return item;
-		});
-	}, [criticalCount, warningCount]);
+		return (
+			navItems
+				// .filter((item) => {
+				// 	// If item has a module requirement, check permission
+				// 	if (item.module) {
+				// 		return hasAccess(item.module);
+				// 	}
+				// 	// Items without module requirement are always visible
+				// 	return true;
+				// })
+				.map((item) => {
+					// Add badge to inventory page for critical/warning alerts
+					if (item.path === "/inventory") {
+						const totalAlerts = criticalCount + warningCount;
+						if (totalAlerts > 0) {
+							return {
+								...item,
+								badge: {
+									count: totalAlerts,
+									// Red for critical, orange if only warnings
+									colorScheme:
+										criticalCount > 0 ? "red" : "orange",
+								},
+							};
+						}
+					}
+					return item;
+				})
+		);
+	}, [criticalCount, warningCount, hasAccess]);
 
 	return (
 		<Flex
 			direction="column"
-			w={isCollapsed ? `${SIDEBAR_WIDTH_COLLAPSED}px` : `${SIDEBAR_WIDTH_EXPANDED}px`}
+			w={
+				isCollapsed
+					? `${SIDEBAR_WIDTH_COLLAPSED}px`
+					: `${SIDEBAR_WIDTH_EXPANDED}px`
+			}
 			h="100vh"
 			bg="brand.500"
 			position="relative"

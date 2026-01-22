@@ -25,7 +25,12 @@ import {
 	BarcodeScanner,
 } from "../components/sales";
 import type { ScannedPromotionInfo } from "../components/sales/BarcodeScanner";
-import { KeyboardShortcutsModal, SaleCelebration, useSaleCelebration } from "../components/common";
+import {
+	KeyboardShortcutsModal,
+	SaleCelebration,
+	useSaleCelebration,
+	Pagination,
+} from "../components/common";
 import type {
 	OrderItem,
 	PaymentMethod,
@@ -35,12 +40,14 @@ import type {
 	OrderFilters as ApiOrderFilters,
 	OrderListItem,
 	DiscountRequest,
+	CreateOrderResponse,
 } from "../types/sales";
 import type { OrderFilters } from "../components/sales/OrderFilterBar";
 import { isExpired, isExpiringSoon } from "../utils/date";
 import { salesService } from "../services/salesService";
 import { reservationService } from "../services/reservationService";
 import { useAuthStore } from "../store/authStore";
+import { API_CONFIG } from "../constants";
 import { useKeyboardShortcuts } from "../hooks";
 
 interface Customer {
@@ -49,6 +56,8 @@ interface Customer {
 	phone: string;
 	points?: number;
 }
+
+const createDraftOrderNumber = () => `TẠM-${Date.now()}`;
 
 const SalesPage = () => {
 	const toast = useToast();
@@ -65,10 +74,8 @@ const SalesPage = () => {
 	>();
 	const [cashReceived, setCashReceived] = useState<number>(0);
 	const [discount, setDiscount] = useState<DiscountRequest | null>(null);
-	const [orderNumber] = useState(
-		`#${Math.floor(Math.random() * 90000000) + 10000000}`,
-	);
-	const [createdAt] = useState(new Date());
+	const [orderNumber, setOrderNumber] = useState(createDraftOrderNumber);
+	const [createdAt, setCreatedAt] = useState(new Date());
 	// Pending orders state - Load from localStorage
 	const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
 		try {
@@ -95,6 +102,10 @@ const SalesPage = () => {
 	const [orders, setOrders] = useState<SalesOrder[]>([]);
 	const [filteredOrders, setFilteredOrders] = useState<SalesOrder[]>([]);
 	const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
+	const [orderPage, setOrderPage] = useState(1);
+	const [orderPageSize] = useState(10);
+	const [orderTotalItems, setOrderTotalItems] = useState(0);
+	const [orderTotalPages, setOrderTotalPages] = useState(1);
 	const [filters, setFilters] = useState<OrderFilters>({
 		searchQuery: "",
 		status: "",
@@ -123,6 +134,53 @@ const SalesPage = () => {
 	// Refs for handlers that are defined later (needed for keyboard shortcuts)
 	const handlePrintRef = useRef<() => void>(() => {});
 	const handlePauseOrderRef = useRef<() => void>(() => {});
+
+	// Track current reservation IDs for cleanup on page unload
+	// Using ref to avoid re-renders and keep value fresh in cleanup callback
+	const activeReservationsRef = useRef<string[]>([]);
+	useEffect(() => {
+		activeReservationsRef.current = orderItems
+			.filter((item) => item.reservationId)
+			.map((item) => item.reservationId as string);
+	}, [orderItems]);
+
+	// Cleanup reservations when browser tab/window closes (zombie prevention)
+	// Backend has 15-min TTL as fallback, but this provides faster cleanup
+	useEffect(() => {
+		const handleBeforeUnload = () => {
+			const reservationIds = activeReservationsRef.current;
+			if (reservationIds.length === 0) return;
+
+			// Use sendBeacon for reliable delivery during unload
+			// Note: sendBeacon only supports simple POST with form/text data
+			// We send a JSON blob and rely on backend accepting application/json
+			const payload = JSON.stringify({
+				reservationIds,
+				reason: "Browser closed",
+			});
+			const endpoint = `${API_CONFIG.BASE_URL}/stock-reservations/release-batch`;
+			const accessToken = useAuthStore.getState().accessToken;
+
+			if (accessToken) {
+				void fetch(endpoint, {
+					method: "POST",
+					keepalive: true,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${accessToken}`,
+					},
+					credentials: "include",
+					body: payload,
+				});
+			} else {
+				const blob = new Blob([payload], { type: "application/json" });
+				navigator.sendBeacon(endpoint, blob);
+			}
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+	}, []);
 
 	// Keyboard shortcut handlers (memoized for stable references)
 	const handleClearCart = useCallback(async () => {
@@ -264,7 +322,7 @@ const SalesPage = () => {
 	useEffect(() => {
 		// Apply filters when filters change
 		applyFilters();
-	}, [filters, orders]);
+	}, [filters, orderPage]);
 
 	// Save pending orders to localStorage whenever they change
 	useEffect(() => {
@@ -312,8 +370,8 @@ const SalesPage = () => {
 					filters.paymentMethod as ApiOrderFilters["paymentMethod"],
 				startDate: filters.dateFrom || undefined,
 				endDate: filters.dateTo || undefined,
-				page: 0,
-				size: 50,
+				page: orderPage - 1,
+				size: orderPageSize,
 				sort: "orderDate,desc",
 			};
 
@@ -351,6 +409,8 @@ const SalesPage = () => {
 
 			setOrders(uiOrders);
 			setFilteredOrders(uiOrders);
+			setOrderTotalItems(response.pagination.totalItems);
+			setOrderTotalPages(response.pagination.totalPages);
 		} catch (error) {
 			console.error("Error loading orders:", error);
 			toast({
@@ -361,6 +421,8 @@ const SalesPage = () => {
 			});
 			setOrders([]);
 			setFilteredOrders([]);
+			setOrderTotalItems(0);
+			setOrderTotalPages(1);
 		}
 	};
 
@@ -371,6 +433,7 @@ const SalesPage = () => {
 
 	const handleFiltersChange = (newFilters: OrderFilters) => {
 		setFilters(newFilters);
+		setOrderPage(1);
 	};
 
 	const handleResetFilters = () => {
@@ -381,11 +444,46 @@ const SalesPage = () => {
 			dateFrom: "",
 			dateTo: "",
 		});
+		setOrderPage(1);
 	};
 
-	const handleViewOrderDetail = (order: SalesOrder) => {
-		setSelectedOrder(order);
-		onOpen();
+	const handleViewOrderDetail = async (order: SalesOrder) => {
+		try {
+			// Fetch full order details from backend
+			const orderDetail = await salesService.getOrderById(order.id);
+			
+			// Map to SalesOrder format with items
+			const fullOrder: SalesOrder = {
+				...order,
+				items: orderDetail.items.map(item => ({
+					id: item.productId,
+					product: {
+						id: item.productId,
+						code: item.productId,
+						name: item.productName,
+						price: item.unitPrice,
+						stock: 0, // Not relevant for completed order
+					},
+					quantity: item.quantity,
+					unitPrice: item.unitPrice,
+					totalPrice: item.subTotal,
+				})),
+				subtotal: orderDetail.subTotal,
+				discount: orderDetail.discountAmount,
+				total: orderDetail.totalAmount,
+			};
+			
+			setSelectedOrder(fullOrder);
+			onOpen();
+		} catch (error) {
+			console.error("Error loading order details:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể tải chi tiết đơn hàng",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	const handleProductSelect = async (
@@ -496,6 +594,27 @@ const SalesPage = () => {
 				),
 			);
 		} else {
+
+							// Re-validate stock availability to avoid stale reservations
+							const stockChecks = await Promise.all(
+								apiItems.map((item) =>
+									salesService.checkProduct(item.lotId, item.quantity),
+								),
+							);
+							const insufficient = stockChecks.find(
+								(result, index) => result.currentStock < apiItems[index].quantity,
+							);
+
+							if (insufficient) {
+								toast({
+									title: "Tồn kho không đủ",
+									description:
+										"Một hoặc nhiều lô hàng không còn đủ số lượng. Vui lòng quét lại.",
+									status: "error",
+									duration: 4000,
+								});
+								return;
+							}
 			// Reserve stock for new item
 			let reservationId: string | undefined;
 			if (batchId && user?.userId) {
@@ -586,13 +705,104 @@ const SalesPage = () => {
 		setOrderItems(orderItems.filter((item) => item.id !== itemId));
 	};
 
-	const calculateTotal = () => {
+	const calculateSubtotal = () => {
 		return orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+	};
+
+	const calculateDiscountAmount = (subtotal: number) => {
+		if (!discount || discount.type === "NONE") return 0;
+
+		switch (discount.type) {
+			case "LOYALTY_POINTS":
+				return Math.min(discount.pointsToUse ?? 0, subtotal);
+			case "PERCENTAGE": {
+				const percentage = discount.percentage ?? 0;
+				const rawDiscount = (subtotal * percentage) / 100;
+				const cappedDiscount =
+					discount.maxAmount !== undefined
+						? Math.min(rawDiscount, discount.maxAmount)
+						: rawDiscount;
+				return Math.min(cappedDiscount, subtotal);
+			}
+			case "FIXED_AMOUNT":
+				return Math.min(discount.amount ?? 0, subtotal);
+			default:
+				return 0;
+		}
+	};
+
+	const calculateFinalTotal = () => {
+		const subtotal = calculateSubtotal();
+		const discountAmount = calculateDiscountAmount(subtotal);
+		return Math.max(0, subtotal - discountAmount);
 	};
 
 	const calculateLoyaltyPoints = () => {
 		// 1 point per 100 VND spent (1% loyalty rate)
-		return Math.floor(calculateTotal() / 100);
+		return Math.floor(calculateFinalTotal() / 100);
+	};
+
+	const printReceipt = (response: CreateOrderResponse) => {
+		const receiptWindow = window.open(
+			"",
+			"_blank",
+			"width=420,height=640,noopener,noreferrer",
+		);
+
+		if (!receiptWindow) return;
+
+		const itemsHtml = response.items
+			.map(
+				(item) => `
+					<tr>
+						<td>${item.productName}</td>
+						<td style="text-align:right;">${item.quantity}</td>
+						<td style="text-align:right;">${item.subTotal.toLocaleString("vi-VN")}</td>
+					</tr>
+				`,
+			)
+			.join("");
+
+		receiptWindow.document.write(`
+			<html>
+				<head>
+					<title>Hóa đơn</title>
+					<style>
+						body { font-family: Arial, sans-serif; padding: 16px; }
+						h1 { font-size: 16px; margin-bottom: 8px; }
+						table { width: 100%; border-collapse: collapse; }
+						td { padding: 4px 0; font-size: 12px; }
+						.total { font-weight: bold; margin-top: 8px; }
+					</style>
+				</head>
+				<body>
+					<h1>Hóa đơn #${response.orderId}</h1>
+					<div>Ngày: ${response.orderDate}</div>
+					<table>
+						<thead>
+							<tr>
+								<td>Sản phẩm</td>
+								<td style="text-align:right;">SL</td>
+								<td style="text-align:right;">Thành tiền</td>
+							</tr>
+						</thead>
+						<tbody>
+							${itemsHtml}
+						</tbody>
+					</table>
+					<div class="total">Tạm tính: ${response.subTotal.toLocaleString("vi-VN")}đ</div>
+					<div>Giảm giá: ${response.discountAmount.toLocaleString("vi-VN")}đ</div>
+					<div class="total">Tổng: ${response.totalAmount.toLocaleString("vi-VN")}đ</div>
+					<div>Tiền khách đưa: ${response.amountGiven.toLocaleString("vi-VN")}đ</div>
+					<div>Tiền thối: ${response.changeReturned.toLocaleString("vi-VN")}đ</div>
+				</body>
+			</html>
+		`);
+
+		receiptWindow.document.close();
+		receiptWindow.focus();
+		receiptWindow.print();
+		receiptWindow.close();
 	};
 
 	const handlePrint = async () => {
@@ -649,7 +859,7 @@ const SalesPage = () => {
 
 			// Use cashReceived if provided, otherwise use total (for transfer payments)
 			const amountGiven =
-				cashReceived > 0 ? cashReceived : calculateTotal();
+				cashReceived > 0 ? cashReceived : calculateFinalTotal();
 
 			// Call API to create order
 			const response = await salesService.createOrder({
@@ -660,6 +870,8 @@ const SalesPage = () => {
 				items: apiItems,
 				discount: discount || undefined,
 			});
+
+			printReceipt(response);
 
 			// Success notification - brief, professional confirmation
 			celebrate({
@@ -678,6 +890,8 @@ const SalesPage = () => {
 			setPaymentMethod(undefined);
 			setCashReceived(0);
 			setDiscount(null);
+			setOrderNumber(createDraftOrderNumber());
+			setCreatedAt(new Date());
 			setCustomer({
 				id: `guest_${Date.now()}`,
 				name: "KHÁCH VÃNG LAI",
@@ -954,7 +1168,8 @@ const SalesPage = () => {
 
 								{/* Floating Payment Footer */}
 								<PaymentFooter
-									total={calculateTotal()}
+									subtotal={calculateSubtotal()}
+									total={calculateFinalTotal()}
 									loyaltyPoints={
 										customer?.phone
 											? calculateLoyaltyPoints()
@@ -989,17 +1204,29 @@ const SalesPage = () => {
 										borderRadius="xl"
 										p={6}
 										boxShadow="sm">
-										<Heading
+											<Heading
 											size="md"
 											mb={4}
 											color="#161f70">
-											Danh sách đơn hàng (
-											{filteredOrders.length})
+												Danh sách đơn hàng ({orderTotalItems})
 										</Heading>
 										<OrderHistoryTable
 											orders={filteredOrders}
 											onViewDetail={handleViewOrderDetail}
 										/>
+											{orderTotalPages > 1 && (
+												<Box mt={4}>
+													<Pagination
+														currentPage={orderPage}
+														totalPages={orderTotalPages}
+														totalItems={orderTotalItems}
+														pageSize={orderPageSize}
+														onPageChange={setOrderPage}
+														showInfo={true}
+														itemLabel="đơn hàng"
+													/>
+												</Box>
+											)}
 									</Box>
 								</VStack>
 							</TabPanel>

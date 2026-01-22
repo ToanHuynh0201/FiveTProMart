@@ -25,6 +25,7 @@ interface Customer {
 }
 
 interface PaymentFooterProps {
+	subtotal: number;
 	total: number;
 	loyaltyPoints?: number;
 	paymentMethod: PaymentMethod | undefined;
@@ -42,6 +43,7 @@ interface PaymentFooterProps {
 }
 
 export const PaymentFooter: React.FC<PaymentFooterProps> = ({
+	subtotal,
 	total,
 	loyaltyPoints,
 	paymentMethod,
@@ -58,11 +60,9 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	// Get sidebar width for proper positioning
 	const { sidebarWidth } = useSidebar();
 
-	// Calculate final total after discount
-	const discountAmount = discount?.type === "LOYALTY_POINTS" 
-		? (discount.pointsToUse ?? 0) 
-		: 0;
-	const finalTotal = Math.max(0, total - discountAmount);
+	// Calculate final total after discount (passed from parent)
+	const discountAmount = Math.max(0, subtotal - total);
+	const finalTotal = total;
 
 	const [phoneInput, setPhoneInput] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
@@ -164,16 +164,16 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 		}
 	}, [cashReceived, cashInput]);
 	
-	// Recalculate discount when total changes (in case points > new total)
+	// Recalculate discount when subtotal changes (in case points > new subtotal)
 	React.useEffect(() => {
 		if (useAllPoints && onDiscountChange && customer?.points) {
-			const pointsToUse = Math.min(customer.points, Math.floor(total));
+			const pointsToUse = Math.min(customer.points, Math.floor(subtotal));
 			onDiscountChange({
 				type: "LOYALTY_POINTS",
 				pointsToUse,
 			});
 		}
-	}, [total, useAllPoints, customer?.points, onDiscountChange]);
+	}, [subtotal, useAllPoints, customer?.points, onDiscountChange]);
 
 	// Handle cash input change
 	const handleCashInputChange = (value: string) => {
@@ -183,8 +183,8 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	};
 
 	// Calculate change from prop (source of truth)
-	const change = cashReceived - total;
-	const hasEnoughCash = cashReceived >= total;
+	const change = cashReceived - finalTotal;
+	const hasEnoughCash = cashReceived >= finalTotal;
 
 	return (
 		<Box
@@ -260,10 +260,10 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 														colorScheme={useAllPoints ? "purple" : "green"}
 														fontSize="10px"
 														borderRadius="full">
-														{useAllPoints ? `−${Math.min(customer.points, Math.floor(total))}đ` : `${customer.points}đ`}
+														{useAllPoints ? `−${Math.min(customer.points, Math.floor(subtotal))}đ` : `${customer.points}đ`}
 													</Badge>
 													<Tooltip 
-														label={`Dùng ${Math.min(customer.points, Math.floor(total))} điểm để giảm ${Math.min(customer.points, Math.floor(total)).toLocaleString("vi-VN")}đ`}
+														label={`Dùng ${Math.min(customer.points, Math.floor(subtotal))} điểm để giảm ${Math.min(customer.points, Math.floor(subtotal)).toLocaleString("vi-VN")}đ`}
 														placement="top"
 														hasArrow
 													>
@@ -276,8 +276,8 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 																	const checked = e.target.checked;
 																	setUseAllPoints(checked);
 																	if (checked && onDiscountChange && customer.points) {
-																		// Use points up to total (can't discount more than total)
-																		const pointsToUse = Math.min(customer.points, Math.floor(total));
+																		// Use points up to subtotal (can't discount more than subtotal)
+																		const pointsToUse = Math.min(customer.points, Math.floor(subtotal));
 																		onDiscountChange({
 																			type: "LOYALTY_POINTS",
 																			pointsToUse,
@@ -443,7 +443,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 												color="gray.400"
 												textDecoration="line-through"
 												lineHeight="1">
-												{total.toLocaleString("vi-VN")}đ
+												{subtotal.toLocaleString("vi-VN")}đ
 											</Text>
 										)}
 										<Text
@@ -553,13 +553,23 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>
-								<HStack spacing={1}>
+								<HStack spacing={2}>
+									{discountAmount > 0 && (
+										<Text
+											fontSize="md"
+											fontWeight="500"
+											color="gray.400"
+											textDecoration="line-through"
+											lineHeight="1">
+											{subtotal.toLocaleString("vi-VN")}đ
+										</Text>
+									)}
 									<Text
 										fontSize="3xl"
 										fontWeight="800"
 										color="#161f70"
 										lineHeight="1">
-										{total.toLocaleString("vi-VN")}
+										{finalTotal.toLocaleString("vi-VN")}
 									</Text>
 									<Text
 										fontSize="lg"
@@ -842,13 +852,23 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									textTransform="uppercase">
 									TỔNG TIỀN
 								</Text>
-								<HStack spacing={1}>
+								<HStack spacing={2}>
+									{discountAmount > 0 && (
+										<Text
+											fontSize="sm"
+											fontWeight="500"
+											color="gray.400"
+											textDecoration="line-through"
+											lineHeight="1">
+											{subtotal.toLocaleString("vi-VN")}đ
+										</Text>
+									)}
 									<Text
 										fontSize="2xl"
 										fontWeight="800"
 										color="#161f70"
 										lineHeight="1">
-										{total.toLocaleString("vi-VN")}
+										{finalTotal.toLocaleString("vi-VN")}
 									</Text>
 									<Text
 										fontSize="md"

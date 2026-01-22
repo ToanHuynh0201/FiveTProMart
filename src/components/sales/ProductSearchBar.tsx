@@ -375,26 +375,13 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									px={3.5}
 									py={2.5}
 									fontSize="13px"
-									color="brand.500"
+									color="gray.500"
 									fontWeight="500"
-									cursor="pointer"
-									_hover={{ bg: "blue.50" }}
-									onMouseDown={(e) => {
-										e.preventDefault();
-										// Add product without specific batch
-										onProductSelect(product);
-										setSearchQuery("");
-										setSearchResults([]);
-										setShowResults(false);
-										toast({
-											title: "Đã thêm vào giỏ hàng",
-											description: product.name,
-											status: "success",
-											duration: 2000,
-											position: "top",
-										});
-									}}>
-									+ Thêm vào giỏ hàng
+									bg="gray.50"
+									cursor="not-allowed">
+									{product.stock <= 0
+										? "Hết hàng - không có lô khả dụng"
+										: "Không có lô hàng khả dụng"}
 								</Box>
 							)}
 						</Box>

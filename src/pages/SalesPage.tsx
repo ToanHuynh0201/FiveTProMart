@@ -811,6 +811,11 @@ const SalesPage = () => {
 		return Math.max(0, subtotal - discountAmount);
 	};
 
+	const calculateRoundedCashTotal = () => {
+		// Round to nearest 1,000 VND (Vietnam retail standard)
+		return Math.round(calculateFinalTotal() / 1000) * 1000;
+	};
+
 	const calculateLoyaltyPoints = () => {
 		// 1 point per 100 VND spent (1% loyalty rate)
 		return Math.floor(calculateFinalTotal() / 100);
@@ -872,6 +877,7 @@ const SalesPage = () => {
 					<div class="total">Tổng: ${response.totalAmount.toLocaleString("vi-VN")}đ</div>
 					<div>Tiền khách đưa: ${localData.amountGiven.toLocaleString("vi-VN")}đ</div>
 					<div>Tiền thối: ${response.changeReturned.toLocaleString("vi-VN")}đ</div>
+					${response.pointsEarned > 0 ? `<div style="margin-top:8px;color:#dd6b20;">⭐ Điểm tích lũy: +${response.pointsEarned.toLocaleString("vi-VN")} điểm</div>` : ""}
 				</body>
 			</html>
 		`);
@@ -934,6 +940,30 @@ const SalesPage = () => {
 			// Get staffId from auth store
 			const staffId = user?.userId ?? "guest_staff";
 
+			if (paymentMethod === "cash") {
+				const roundedCashTotal = calculateRoundedCashTotal();
+				if (cashReceived <= 0) {
+					toast({
+						title: "Chưa nhập tiền khách đưa",
+						description: "Vui lòng nhập số tiền khách đưa",
+						status: "warning",
+						duration: 3000,
+						isClosable: true,
+					});
+					return;
+				}
+				if (cashReceived < roundedCashTotal) {
+					toast({
+						title: "Tiền khách đưa không đủ",
+						description: `Số tiền tối thiểu cần thu: ${roundedCashTotal.toLocaleString("vi-VN")}đ`,
+						status: "warning",
+						duration: 3000,
+						isClosable: true,
+					});
+					return;
+				}
+			}
+
 			// Use cashReceived if provided, otherwise use total (for transfer payments)
 			const amountGiven =
 				cashReceived > 0 ? cashReceived : calculateFinalTotal();
@@ -961,6 +991,7 @@ const SalesPage = () => {
 				change: response.changeReturned,
 				originalAmount: response.originalAmount,
 				roundingAdjustment: response.roundingAdjustment,
+				pointsEarned: response.pointsEarned,
 			});
 
 			// Clear localStorage
@@ -1386,6 +1417,9 @@ const SalesPage = () => {
 					amount={celebrationData.amount}
 					orderId={celebrationData.orderId}
 					change={celebrationData.change}
+					originalAmount={celebrationData.originalAmount}
+					roundingAdjustment={celebrationData.roundingAdjustment}
+					pointsEarned={celebrationData.pointsEarned}
 				/>
 			</Box>
 		</MainLayout>

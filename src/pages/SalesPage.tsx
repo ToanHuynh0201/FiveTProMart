@@ -455,12 +455,12 @@ const SalesPage = () => {
 			);
 
 			// Reserve additional stock
-			if (batchId && user?.id) {
+			if (batchId && user?.userId) {
 				try {
 					await reservationService.reserve({
 						lotId: batchId,
 						quantity: quantity, // Only reserve the additional quantity
-						reservedBy: user.id,
+						reservedBy: user.userId,
 					});
 				} catch (error) {
 					toast({
@@ -491,12 +491,12 @@ const SalesPage = () => {
 		} else {
 			// Reserve stock for new item
 			let reservationId: string | undefined;
-			if (batchId && user?.id) {
+			if (batchId && user?.userId) {
 				try {
 					const reservation = await reservationService.reserve({
 						lotId: batchId,
 						quantity: quantity,
-						reservedBy: user.id,
+						reservedBy: user.userId,
 					});
 					reservationId = reservation.reservationId;
 				} catch (error) {
@@ -638,7 +638,7 @@ const SalesPage = () => {
 				paymentMethod === "cash" ? "CASH" : "BANK_TRANSFER";
 
 			// Get staffId from auth store
-			const staffId = user?.id ?? "guest_staff";
+			const staffId = user?.userId ?? "guest_staff";
 
 			// Use cashReceived if provided, otherwise use total (for transfer payments)
 			const amountGiven =

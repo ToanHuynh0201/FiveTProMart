@@ -565,7 +565,7 @@ const PurchasePage = () => {
 						setSelectedPurchase(null);
 					}}
 					purchase={selectedPurchase}
-					staffId={user?.id || ""}
+					staffId={user?.userId || ""}
 					onConfirm={handleConfirmOrder}
 					isLoading={isLoadingDetail}
 				/>
@@ -577,7 +577,7 @@ const PurchasePage = () => {
 						setSelectedPurchase(null);
 					}}
 					purchase={selectedPurchase}
-					staffId={user?.id || ""}
+					staffId={user?.userId || ""}
 					onCancel={handleCancelOrderSubmit}
 				/>
 			</Box>

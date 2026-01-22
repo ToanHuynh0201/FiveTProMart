@@ -346,6 +346,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		setIsLoading(true);
 
 		try {
+			console.log(selectedProducts.map((p) => p.productId));
 			const result = await supplierService.updateSupplier(supplierId, {
 				supplierName: formData.supplierName,
 				address: formData.address,

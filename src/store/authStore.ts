@@ -17,7 +17,10 @@ import type { User } from '../types/auth'
 const isValidUser = (user: unknown): user is User => {
 	if (!user || typeof user !== 'object') return false
 	const u = user as Record<string, unknown>
-	return typeof u.id === 'string' && u.id.length > 0
+	return (
+		typeof u.profileId === 'string' && u.profileId.length > 0 &&
+		typeof u.userId === 'string' && u.userId.length > 0
+	)
 }
 
 interface AuthState {

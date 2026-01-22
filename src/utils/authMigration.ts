@@ -52,7 +52,7 @@ export const migrateOldAuthData = (): boolean => {
 		if (oldUser) {
 			try {
 				const user = JSON.parse(oldUser)
-				if (user && typeof user === 'object' && user.id) {
+				if (user && typeof user === 'object' && (user.profileId || user.userId)) {
 					useAuthStore.getState().setUser(user)
 					console.log('[Migration] ✓ User profile migrated')
 				}

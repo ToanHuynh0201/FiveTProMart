@@ -27,6 +27,7 @@ import type {
 	WorkScheduleResponse,
 	WorkShift,
 	ShiftRoleConfig,
+	UpdateWorkShiftDTO,
 } from "@/types";
 import { scheduleService } from "@/services/scheduleService";
 
@@ -505,18 +506,65 @@ const SchedulePage = () => {
 	};
 
 	const handleSaveShiftConfig = async (config: ShiftConfig) => {
-		// Note: The API doesn't have an update endpoint for shift config
-		// ShiftConfigModal handles creating new shifts via createWorkShift
-		// For now, just update local state
-		setShiftConfig(config);
-		await loadWeekSchedule();
+		try {
+			// Get all work shifts to find the ones that need updating
+			const shiftsResult = await scheduleService.getWorkShifts(true);
 
-		toast({
-			title: "Thành công",
-			description: "Đã cập nhật cấu hình ca làm việc",
-			status: "success",
-			duration: 3000,
-		});
+			if (!shiftsResult.success || !shiftsResult.data) {
+				throw new Error("Failed to fetch work shifts");
+			}
+
+			const existingShifts = shiftsResult.data;
+
+			// Update each shift that exists in both config and backend
+			const updatePromises = config.shifts
+				.filter(shift => shift.id) // Only update shifts with IDs
+				.map(async (shift) => {
+					const existingShift = existingShifts.find((s: any) => s.id === shift.id);
+
+					if (existingShift) {
+						const updateData: UpdateWorkShiftDTO = {
+							shiftName: shift.name,
+							startTime: shift.startTime,
+							endTime: shift.endTime,
+							roleConfigId: existingShift.roleConfig.id, // Keep existing roleConfig
+							isActive: true
+						};
+
+						return await scheduleService.updateWorkShift(shift.id, updateData);
+					}
+				})
+				.filter(Boolean); // Remove undefined promises
+
+			// Wait for all updates to complete
+			const results = await Promise.all(updatePromises);
+
+			// Check if all updates succeeded
+			const failedUpdates = results.filter(r => r && !r.success);
+
+			if (failedUpdates.length > 0) {
+				throw new Error("Some shifts failed to update");
+			}
+
+			// Update local state and reload schedule
+			setShiftConfig(config);
+			await loadWeekSchedule();
+
+			toast({
+				title: "Thành công",
+				description: "Đã cập nhật cấu hình ca làm việc",
+				status: "success",
+				duration: 3000,
+			});
+		} catch (error) {
+			console.error("Error saving shift config:", error);
+			toast({
+				title: "Lỗi",
+				description: "Không thể cập nhật cấu hình ca làm việc",
+				status: "error",
+				duration: 3000,
+			});
+		}
 	};
 
 	if (!shiftConfig) {

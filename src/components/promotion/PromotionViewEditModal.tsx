@@ -49,6 +49,7 @@ import type {
 	PromotionDetail,
 	PromotionType,
 	PromotionStatus,
+	BuyXGetYProductPair,
 } from "@/types/promotion";
 import { promotionService } from "@/services/promotionService";
 import {
@@ -60,6 +61,7 @@ import {
 	FiTag,
 } from "react-icons/fi";
 import { ProductSelector } from "../supplier/ProductSelector";
+import { BuyXGetYProductPairSelector } from "./BuyXGetYProductPairSelector";
 
 interface SelectedProduct {
 	productId: string;
@@ -131,8 +133,15 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		[],
 	);
 
+	// Product pairs for Buy X Get Y promotions
+	const [productPairs, setProductPairs] = useState<BuyXGetYProductPair[]>([]);
+
 	const handleProductsChange = (newProducts: SelectedProduct[]) => {
 		setSelectedProducts(newProducts);
+	};
+
+	const handleProductPairsChange = (newPairs: BuyXGetYProductPair[]) => {
+		setProductPairs(newPairs);
 	};
 
 	// Load promotion data when modal opens
@@ -151,6 +160,7 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		setIsFetching(true);
 		try {
 			const result = await promotionService.getPromotionById(promotionId);
+			console.log(result);
 
 			if (result.success && result.data) {
 				setPromotionData(result.data);
@@ -163,17 +173,29 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 					discountPercent: result.data.discountPercent || 10,
 					buyQuantity: result.data.buyQuantity || 1,
 					getQuantity: result.data.getQuantity || 1,
-					startDate: parseDDMMYYYYToInput(result.data.startDate),
-					endDate: parseDDMMYYYYToInput(result.data.endDate),
+					startDate: result.data.startDate,
+					endDate: result.data.endDate,
 				});
 
-				// Map products for edit mode
-				const existingProducts: SelectedProduct[] =
-					result.data.products.map((p: any) => ({
-						productId: p.productId,
-						productName: p.productName,
-					}));
-				setSelectedProducts(existingProducts);
+				// Map products based on promotion type
+				if (result.data.promotionType === "Discount") {
+					const existingProducts: SelectedProduct[] =
+						result.data.products.map((p: any) => ({
+							productId: p.productId,
+							productName: p.productName,
+						}));
+					setSelectedProducts(existingProducts);
+				} else {
+					// For Buy X Get Y, map to product pairs
+					const existingPairs: BuyXGetYProductPair[] =
+						result.data.products.map((p: any) => ({
+							productBuy: p.productBuy,
+							productBuyName: p.productBuyName,
+							productGet: p.productGet,
+							productGetName: p.productGetName,
+						}));
+					setProductPairs(existingPairs);
+				}
 			} else {
 				toast({
 					title: "Lỗi",
@@ -230,14 +252,27 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 			return;
 		}
 
-		if (selectedProducts.length === 0) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng chọn ít nhất 1 sản phẩm áp dụng",
-				status: "error",
-				duration: 3000,
-			});
-			return;
+		// Validate products/product pairs based on type
+		if (formData.promotionType === "Discount") {
+			if (selectedProducts.length === 0) {
+				toast({
+					title: "Lỗi",
+					description: "Vui lòng chọn ít nhất 1 sản phẩm áp dụng",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+		} else {
+			if (productPairs.length === 0) {
+				toast({
+					title: "Lỗi",
+					description: "Vui lòng chọn ít nhất 1 cặp sản phẩm áp dụng",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
 		}
 
 		// Validate based on type
@@ -273,14 +308,14 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			const productIds = selectedProducts.map((p) => p.productId);
-
 			let requestData;
 
 			if (formData.promotionType === "Discount") {
+				const productIds = selectedProducts.map((p) => p.productId);
 				requestData = {
 					promotionName: formData.promotionName,
-					promotionDescription: formData.promotionDescription || undefined,
+					promotionDescription:
+						formData.promotionDescription || undefined,
 					products: productIds,
 					promotionType: "Discount" as const,
 					discountPercent: formData.discountPercent,
@@ -288,10 +323,16 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
 				};
 			} else {
+				// For Buy X Get Y, use product pairs directly
+				const pairs = productPairs.map((pair) => ({
+					productBuy: pair.productBuy,
+					productGet: pair.productGet,
+				}));
 				requestData = {
 					promotionName: formData.promotionName,
-					promotionDescription: formData.promotionDescription || undefined,
-					products: productIds,
+					promotionDescription:
+						formData.promotionDescription || undefined,
+					products: pairs,
 					promotionType: "Buy X Get Y" as const,
 					buyQuantity: formData.buyQuantity,
 					getQuantity: formData.getQuantity,
@@ -319,7 +360,8 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Không thể cập nhật khuyến mãi",
+					description:
+						result.error || "Không thể cập nhật khuyến mãi",
 					status: "error",
 					duration: 3000,
 					isClosable: true,
@@ -651,135 +693,262 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 										)}
 									</Grid>
 
-									{/* Products Table */}
+									{/* Products Table - Conditional Rendering by Promotion Type */}
 									<Box mt={2}>
-										<Text
-											fontSize="15px"
-											fontWeight="600"
-											color="gray.700"
-											mb={3}>
-											Sản phẩm áp dụng (
-											{promotionData.products.length})
-										</Text>
-										<Box
-											border="1px solid"
-											borderColor="gray.200"
-											borderRadius="12px"
-											overflow="hidden">
-											<Table
-												size="sm"
-												variant="simple">
-												<Thead bg="gray.50">
-													<Tr>
-														<Th
-															fontSize="12px"
-															fontWeight="700"
-															color="gray.600"
-															py={3}>
-															Tên sản phẩm
-														</Th>
-														<Th
-															fontSize="12px"
-															fontWeight="700"
-															color="gray.600"
-															py={3}>
-															ĐVT
-														</Th>
-														<Th
-															fontSize="12px"
-															fontWeight="700"
-															color="gray.600"
-															py={3}
-															isNumeric>
-															Giá bán
-														</Th>
-														{promotionData.promotionType ===
-															"Discount" && (
-															<Th
-																fontSize="12px"
-																fontWeight="700"
-																color="gray.600"
-																py={3}
-																isNumeric>
-																Giá KM
-															</Th>
-														)}
-													</Tr>
-												</Thead>
-												<Tbody>
-													{promotionData.products.map(
-														(product) => (
-															<Tr
-																key={
-																	product.productId
-																}
-																_hover={{
-																	bg: "gray.50",
-																}}>
-																<Td
-																	fontSize="13px"
-																	py={3}>
-																	<VStack
-																		align="flex-start"
-																		spacing={
-																			0
-																		}>
-																		<Text
-																			fontWeight="600"
-																			color="gray.800">
-																			{
-																				product.productName
-																			}
-																		</Text>
-																		<Text
-																			fontSize="11px"
-																			color="gray.500">
-																			{
-																				product.productId
-																			}
-																		</Text>
-																	</VStack>
-																</Td>
-																<Td
-																	fontSize="13px"
+										{promotionData.promotionType === "Discount" ? (
+											// Discount Promotion - Show Products
+											<>
+												<Text
+													fontSize="15px"
+													fontWeight="600"
+													color="gray.700"
+													mb={3}>
+													Sản phẩm áp dụng (
+													{promotionData.products.length})
+												</Text>
+												<Box
+													border="1px solid"
+													borderColor="gray.200"
+													borderRadius="12px"
+													overflow="hidden">
+													<Table
+														size="sm"
+														variant="simple">
+														<Thead bg="gray.50">
+															<Tr>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
 																	color="gray.600"
 																	py={3}>
-																	{
-																		product.unitOfMeasure
-																	}
-																</Td>
-																<Td
-																	fontSize="13px"
-																	fontWeight="600"
-																	color="gray.700"
+																	Tên sản phẩm
+																</Th>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="gray.600"
+																	py={3}>
+																	ĐVT
+																</Th>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="gray.600"
 																	py={3}
 																	isNumeric>
-																	{formatCurrency(
-																		product.sellingPrice,
-																	)}
-																</Td>
-																{promotionData.promotionType ===
-																	"Discount" && (
-																	<Td
-																		fontSize="13px"
-																		fontWeight="700"
-																		color="green.600"
-																		py={3}
-																		isNumeric>
-																		{product.promotionPrice !==
-																		null
-																			? formatCurrency(
-																					product.promotionPrice,
-																				)
-																			: "-"}
-																	</Td>
-																)}
+																	Giá bán
+																</Th>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="gray.600"
+																	py={3}
+																	isNumeric>
+																	Giá KM
+																</Th>
 															</Tr>
-														),
-													)}
-												</Tbody>
-											</Table>
-										</Box>
+														</Thead>
+														<Tbody>
+															{promotionData.products.map(
+																(product: any) => (
+																	<Tr
+																		key={
+																			product.productId
+																		}
+																		_hover={{
+																			bg: "gray.50",
+																		}}>
+																		<Td
+																			fontSize="13px"
+																			py={3}>
+																			<VStack
+																				align="flex-start"
+																				spacing={
+																					0
+																				}>
+																				<Text
+																					fontWeight="600"
+																					color="gray.800">
+																					{
+																						product.productName
+																					}
+																				</Text>
+																				<Text
+																					fontSize="11px"
+																					color="gray.500">
+																					{
+																						product.productId
+																					}
+																				</Text>
+																			</VStack>
+																		</Td>
+																		<Td
+																			fontSize="13px"
+																			color="gray.600"
+																			py={3}>
+																			{
+																				product.unitOfMeasure
+																			}
+																		</Td>
+																		<Td
+																			fontSize="13px"
+																			fontWeight="600"
+																			color="gray.700"
+																			py={3}
+																			isNumeric>
+																			{formatCurrency(
+																				product.sellingPrice,
+																			)}
+																		</Td>
+																		<Td
+																			fontSize="13px"
+																			fontWeight="700"
+																			color="green.600"
+																			py={3}
+																			isNumeric>
+																			{product.promotionPrice !==
+																			null
+																				? formatCurrency(
+																						product.promotionPrice,
+																					)
+																				: "-"}
+																		</Td>
+																	</Tr>
+																),
+															)}
+														</Tbody>
+													</Table>
+												</Box>
+											</>
+										) : (
+											// Buy X Get Y Promotion - Show Product Pairs
+											<>
+												<Text
+													fontSize="15px"
+													fontWeight="600"
+													color="gray.700"
+													mb={1}>
+													Cặp sản phẩm áp dụng (
+													{promotionData.products.length})
+												</Text>
+												<Text
+													fontSize="13px"
+													color="gray.600"
+													mb={3}>
+													Khách mua sản phẩm X sẽ được tặng sản phẩm Y
+												</Text>
+												<Box
+													border="1px solid"
+													borderColor="gray.200"
+													borderRadius="12px"
+													overflow="hidden">
+													<Table
+														size="sm"
+														variant="simple">
+														<Thead bg="purple.50">
+															<Tr>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="gray.600"
+																	py={3}
+																	width="45%">
+																	Sản phẩm mua (X)
+																</Th>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="purple.600"
+																	py={3}
+																	textAlign="center"
+																	width="10%">
+																	→
+																</Th>
+																<Th
+																	fontSize="12px"
+																	fontWeight="700"
+																	color="gray.600"
+																	py={3}
+																	width="45%">
+																	Sản phẩm tặng (Y)
+																</Th>
+															</Tr>
+														</Thead>
+														<Tbody>
+															{promotionData.products.map(
+																(
+																	product: any,
+																	index: number,
+																) => (
+																	<Tr
+																		key={
+																			index
+																		}
+																		_hover={{
+																			bg: "purple.25",
+																		}}>
+																		<Td
+																			fontSize="13px"
+																			py={3}>
+																			<VStack
+																				align="flex-start"
+																				spacing={
+																					0
+																				}>
+																				<Text
+																					fontWeight="600"
+																					color="gray.800">
+																					{product.productBuyName ||
+																						product.productName}
+																				</Text>
+																				<Text
+																					fontSize="11px"
+																					color="gray.500">
+																					{product.productBuy ||
+																						product.productId}
+																				</Text>
+																			</VStack>
+																		</Td>
+																		<Td
+																			fontSize="16px"
+																			fontWeight="700"
+																			color="purple.500"
+																			py={3}
+																			textAlign="center">
+																			→
+																		</Td>
+																		<Td
+																			fontSize="13px"
+																			py={3}>
+																			<VStack
+																				align="flex-start"
+																				spacing={
+																					0
+																				}>
+																				<Text
+																					fontWeight="600"
+																					color="gray.800">
+																					{
+																						product.productGetName
+																					}
+																				</Text>
+																				<Text
+																					fontSize="11px"
+																					color="gray.500">
+																					{
+																						product.productGet
+																					}
+																				</Text>
+																			</VStack>
+																		</Td>
+																	</Tr>
+																),
+															)}
+														</Tbody>
+													</Table>
+												</Box>
+											</>
+										)}
 									</Box>
 								</>
 							) : (
@@ -1080,31 +1249,54 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 											</FormControl>
 										</GridItem>
 
-										{/* Sản phẩm áp dụng */}
+										{/* Sản phẩm áp dụng - hiển thị khác nhau theo loại khuyến mãi */}
 										<GridItem colSpan={{ base: 1, md: 2 }}>
-											<FormControl isRequired>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600"
-													color="gray.700">
-													Sản phẩm áp dụng
-												</FormLabel>
-												<Box
-													p={4}
-													border="1px solid"
-													borderColor="gray.200"
-													borderRadius="lg"
-													bg="gray.50">
-													<ProductSelector
-														selectedProducts={
-															selectedProducts
-														}
-														onProductsChange={
-															handleProductsChange
+											{formData.promotionType === "Discount" ? (
+												<FormControl isRequired>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.700">
+														Sản phẩm áp dụng
+													</FormLabel>
+													<Box
+														p={4}
+														border="1px solid"
+														borderColor="gray.200"
+														borderRadius="lg"
+														bg="gray.50">
+														<ProductSelector
+															selectedProducts={
+																selectedProducts
+															}
+															onProductsChange={
+																handleProductsChange
+															}
+														/>
+													</Box>
+												</FormControl>
+											) : (
+												<FormControl isRequired>
+													<FormLabel
+														fontSize="14px"
+														fontWeight="600"
+														color="gray.700">
+														Cặp sản phẩm áp dụng
+													</FormLabel>
+													<Text
+														fontSize="13px"
+														color="gray.600"
+														mb={2}>
+														Chọn cặp sản phẩm: khách mua sản phẩm X sẽ được tặng sản phẩm Y
+													</Text>
+													<BuyXGetYProductPairSelector
+														productPairs={productPairs}
+														onProductPairsChange={
+															handleProductPairsChange
 														}
 													/>
-												</Box>
-											</FormControl>
+												</FormControl>
+											)}
 										</GridItem>
 									</Grid>
 								</>

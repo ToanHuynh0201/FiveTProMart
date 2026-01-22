@@ -37,9 +37,9 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 
 	// Helper: Format date to dd-MM-yyyy
 	const formatDateForAPI = (date: Date): string => {
-		const day = date.getDate().toString().padStart(2, "0");
-		const month = (date.getMonth() + 1).toString().padStart(2, "0");
 		const year = date.getFullYear();
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		const day = date.getDate().toString().padStart(2, "0");
 		return `${day}-${month}-${year}`;
 	};
 
@@ -90,12 +90,16 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				const today = new Date();
 				const endDate = new Date();
 				endDate.setDate(today.getDate() + 7); // Get next 7 days
+				console.log(formatDateForAPI(today));
+				console.log(formatDateForAPI(endDate));
 
 				const result = await scheduleService.getWorkSchedules({
 					startDate: formatDateForAPI(today),
 					endDate: formatDateForAPI(endDate),
-					profileId: user?.profileId,
+					profileId: "ab5f27d5-a242-4155-a506-2cde1533cb22",
 				});
+
+				console.log(result);
 
 				if (result.success && result.data) {
 					// Transform WorkScheduleResponse[] to UpcomingShift[]

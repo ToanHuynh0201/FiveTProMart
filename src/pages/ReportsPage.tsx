@@ -44,70 +44,68 @@ import type {
 	DashboardSummary,
 } from "@/types/reports";
 import MainLayout from "@/components/layout/MainLayout";
-
+const formatDateForAPI = (date: Date): string => {
+	const year = date.getFullYear();
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	const day = date.getDate().toString().padStart(2, "0");
+	return `${day}-${month}-${year}`;
+};
 // Helper function to convert DateRange to yyyy-MM-dd format
 // Backend expects simple date format (yyyy-MM-dd) for proper parsing
 // Helper function to convert DateRange to ISO 8601 Instant format
 // Backend expects Instant format (UTC timestamp)
-const getDateRangeParams = (dateRange: DateRange): { startDate: string; endDate: string } => {
-    const now = new Date();
-    let startDate: Date;
-    
-    // Logic chọn ngày giữ nguyên
-    switch (dateRange) {
-        case "today":
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-        case "week":
-            startDate = new Date(now);
-            startDate.setDate(now.getDate() - 7);
-            break;
-        case "month":
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            break;
-        case "quarter":
-            const quarter = Math.floor(now.getMonth() / 3);
-            startDate = new Date(now.getFullYear(), quarter * 3, 1);
-            break;
-        case "year":
-            startDate = new Date(now.getFullYear(), 0, 1);
-            break;
-        default:
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-    
-    // Hàm build chuỗi thủ công + ghép chữ Z vào cuối
-    const toFakeUTCString = (date: Date): string => {
-        const pad = (num: number) => num.toString().padStart(2, '0');
-        
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
-        const hours = pad(date.getHours());
-        const minutes = pad(date.getMinutes());
-        const seconds = pad(date.getSeconds());
-        const ms = date.getMilliseconds().toString().padStart(3, '0'); // Thêm mili giây cho chuẩn ISO
 
-        // Kết quả: "2026-01-01T00:00:00.000Z" (Nhưng là giờ VN)
-        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}Z`;
-    };
+const getDateRangeParams = (
+	dateRange: DateRange,
+): { startDate: string; endDate: string } => {
+	const now = new Date();
+	let startDate: Date;
 
-    const result = {
-        startDate: toFakeUTCString(startDate),
-        endDate: toFakeUTCString(now),
-    };
+	// Logic chọn ngày giữ nguyên
+	switch (dateRange) {
+		case "today":
+			startDate = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate(),
+			);
+			break;
+		case "week":
+			startDate = new Date(now);
+			startDate.setDate(now.getDate() - 7);
+			break;
+		case "month":
+			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+			break;
+		case "quarter":
+			const quarter = Math.floor(now.getMonth() / 3);
+			startDate = new Date(now.getFullYear(), quarter * 3, 1);
+			break;
+		case "year":
+			startDate = new Date(now.getFullYear(), 0, 1);
+			break;
+		default:
+			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+	}
 
-    console.log('🔍 Date strings being sent to backend:', result);
-    
-    return result;
+	const result = {
+		startDate: formatDateForAPI(startDate),
+		endDate: formatDateForAPI(now),
+	};
+
+	console.log("🔍 Date strings being sent to backend:", result);
+
+	return result;
 };
 export const ReportsPage: React.FC = () => {
 	const [dateRange, setDateRange] = useState<DateRange>("month");
 	const [loading, setLoading] = useState(true);
 
 	// Data states - New API
-	const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
-	
+	const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(
+		null,
+	);
+
 	// Legacy data states (commented out until components are updated)
 	const [revenueData, setRevenueData] = useState<RevenueReport | null>(null);
 	const [ordersData, setOrdersData] = useState<OrdersReport | null>(null);
@@ -159,22 +157,22 @@ export const ReportsPage: React.FC = () => {
 			setLoading(true);
 			try {
 				const dateParams = getDateRangeParams(dateRange);
-				
-				console.log('📅 Date params:', dateParams);
-				
+
+				console.log("📅 Date params:", dateParams);
+
 				// Load dashboard summary with new API
-				const summaryResponse = await reportService.getDashboardSummary(dateParams);
-				console.log('✅ Summary response:', summaryResponse);
+				const summaryResponse =
+					await reportService.getDashboardSummary(dateParams);
+				console.log("✅ Summary response:", summaryResponse);
 				setDashboardData(summaryResponse.data);
-				
+
 				// TODO: Load other statistics as needed
 				// const revenueChart = await reportService.getRevenueProfitChart(dateParams);
 				// const ordersChart = await reportService.getOrdersChart(dateParams);
 				// const categoryRevenue = await reportService.getCategoryRevenue({ ...dateParams, limit: 5 });
 				// const topProducts = await reportService.getTopProducts({ ...dateParams, limit: 10 });
-				
 			} catch (error) {
-				console.error('❌ Failed to load reports:', error);
+				console.error("❌ Failed to load reports:", error);
 				// Data will remain null - components handle empty states
 			} finally {
 				setLoading(false);

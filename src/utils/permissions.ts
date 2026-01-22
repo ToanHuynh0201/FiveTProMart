@@ -34,9 +34,6 @@ const PERMISSION_MAP: Record<PermissionModule, AccountType[]> = {
  */
 const getEffectiveAccountType = (user: User | null): AccountType => {
 	if (!user || !user.accountType) {
-		console.log(
-			"[Permissions] User is null or has no accountType, defaulting to Admin",
-		);
 		return "Admin";
 	}
 
@@ -53,7 +50,6 @@ const getEffectiveAccountType = (user: User | null): AccountType => {
 					? "WarehouseStaff"
 					: "Admin"; // Default to Admin for unknown types
 
-	console.log("[Permissions] Normalized accountType:", normalizedType);
 	return normalizedType as AccountType;
 };
 
@@ -67,12 +63,6 @@ export const hasModuleAccess = (
 	const accountType = getEffectiveAccountType(user);
 	const allowedRoles = PERMISSION_MAP[module];
 	const hasAccess = allowedRoles.includes(accountType);
-
-	console.log(`[Permissions] Checking access for ${module}:`, {
-		accountType,
-		allowedRoles,
-		hasAccess,
-	});
 
 	return hasAccess;
 };

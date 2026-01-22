@@ -71,6 +71,14 @@ const SchedulePage = () => {
 		assignments: [],
 	});
 
+	// Helper: Format local date to yyyy-MM-dd without timezone conversion
+	const formatLocalDate = (date: Date): string => {
+		const y = date.getFullYear();
+		const m = (date.getMonth() + 1).toString().padStart(2, "0");
+		const d = date.getDate().toString().padStart(2, "0");
+		return `${y}-${m}-${d}`;
+	};
+
 	// Helper: Generate weeks for a month
 	const generateWeeksForMonth = (
 		month: number,
@@ -94,8 +102,8 @@ const SchedulePage = () => {
 			const endLabel = `${weekEnd.getDate().toString().padStart(2, "0")}/${(weekEnd.getMonth() + 1).toString().padStart(2, "0")}`;
 
 			weeks.push({
-				start: currentWeekStart.toISOString().split("T")[0],
-				end: weekEnd.toISOString().split("T")[0],
+				start: formatLocalDate(currentWeekStart),
+				end: formatLocalDate(weekEnd),
 				label: `${startLabel} - ${endLabel}`,
 			});
 
@@ -108,11 +116,11 @@ const SchedulePage = () => {
 
 	// Helper: Format date to dd-MM-yyyy
 	const formatDateForAPI = (dateStr: string): string => {
-		const date = new Date(dateStr);
-		const day = date.getDate().toString().padStart(2, "0");
-		const month = (date.getMonth() + 1).toString().padStart(2, "0");
-		const year = date.getFullYear();
-		return `${day}-${month}-${year}`;
+		// Parse yyyy-MM-dd without timezone conversion
+		const [year, month, day] = dateStr.split("-").map(Number);
+		const dayStr = day.toString().padStart(2, "0");
+		const monthStr = month.toString().padStart(2, "0");
+		return `${dayStr}-${monthStr}-${year}`;
 	};
 
 	// Helper: Parse dd-MM-yyyy to yyyy-MM-dd
@@ -333,7 +341,16 @@ const SchedulePage = () => {
 			selectedYear,
 		);
 		setWeeks(generatedWeeks);
-		setSelectedWeekIndex(0);
+
+		// Find current week containing today
+		const today = new Date();
+		const todayStr = formatLocalDate(today);
+		const currentWeekIndex = generatedWeeks.findIndex((week) => {
+			return todayStr >= week.start && todayStr <= week.end;
+		});
+
+		// Set to current week if found, otherwise default to first week
+		setSelectedWeekIndex(currentWeekIndex >= 0 ? currentWeekIndex : 0);
 	};
 
 	const loadWeekSchedule = async () => {
@@ -349,6 +366,8 @@ const SchedulePage = () => {
 				startDate,
 				endDate,
 			});
+
+			console.log(result);
 
 			if (result.success && result.data) {
 				const weekData = convertToWeekData(result.data, currentWeek);
@@ -518,9 +537,11 @@ const SchedulePage = () => {
 
 			// Update each shift that exists in both config and backend
 			const updatePromises = config.shifts
-				.filter(shift => shift.id) // Only update shifts with IDs
+				.filter((shift) => shift.id) // Only update shifts with IDs
 				.map(async (shift) => {
-					const existingShift = existingShifts.find((s: any) => s.id === shift.id);
+					const existingShift = existingShifts.find(
+						(s: any) => s.id === shift.id,
+					);
 
 					if (existingShift) {
 						const updateData: UpdateWorkShiftDTO = {
@@ -528,10 +549,13 @@ const SchedulePage = () => {
 							startTime: shift.startTime,
 							endTime: shift.endTime,
 							roleConfigId: existingShift.roleConfig.id, // Keep existing roleConfig
-							isActive: true
+							isActive: true,
 						};
 
-						return await scheduleService.updateWorkShift(shift.id, updateData);
+						return await scheduleService.updateWorkShift(
+							shift.id,
+							updateData,
+						);
 					}
 				})
 				.filter(Boolean); // Remove undefined promises
@@ -540,7 +564,7 @@ const SchedulePage = () => {
 			const results = await Promise.all(updatePromises);
 
 			// Check if all updates succeeded
-			const failedUpdates = results.filter(r => r && !r.success);
+			const failedUpdates = results.filter((r) => r && !r.success);
 
 			if (failedUpdates.length > 0) {
 				throw new Error("Some shifts failed to update");

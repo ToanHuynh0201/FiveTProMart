@@ -130,10 +130,17 @@ class ScheduleService {
 		async (
 			filters: GetWorkSchedulesFilters,
 		): Promise<WorkScheduleResponse[]> => {
-			return await apiService.get("/work-schedules", { params: filters });
+			const params = new URLSearchParams();
+
+			Object.entries(filters).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					params.append(key, String(value));
+				}
+			});
+
+			return await apiService.get(`/work-schedules?${params.toString()}`);
 		},
 	);
-
 	/**
 	 * Assign staff to shifts
 	 * @param data - Assignment data

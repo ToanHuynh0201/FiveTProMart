@@ -40,7 +40,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 		const year = date.getFullYear();
 		const month = (date.getMonth() + 1).toString().padStart(2, "0");
 		const day = date.getDate().toString().padStart(2, "0");
-		return `${day}-${month}-${year}`;
+		return `${year}-${month}-${day}`;
 	};
 
 	// Helper: Format date to display format (dd/MM)
@@ -94,9 +94,9 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 				console.log(formatDateForAPI(endDate));
 
 				const result = await scheduleService.getWorkSchedules({
+					profileId: "8945d55b-b1f3-4794-bb76-5e9182235711",
 					startDate: formatDateForAPI(today),
 					endDate: formatDateForAPI(endDate),
-					profileId: "ab5f27d5-a242-4155-a506-2cde1533cb22",
 				});
 
 				console.log(result);

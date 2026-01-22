@@ -80,7 +80,9 @@ class ScheduleService {
 			}
 
 			const queryString = params.toString();
-			const url = queryString ? `/work-shifts?${queryString}` : "/work-shifts";
+			const url = queryString
+				? `/work-shifts?${queryString}`
+				: "/work-shifts";
 
 			return await apiService.get(url);
 		},
@@ -107,40 +109,38 @@ class ScheduleService {
 	/**
 	 * Delete a shift template (soft delete)
 	 * @param id - Work shift ID
+	 * @param data - Shift data (same as update but with isActive: false)
 	 */
-	deleteWorkShift = withErrorHandling(async (id: string) => {
-		return await apiService.delete(`/work-shift-templates/${id}`);
-	});
+	deleteWorkShift = withErrorHandling(
+		async (id: string, data: Omit<UpdateWorkShiftDTO, "isActive">) => {
+			return await apiService.put(`/work-shift-templates/${id}`, {
+				...data,
+				is_active: false,
+			});
+		},
+	);
 
 	// ==================== Work Schedules ====================
 
 	/**
 	 * Get work schedules with filters
-	 * @param filters - Filter parameters
+	 * @param filters - Filter parameters (sent as query params)
 	 */
 	getWorkSchedules = withErrorHandling(
-		async (filters: GetWorkSchedulesFilters): Promise<WorkScheduleResponse[]> => {
+		async (
+			filters: GetWorkSchedulesFilters,
+		): Promise<WorkScheduleResponse[]> => {
 			const params = new URLSearchParams();
 
-			// Required fields
-			params.append("startDate", filters.startDate);
-			params.append("endDate", filters.endDate);
+			Object.entries(filters).forEach(([key, value]) => {
+				if (value !== undefined && value !== null) {
+					params.append(key, String(value));
+				}
+			});
 
-			// Optional filters
-			if (filters.profileId) {
-				params.append("profileId", filters.profileId);
-			}
-			if (filters.workShiftId) {
-				params.append("workShiftId", filters.workShiftId);
-			}
-
-			const queryString = params.toString();
-			const url = `/work-schedules?${queryString}`;
-
-			return await apiService.get(url);
+			return await apiService.get(`/work-schedules?${params.toString()}`);
 		},
 	);
-
 	/**
 	 * Assign staff to shifts
 	 * @param data - Assignment data

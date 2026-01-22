@@ -481,8 +481,51 @@ const ShiftConfigModal = ({
 				return;
 			}
 
+			// Find the shift to get its data
+			const shiftToDelete = shifts.find((s) => s.id === shiftId);
+			if (!shiftToDelete) {
+				toast({
+					title: "Lỗi",
+					description: "Không tìm thấy thông tin ca làm việc",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+
+			// Find the matching role config for this shift
+			const matchingConfig = roleConfigs.find(
+				(config) =>
+					config.requirements.some(
+						(req) =>
+							req.accountType === "WarehouseStaff" &&
+							req.quantity ===
+								shiftToDelete.requiredWarehouseStaff,
+					) &&
+					config.requirements.some(
+						(req) =>
+							req.accountType === "SalesStaff" &&
+							req.quantity === shiftToDelete.requiredSalesStaff,
+					),
+			);
+
+			if (!matchingConfig) {
+				toast({
+					title: "Lỗi",
+					description: "Không tìm thấy cấu hình role phù hợp",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+
 			try {
-				const result = await scheduleService.deleteWorkShift(shiftId);
+				const result = await scheduleService.deleteWorkShift(shiftId, {
+					shiftName: shiftToDelete.name,
+					startTime: shiftToDelete.startTime,
+					endTime: shiftToDelete.endTime,
+					roleConfigId: matchingConfig.id,
+				});
 
 				if (result.success) {
 					toast({
@@ -625,51 +668,6 @@ const ShiftConfigModal = ({
 													<Text
 														fontSize="13px"
 														color="gray.600">
-														Nhân viên sẽ không xuất
-														hiện trong danh sách khi
-														đã đạt giới hạn
-													</Text>
-												</Box>
-												<NumberInput
-													value={maxShiftsPerWeek}
-													onChange={(_, value) =>
-														setMaxShiftsPerWeek(
-															value,
-														)
-													}
-													min={1}
-													max={14}
-													w="120px">
-													<NumberInputField />
-													<NumberInputStepper>
-														<NumberIncrementStepper />
-														<NumberDecrementStepper />
-													</NumberInputStepper>
-												</NumberInput>
-											</HStack>
-										</FormControl>
-									</Box>
-									<Box
-										p={4}
-										bg="blue.50"
-										borderRadius="md"
-										borderLeft="4px solid"
-										borderLeftColor="green.500">
-										<FormControl>
-											<HStack
-												spacing={4}
-												align="center">
-												<Box flex={1}>
-													<FormLabel
-														fontSize="15px"
-														fontWeight="600"
-														mb={1}>
-														Số giờ tối mỗi nhân viên
-														có thể làm trong 1 tuần
-													</FormLabel>
-													<Text
-														fontSize="13px"
-														color="green.600">
 														Nhân viên sẽ không xuất
 														hiện trong danh sách khi
 														đã đạt giới hạn
@@ -1134,85 +1132,125 @@ const ShiftConfigModal = ({
 																	</Box>
 																)}
 
-															<HStack spacing={4}>
-																<FormControl
-																	flex={1}>
-																	<FormLabel
-																		fontSize="14px"
-																		fontWeight="600">
-																		Nhân
-																		viên kho
-																		cần
-																		thiết
-																	</FormLabel>
-																	<NumberInput
-																		value={
-																			editingShift.requiredWarehouseStaff
-																		}
-																		onChange={(
-																			_,
-																			value,
-																		) =>
+															{/* Role Config Selection */}
+															<FormControl
+																isRequired>
+																<FormLabel
+																	fontSize="14px"
+																	fontWeight="600">
+																	Cấu hình
+																	role
+																	<Text
+																		as="span"
+																		color="red.500"
+																		ml={1}>
+																		*
+																	</Text>
+																</FormLabel>
+																<Select
+																	value={
+																		selectedRoleConfigId
+																	}
+																	onChange={(
+																		e,
+																	) => {
+																		const configId =
+																			e
+																				.target
+																				.value;
+																		setSelectedRoleConfigId(
+																			configId,
+																		);
+
+																		// Update shift requirements based on selected config
+																		const selectedConfig =
+																			roleConfigs.find(
+																				(
+																					c,
+																				) =>
+																					c.id ===
+																					configId,
+																			);
+																		if (
+																			selectedConfig &&
+																			editingShift
+																		) {
+																			const warehouseReq =
+																				selectedConfig.requirements.find(
+																					(
+																						req,
+																					) =>
+																						req.accountType ===
+																						"WarehouseStaff",
+																				)
+																					?.quantity ||
+																				0;
+																			const salesReq =
+																				selectedConfig.requirements.find(
+																					(
+																						req,
+																					) =>
+																						req.accountType ===
+																						"SalesStaff",
+																				)
+																					?.quantity ||
+																				0;
+
 																			setEditingShift(
 																				{
 																					...editingShift,
 																					requiredWarehouseStaff:
-																						value ||
-																						0,
-																				},
-																			)
-																		}
-																		min={0}
-																		max={
-																			50
-																		}>
-																		<NumberInputField />
-																		<NumberInputStepper>
-																			<NumberIncrementStepper />
-																			<NumberDecrementStepper />
-																		</NumberInputStepper>
-																	</NumberInput>
-																</FormControl>
-
-																<FormControl
-																	flex={1}>
-																	<FormLabel
-																		fontSize="14px"
-																		fontWeight="600">
-																		Nhân
-																		viên bán
-																		hàng cần
-																		thiết
-																	</FormLabel>
-																	<NumberInput
-																		value={
-																			editingShift.requiredSalesStaff
-																		}
-																		onChange={(
-																			_,
-																			value,
-																		) =>
-																			setEditingShift(
-																				{
-																					...editingShift,
+																						warehouseReq,
 																					requiredSalesStaff:
-																						value ||
-																						0,
+																						salesReq,
 																				},
-																			)
+																			);
 																		}
-																		min={0}
-																		max={
-																			50
-																		}>
-																		<NumberInputField />
-																		<NumberInputStepper>
-																			<NumberIncrementStepper />
-																			<NumberDecrementStepper />
-																		</NumberInputStepper>
-																	</NumberInput>
-																</FormControl>
-															</HStack>
+																	}}
+																	placeholder="Chọn cấu hình role"
+																	bg="white">
+																	{roleConfigs.map(
+																		(
+																			config,
+																		) => (
+																			<option
+																				key={
+																					config.id
+																				}
+																				value={
+																					config.id
+																				}>
+																				{
+																					config.configName
+																				}{" "}
+																				(
+																				{config.requirements
+																					.map(
+																						(
+																							req,
+																						) =>
+																							`${req.accountType === "WarehouseStaff" ? "Kho" : "Bán hàng"}: ${req.quantity}`,
+																					)
+																					.join(
+																						", ",
+																					)}
+
+																				)
+																			</option>
+																		),
+																	)}
+																</Select>
+																<Text
+																	fontSize="12px"
+																	color="gray.600"
+																	mt={1}>
+																	💡 Chọn cấu
+																	hình role sẽ
+																	tự động điền
+																	số nhân viên
+																	yêu cầu
+																</Text>
+															</FormControl>
 															<HStack
 																justify="flex-end"
 																spacing={2}>
@@ -1352,11 +1390,40 @@ const ShiftConfigModal = ({
 																	size="sm"
 																	colorScheme="blue"
 																	variant="ghost"
-																	onClick={() =>
+																	onClick={() => {
 																		setEditingShift(
 																			shift,
-																		)
-																	}
+																		);
+																		// Find and set the matching roleConfig
+																		const matchingConfig =
+																			roleConfigs.find(
+																				(
+																					config,
+																				) =>
+																					config.requirements.some(
+																						(
+																							req,
+																						) =>
+																							req.accountType ===
+																								"WarehouseStaff" &&
+																							req.quantity ===
+																								shift.requiredWarehouseStaff,
+																					) &&
+																					config.requirements.some(
+																						(
+																							req,
+																						) =>
+																							req.accountType ===
+																								"SalesStaff" &&
+																							req.quantity ===
+																								shift.requiredSalesStaff,
+																					),
+																			);
+																		setSelectedRoleConfigId(
+																			matchingConfig?.id ||
+																				"",
+																		);
+																	}}
 																	isDisabled={
 																		editingShift !==
 																		null

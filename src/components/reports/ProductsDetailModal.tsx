@@ -9,7 +9,6 @@ import {
 	Divider,
 	Box,
 	Flex,
-	Select,
 	Text,
 	Table,
 	Thead,
@@ -80,12 +79,6 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 		const endIndex = startIndex + pageSize;
 		return filteredTableProducts.slice(startIndex, endIndex);
 	}, [filteredTableProducts, currentPage, pageSize]);
-
-	// Reset to page 1 when filter changes
-	const handleTableTopLimitChange = (value: string) => {
-		const newLimit = value === "all" ? "all" : Number.parseInt(value);
-		setTableTopLimit(newLimit);
-	};
 
 	const formatCurrency = (value: number) => {
 		if (value >= 1000000) {
@@ -212,7 +205,11 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 										{chartData.map((_, index) => (
 											<Cell
 												key={`cell-${index}`}
-												fill={COLORS[index % COLORS.length]}
+												fill={
+													COLORS[
+														index % COLORS.length
+													]
+												}
 											/>
 										))}
 									</Bar>
@@ -234,7 +231,8 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 								fontSize="lg"
 								fontWeight="600"
 								color="gray.700">
-								Chi tiết sản phẩm ({filteredTableProducts.length} sản phẩm)
+								Chi tiết sản phẩm (
+								{filteredTableProducts.length} sản phẩm)
 							</Text>
 							<Flex
 								align="center"
@@ -244,18 +242,6 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 									color="gray.600">
 									Hiển thị:
 								</Text>
-								<Select
-									value={tableTopLimit}
-									onChange={(e) => handleTableTopLimitChange(e.target.value)}
-									size="sm"
-									width="120px"
-									bg="white"
-									borderColor="gray.300">
-									<option value={5}>Top 5</option>
-									<option value={10}>Top 10</option>
-									<option value={50}>Top 50</option>
-									<option value="all">Tất cả</option>
-								</Select>
 							</Flex>
 						</Flex>
 						<Box
@@ -279,7 +265,9 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 								</Thead>
 								<Tbody>
 									{paginatedProducts.map((product, index) => {
-										const globalIndex = (currentPage - 1) * PAGE_SIZE + index;
+										const globalIndex =
+											(currentPage - 1) * PAGE_SIZE +
+											index;
 										return (
 											<Tr
 												key={product.id}
@@ -289,7 +277,12 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 														w="24px"
 														h="24px"
 														borderRadius="full"
-														bg={COLORS[globalIndex % COLORS.length]}
+														bg={
+															COLORS[
+																globalIndex %
+																	COLORS.length
+															]
+														}
 														color="white"
 														align="center"
 														justify="center"
@@ -303,7 +296,9 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 													fontSize="sm">
 													{product.code}
 												</Td>
-												<Td fontSize="sm">{product.name}</Td>
+												<Td fontSize="sm">
+													{product.name}
+												</Td>
 												<Td>
 													<Badge
 														colorScheme="blue"
@@ -322,16 +317,20 @@ export const ProductsDetailModal: React.FC<ProductsDetailModalProps> = ({
 													fontWeight="600"
 													fontSize="sm"
 													color="brand.500">
-													{formatCurrency(product.revenue)} đ
+													{formatCurrency(
+														product.revenue,
+													)}{" "}
+													đ
 												</Td>
 												<Td isNumeric>
 													<Badge
 														colorScheme={
 															product.stock === 0
 																? "red"
-																: product.stock < 50
-																? "orange"
-																: "green"
+																: product.stock <
+																	  50
+																	? "orange"
+																	: "green"
 														}
 														fontSize="xs">
 														{product.stock}

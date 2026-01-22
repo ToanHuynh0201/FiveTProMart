@@ -6,6 +6,7 @@ import {
 	Heading,
 	Text,
 	useDisclosure,
+	useToast,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import {
@@ -39,7 +40,6 @@ import type {
 	OrdersReport,
 	ProductsReport,
 	CategoryReport,
-	CustomerStats,
 	ExpenseReport,
 	DashboardSummary,
 } from "@/types/reports";
@@ -61,9 +61,9 @@ const getDateRangeParams = (
 	const now = new Date();
 	let startDate: Date;
 
-	// Logic chọn ngày giữ nguyên
 	switch (dateRange) {
 		case "today":
+			// Hôm nay: từ 00:00 hôm nay đến bây giờ
 			startDate = new Date(
 				now.getFullYear(),
 				now.getMonth(),
@@ -71,21 +71,28 @@ const getDateRangeParams = (
 			);
 			break;
 		case "week":
+			// 7 ngày qua: từ 7 ngày trước đến nay
 			startDate = new Date(now);
 			startDate.setDate(now.getDate() - 7);
 			break;
 		case "month":
-			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+			// 30 ngày qua: từ 30 ngày trước đến nay
+			startDate = new Date(now);
+			startDate.setDate(now.getDate() - 30);
 			break;
 		case "quarter":
-			const quarter = Math.floor(now.getMonth() / 3);
-			startDate = new Date(now.getFullYear(), quarter * 3, 1);
+			// 3 tháng qua: từ 90 ngày trước đến nay
+			startDate = new Date(now);
+			startDate.setDate(now.getDate() - 90);
 			break;
 		case "year":
+			// Năm nay: từ đầu năm đến nay
 			startDate = new Date(now.getFullYear(), 0, 1);
 			break;
 		default:
-			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+			// Mặc định: 30 ngày qua
+			startDate = new Date(now);
+			startDate.setDate(now.getDate() - 30);
 	}
 
 	const result = {
@@ -100,13 +107,14 @@ const getDateRangeParams = (
 export const ReportsPage: React.FC = () => {
 	const [dateRange, setDateRange] = useState<DateRange>("month");
 	const [loading, setLoading] = useState(true);
+	const toast = useToast();
 
-	// Data states - New API
+	// Data states - Statistics API
 	const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(
 		null,
 	);
 
-	// Legacy data states (commented out until components are updated)
+	// Legacy data states (for compatibility with existing components)
 	const [revenueData, setRevenueData] = useState<RevenueReport | null>(null);
 	const [ordersData, setOrdersData] = useState<OrdersReport | null>(null);
 	const [productsData, setProductsData] = useState<ProductsReport | null>(
@@ -115,10 +123,7 @@ export const ReportsPage: React.FC = () => {
 	const [categoryData, setCategoryData] = useState<CategoryReport | null>(
 		null,
 	);
-	const [customerData, setCustomerData] = useState<CustomerStats | null>(
-		null,
-	);
-	const [expenseData, setExpenseData] = useState<ExpenseReport | null>(null);
+	const [expenseData] = useState<ExpenseReport | null>(null);
 
 	// Modal states
 	const {
@@ -153,6 +158,11 @@ export const ReportsPage: React.FC = () => {
 
 	// Fetch data
 	useEffect(() => {
+		console.log(
+			"🔄 useEffect triggered - dateRange changed to:",
+			dateRange,
+		);
+
 		const loadAllReports = async () => {
 			setLoading(true);
 			try {
@@ -160,19 +170,143 @@ export const ReportsPage: React.FC = () => {
 
 				console.log("📅 Date params:", dateParams);
 
-				// Load dashboard summary with new API
+				// 1.1 Load dashboard summary
 				const summaryResponse =
 					await reportService.getDashboardSummary(dateParams);
 				console.log("✅ Summary response:", summaryResponse);
-				setDashboardData(summaryResponse.data);
+				if (summaryResponse.success) {
+					setDashboardData(summaryResponse.data);
+				}
 
-				// TODO: Load other statistics as needed
-				// const revenueChart = await reportService.getRevenueProfitChart(dateParams);
-				// const ordersChart = await reportService.getOrdersChart(dateParams);
-				// const categoryRevenue = await reportService.getCategoryRevenue({ ...dateParams, limit: 5 });
-				// const topProducts = await reportService.getTopProducts({ ...dateParams, limit: 10 });
+				// 1.2 Load revenue & profit chart
+				const revenueProfitResponse =
+					await reportService.getRevenueProfitChart(dateParams);
+				console.log(
+					"✅ Revenue-Profit chart response:",
+					revenueProfitResponse,
+				);
+				if (revenueProfitResponse.success) {
+					// Convert to legacy format for existing RevenueChart component
+					setRevenueData({
+						period: { type: dateRange },
+						totalRevenue: summaryResponse.data.totalRevenue,
+						totalCost: summaryResponse.data.incurredStats,
+						totalProfit: summaryResponse.data.netProfit,
+						profitMargin:
+							summaryResponse.data.totalRevenue > 0
+								? (summaryResponse.data.netProfit /
+										summaryResponse.data.totalRevenue) *
+									100
+								: 0,
+						data: revenueProfitResponse.data.map((item) => ({
+							date: item.date,
+							revenue: item.revenue,
+							cost: item.expense,
+							profit: item.profit,
+							orders: 0, // Not available in new API
+						})),
+						growth: 0, // Not available in new API
+					});
+				}
+
+				// 1.3 Load orders chart
+				const ordersChartResponse =
+					await reportService.getOrdersChart(dateParams);
+				console.log("✅ Orders chart response:", ordersChartResponse);
+				if (ordersChartResponse.success) {
+					// Convert to legacy format for existing OrdersChart component
+					setOrdersData({
+						period: { type: dateRange },
+						totalOrders: summaryResponse.data.totalOrders,
+						completedOrders: summaryResponse.data.totalOrders,
+						cancelledOrders: 0,
+						completionRate: 100,
+						averageOrderValue:
+							summaryResponse.data.averageOrderValue,
+						data: ordersChartResponse.data.map((item) => ({
+							date: item.date,
+							totalOrders: item.completedOrders,
+							completedOrders: item.completedOrders,
+							cancelledOrders: 0,
+							averageValue:
+								summaryResponse.data.averageOrderValue,
+						})),
+						growth: 0,
+					});
+				}
+
+				// 1.4 Load category revenue (top 5 categories)
+				const categoryRevenueResponse =
+					await reportService.getCategoryRevenue({
+						...dateParams,
+						limit: 5,
+					});
+				console.log(
+					"✅ Category revenue response:",
+					categoryRevenueResponse,
+				);
+				if (categoryRevenueResponse.success) {
+					// Convert to legacy format for existing CategoryChart component
+					const totalRevenue = categoryRevenueResponse.data.reduce(
+						(sum, cat) => sum + cat.totalRevenue,
+						0,
+					);
+					setCategoryData({
+						period: { type: dateRange },
+						categories: categoryRevenueResponse.data.map((cat) => ({
+							category: cat.categoryName,
+							revenue: cat.totalRevenue,
+							quantitySold: cat.totalQuantitySold,
+							productCount: cat.orderCount,
+							percentage: Math.round(
+								(cat.totalRevenue / totalRevenue) * 100,
+							),
+						})),
+						totalRevenue,
+					});
+				}
+
+				// 1.5 Load top selling products (top 10)
+				const topProductsResponse = await reportService.getTopProducts({
+					...dateParams,
+					limit: 10,
+				});
+				console.log("✅ Top products response:", topProductsResponse);
+				if (topProductsResponse.success) {
+					// Convert to legacy format for existing ProductsChart component
+					setProductsData({
+						period: { type: dateRange },
+						topSellingProducts: topProductsResponse.data.map(
+							(product) => ({
+								id: product.productId,
+								code: product.productId, // Using ID as code for now
+								name: product.productName,
+								category: product.categoryName,
+								quantitySold: product.totalQuantitySold,
+								revenue: product.totalRevenue,
+								stock:
+									typeof product.totalStockQuantity ===
+									"number"
+										? product.totalStockQuantity
+										: 0,
+							}),
+						),
+						totalProductsSold:
+							summaryResponse.data.totalProductsSold,
+						totalCategories: categoryRevenueResponse.data.length,
+						lowStockProducts: 0, // Not available in new API
+					});
+				}
 			} catch (error) {
 				console.error("❌ Failed to load reports:", error);
+				toast({
+					title: "Lỗi tải báo cáo",
+					description:
+						"Không thể tải dữ liệu báo cáo. Vui lòng thử lại.",
+					status: "error",
+					duration: 5000,
+					isClosable: true,
+				});
 				// Data will remain null - components handle empty states
 			} finally {
 				setLoading(false);
@@ -180,7 +314,8 @@ export const ReportsPage: React.FC = () => {
 		};
 
 		loadAllReports();
-	}, [dateRange]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [dateRange]); // Only re-run when dateRange changes
 
 	const formatCurrency = (value: number) => {
 		if (value >= 1000000000) {
@@ -226,7 +361,9 @@ export const ReportsPage: React.FC = () => {
 						<Box w={{ base: "full", md: "auto" }}>
 							<DateRangePicker
 								value={dateRange}
-								onChange={setDateRange}
+								onChange={(range) => {
+									setDateRange(range);
+								}}
 							/>
 						</Box>
 					</Flex>

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { ChartCard } from "./ChartCard";
 import type { RevenueReport } from "@/types/reports";
+import { formatDateDDMMYYYYToDisplay } from "@/utils/date";
 
 interface RevenueChartProps {
 	data: RevenueReport;
@@ -41,8 +42,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
 	};
 
 	const formatDate = (dateStr: string) => {
-		const date = new Date(dateStr);
-		return `${date.getDate()}/${date.getMonth() + 1}`;
+		return formatDateDDMMYYYYToDisplay(dateStr);
 	};
 
 	const CustomTooltip = ({ active, payload, label }: any) => {

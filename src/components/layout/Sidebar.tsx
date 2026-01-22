@@ -31,14 +31,14 @@ function Sidebar() {
 	const navItemsWithBadges: NavItem[] = useMemo(() => {
 		return (
 			navItems
-				// .filter((item) => {
-				// 	// If item has a module requirement, check permission
-				// 	if (item.module) {
-				// 		return hasAccess(item.module);
-				// 	}
-				// 	// Items without module requirement are always visible
-				// 	return true;
-				// })
+				.filter((item) => {
+					// If item has a module requirement, check permission
+					if (item.module) {
+						return hasAccess(item.module);
+					}
+					// Items without module requirement are always visible
+					return true;
+				})
 				.map((item) => {
 					// Add badge to inventory page for critical/warning alerts
 					if (item.path === "/inventory") {

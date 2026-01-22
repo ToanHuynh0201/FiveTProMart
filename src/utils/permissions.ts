@@ -10,7 +10,7 @@ import type {
  *
  * Rules:
  * - Admin: Full access to all modules
- * - SalesStaff: Sales and Customers modules only
+ * - SalesStaff: Sales, Promotions, and Customers modules only
  * - WarehouseStaff: Inventory, Categories, Purchase, and Suppliers modules only
  * - null/undefined user: Treated as Admin (fallback for backward compatibility)
  */
@@ -24,7 +24,7 @@ const PERMISSION_MAP: Record<PermissionModule, AccountType[]> = {
 	categories: ["Admin", "WarehouseStaff"],
 	purchase: ["Admin", "WarehouseStaff"],
 	suppliers: ["Admin", "WarehouseStaff"],
-	promotions: ["Admin"],
+	promotions: ["Admin", "SalesStaff"],
 	reports: ["Admin"],
 	expenses: ["Admin"],
 };

@@ -288,10 +288,16 @@ export const PromotionViewEditModal: React.FC<PromotionViewEditModalProps> = ({
 					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
 				};
 			} else {
+				// For Buy X Get Y, we need to send product pairs
+				// Currently, UI selects products which are used for both buy and get
+				const productPairs = productIds.map(productId => ({
+					productBuy: productId,
+					productGet: productId,
+				}));
 				requestData = {
 					promotionName: formData.promotionName,
 					promotionDescription: formData.promotionDescription || undefined,
-					products: productIds,
+					products: productPairs,
 					promotionType: "Buy X Get Y" as const,
 					buyQuantity: formData.buyQuantity,
 					getQuantity: formData.getQuantity,

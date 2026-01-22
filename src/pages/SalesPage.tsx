@@ -231,6 +231,13 @@ const SalesPage = () => {
 			description: "Tạm dừng đơn hàng",
 			enabled: activeTabIndex === 0 && orderItems.length > 0,
 		},
+		{
+			key: "Delete",
+			ctrl: true,
+			action: handleClearCart,
+			description: "Xóa giỏ hàng",
+			enabled: activeTabIndex === 0 && orderItems.length > 0,
+		},
 	]);
 
 	useEffect(() => {

@@ -8,6 +8,7 @@ import {
 	Badge,
 	Button,
 	Box,
+	Text,
 } from "@chakra-ui/react";
 import type { SalesOrder } from "@/types/sales";
 import { formatDate, formatTime } from "@/utils/date";

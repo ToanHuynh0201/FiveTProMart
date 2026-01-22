@@ -75,12 +75,12 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							try {
 								const batchData = await inventoryService.getBatchesByProductId(p.productId);
 								batches = batchData
-									.filter(b => b.status === 'ACTIVE' && b.quantity > 0)
+									.filter(b => b.status === 'ACTIVE' && b.stockQuantity > 0)
 									.map(b => ({
-										id: b.batchId,
-										batchNumber: b.batchNumber,
-										quantity: b.quantity,
-										expiryDate: b.expiryDate,
+										id: b.lotId,
+										batchNumber: b.lotId, // lotId serves as batch identifier
+										quantity: b.stockQuantity,
+										expiryDate: b.expirationDate || '',
 									}));
 							} catch {
 								// If batch fetch fails, continue with empty batches

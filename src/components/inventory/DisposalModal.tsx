@@ -70,7 +70,7 @@ const DisposalModal = ({
 				const productBatches = await inventoryService.getBatchesByProductId(product.productId);
 				// Only include active batches with stock
 				const activeBatches = productBatches
-					.filter(b => b.status === "ACTIVE" && b.quantity > 0)
+					.filter(b => b.status === "ACTIVE" && b.stockQuantity > 0)
 					.map(b => ({
 						...b,
 						selected: false,
@@ -94,25 +94,25 @@ const DisposalModal = ({
 		}
 	};
 
-	const handleToggleBatch = (batchId: string) => {
+	const handleToggleBatch = (lotId: string) => {
 		setBatches(prev => prev.map(b => {
-			if (b.batchId === batchId) {
+			if (b.lotId === lotId) {
 				return {
 					...b,
 					selected: !b.selected,
-					disposeQuantity: !b.selected ? b.quantity : 0, // Default to full quantity when selected
+					disposeQuantity: !b.selected ? b.stockQuantity : 0, // Default to full quantity when selected
 				};
 			}
 			return b;
 		}));
 	};
 
-	const handleQuantityChange = (batchId: string, value: number) => {
+	const handleQuantityChange = (lotId: string, value: number) => {
 		setBatches(prev => prev.map(b => {
-			if (b.batchId === batchId) {
+			if (b.lotId === lotId) {
 				return {
 					...b,
-					disposeQuantity: Math.min(Math.max(0, value), b.quantity),
+					disposeQuantity: Math.min(Math.max(0, value), b.stockQuantity),
 				};
 			}
 			return b;
@@ -132,11 +132,17 @@ const DisposalModal = ({
 			return;
 		}
 
-		const disposalItems: DisposalItem[] = selectedBatches.map(b => ({
-			batchId: b.batchId,
-			batchNumber: b.batchNumber,
+		const disposalItems: DisposalItem[] = selectedBatches.map((b, index) => ({
+			id: `disposal-${Date.now()}-${index}`,
+			batchId: b.lotId,
+			batchNumber: b.lotId, // lotId serves as batch identifier
 			productId: b.productId,
+			productName: b.productName,
+			productCode: b.productId, // Using productId as product code
 			quantity: b.disposeQuantity,
+			maxQuantity: b.stockQuantity,
+			costPrice: b.importPrice,
+			expiryDate: b.expirationDate ? new Date(b.expirationDate) : undefined,
 			reason: note || "Hủy hàng theo yêu cầu",
 		}));
 
@@ -195,11 +201,13 @@ const DisposalModal = ({
 							</Text>
 
 							{batches.map((batch) => {
-								const expiryStatus = getExpiryStatus(batch.expiryDate);
+								const expiryStatus = getExpiryStatus(batch.expirationDate ?? undefined);
+								// Extract color scheme from color (e.g., "red.500" → "red")
+								const badgeColorScheme = expiryStatus.color.split('.')[0];
 								
 								return (
 									<Box
-										key={batch.batchId}
+										key={batch.lotId}
 										p={4}
 										borderRadius="lg"
 										border="1px solid"
@@ -210,19 +218,19 @@ const DisposalModal = ({
 										<HStack justify="space-between" align="start">
 											<Checkbox
 												isChecked={batch.selected}
-												onChange={() => handleToggleBatch(batch.batchId)}
+												onChange={() => handleToggleBatch(batch.lotId)}
 												colorScheme="red"
 											>
 												<VStack align="start" spacing={1} ml={2}>
 													<Text fontWeight="600">{batch.productName}</Text>
 													<HStack spacing={2}>
-														<Badge colorScheme="blue">Lô: {batch.batchNumber}</Badge>
-														<Badge colorScheme={expiryStatus.colorScheme}>
+														<Badge colorScheme="blue">Lô: {batch.lotId}</Badge>
+														<Badge colorScheme={badgeColorScheme}>
 															{expiryStatus.text}
 														</Badge>
 													</HStack>
 													<Text fontSize="13px" color="gray.600">
-														Tồn: {batch.quantity} | HSD: {new Date(batch.expiryDate).toLocaleDateString("vi-VN")}
+														Tồn: {batch.stockQuantity} | HSD: {batch.expirationDate ? new Date(batch.expirationDate).toLocaleDateString("vi-VN") : "N/A"}
 													</Text>
 												</VStack>
 											</Checkbox>
@@ -232,9 +240,9 @@ const DisposalModal = ({
 													size="sm"
 													maxW={20}
 													min={1}
-													max={batch.quantity}
+													max={batch.stockQuantity}
 													value={batch.disposeQuantity}
-													onChange={(_, val) => handleQuantityChange(batch.batchId, val)}
+													onChange={(_, val) => handleQuantityChange(batch.lotId, val)}
 												>
 													<NumberInputField />
 													<NumberInputStepper>

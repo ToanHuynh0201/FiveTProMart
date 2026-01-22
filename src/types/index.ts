@@ -1,5 +1,6 @@
 export * from "./layout";
 export * from "./staff";
+export * from "./salary";
 export * from "./schedule";
 export * from "./sales";
 export * from "./reservation";

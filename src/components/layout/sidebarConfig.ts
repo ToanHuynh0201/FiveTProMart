@@ -11,6 +11,7 @@ import {
 	FiBox,
 	FiAlertCircle,
 	FiGrid,
+	FiDollarSign,
 } from "react-icons/fi";
 
 export const navItems: NavItem[] = [
@@ -53,6 +54,11 @@ export const navItems: NavItem[] = [
 		label: "Ca làm",
 		path: "/schedule",
 		icon: FiCalendar,
+	},
+	{
+		label: "Lương",
+		path: "/salary",
+		icon: FiDollarSign,
 	},
 	{
 		label: "Báo cáo",

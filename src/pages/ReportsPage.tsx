@@ -41,14 +41,60 @@ import type {
 	CategoryReport,
 	CustomerStats,
 	ExpenseReport,
+	DashboardSummary,
 } from "@/types/reports";
 import MainLayout from "@/components/layout/MainLayout";
+
+// Helper function to convert DateRange to dd-MM-yyyy format
+// Backend controller expects: @DateTimeFormat(pattern = "dd-MM-yyyy")
+const getDateRangeParams = (dateRange: DateRange): { startDate: string; endDate: string } => {
+	const now = new Date();
+	let startDate: Date;
+	
+	switch (dateRange) {
+		case "today":
+			startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+			break;
+		case "week":
+			startDate = new Date(now);
+			startDate.setDate(now.getDate() - 7);
+			break;
+		case "month":
+			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+			break;
+		case "quarter":
+			const quarter = Math.floor(now.getMonth() / 3);
+			startDate = new Date(now.getFullYear(), quarter * 3, 1);
+			break;
+		case "year":
+			startDate = new Date(now.getFullYear(), 0, 1);
+			break;
+		default:
+			startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+	}
+	
+	// Format to dd-MM-yyyy as backend expects
+	const formatDate = (date: Date) => {
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const year = date.getFullYear();
+		return `${day}-${month}-${year}`;
+	};
+	
+	return {
+		startDate: formatDate(startDate),
+		endDate: formatDate(now),
+	};
+};
 
 export const ReportsPage: React.FC = () => {
 	const [dateRange, setDateRange] = useState<DateRange>("month");
 	const [loading, setLoading] = useState(true);
 
-	// Data states
+	// Data states - New API
+	const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+	
+	// Legacy data states (commented out until components are updated)
 	const [revenueData, setRevenueData] = useState<RevenueReport | null>(null);
 	const [ordersData, setOrdersData] = useState<OrdersReport | null>(null);
 	const [productsData, setProductsData] = useState<ProductsReport | null>(
@@ -98,23 +144,23 @@ export const ReportsPage: React.FC = () => {
 		const loadAllReports = async () => {
 			setLoading(true);
 			try {
-				// Load all reports in parallel
-				const [revenue, orders, products, category, customers, expenses] = await Promise.all([
-					reportService.getRevenueReport(dateRange),
-					reportService.getOrdersReport(dateRange),
-					reportService.getProductsReport(dateRange),
-					reportService.getCategoryReport(dateRange),
-					reportService.getCustomerStats(),
-					reportService.getExpenseReport(dateRange),
-				]);
+				const dateParams = getDateRangeParams(dateRange);
 				
-				setRevenueData(revenue);
-				setOrdersData(orders);
-				setProductsData(products);
-				setCategoryData(category);
-				setCustomerData(customers);
-				setExpenseData(expenses);
-			} catch {
+				console.log('📅 Date params:', dateParams);
+				
+				// Load dashboard summary with new API
+				const summaryResponse = await reportService.getDashboardSummary(dateParams);
+				console.log('✅ Summary response:', summaryResponse);
+				setDashboardData(summaryResponse.data);
+				
+				// TODO: Load other statistics as needed
+				// const revenueChart = await reportService.getRevenueProfitChart(dateParams);
+				// const ordersChart = await reportService.getOrdersChart(dateParams);
+				// const categoryRevenue = await reportService.getCategoryRevenue({ ...dateParams, limit: 5 });
+				// const topProducts = await reportService.getTopProducts({ ...dateParams, limit: 10 });
+				
+			} catch (error) {
+				console.error('❌ Failed to load reports:', error);
 				// Data will remain null - components handle empty states
 			} finally {
 				setLoading(false);
@@ -195,36 +241,33 @@ export const ReportsPage: React.FC = () => {
 						<MetricCard
 							title="Tổng Doanh thu"
 							value={`${formatCurrency(
-								revenueData?.totalRevenue || 0,
+								dashboardData?.totalRevenue || 0,
 							)}`}
 							suffix=" đ"
 							icon={FiDollarSign}
 							bgGradient="linear(to-br, brand.500, brand.600)"
-							growth={revenueData?.growth}
 							onClick={onRevenueModalOpen}
 						/>
 						<MetricCard
 							title="Lợi nhuận"
 							value={`${formatCurrency(
-								revenueData?.totalProfit || 0,
+								dashboardData?.netProfit || 0,
 							)}`}
 							suffix=" đ"
 							icon={FiTrendingUp}
 							bgGradient="linear(to-br, success.500, green.600)"
-							growth={revenueData?.growth}
 							onClick={onRevenueModalOpen}
 						/>
 						<MetricCard
 							title="Tổng Đơn hàng"
-							value={ordersData?.totalOrders || 0}
+							value={dashboardData?.totalOrders || 0}
 							icon={FiShoppingCart}
 							bgGradient="linear(to-br, purple.500, purple.600)"
-							growth={ordersData?.growth}
 							onClick={onOrdersModalOpen}
 						/>
 						<MetricCard
 							title="Sản phẩm bán"
-							value={productsData?.totalProductsSold || 0}
+							value={dashboardData?.totalProductsSold || 0}
 							icon={FiPackage}
 							bgGradient="linear(to-br, orange.500, orange.600)"
 							onClick={onProductsModalOpen}
@@ -243,7 +286,7 @@ export const ReportsPage: React.FC = () => {
 						<MetricCard
 							title="Giá trị đơn TB"
 							value={`${formatCurrency(
-								ordersData?.averageOrderValue || 0,
+								dashboardData?.averageOrderValue || 0,
 							)}`}
 							suffix=" đ"
 							icon={FiCreditCard}
@@ -251,23 +294,22 @@ export const ReportsPage: React.FC = () => {
 						/>
 						<MetricCard
 							title="Tổng khách hàng"
-							value={customerData?.totalCustomers || 0}
+							value={dashboardData?.totalCustomers || 0}
 							icon={FiUsers}
 							bgGradient="linear(to-br, pink.500, pink.600)"
 						/>
 						<MetricCard
 							title="Khách hàng mới"
-							value={customerData?.newCustomers || 0}
+							value={dashboardData?.newCustomers || 0}
 							icon={FiUsers}
 							bgGradient="linear(to-br, cyan.500, cyan.600)"
 						/>
 						<MetricCard
 							title="Chi phí phát sinh"
-							value={`${formatCurrency(expenseData?.totalExpense || 0)}`}
+							value={`${formatCurrency(dashboardData?.incurredStats || 0)}`}
 							suffix=" đ"
 							icon={FiAlertCircle}
 							bgGradient="linear(to-br, red.500, red.600)"
-							growth={expenseData?.growth}
 							onClick={onExpenseModalOpen}
 						/>
 					</Grid>

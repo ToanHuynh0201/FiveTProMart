@@ -274,6 +274,28 @@ const SchedulePage = () => {
 		loadShiftConfig();
 	}, []);
 
+	// Auto-update editModalData.assignments when weekData changes
+	useEffect(() => {
+		if (editModalData.isOpen && editModalData.date && editModalData.shift) {
+			const daySchedule = weekData.find(
+				(day) => day.date === editModalData.date,
+			);
+			if (daySchedule) {
+				const updatedAssignments =
+					daySchedule.shifts[editModalData.shift] || [];
+				setEditModalData((prev) => ({
+					...prev,
+					assignments: updatedAssignments,
+				}));
+			}
+		}
+	}, [
+		weekData,
+		editModalData.isOpen,
+		editModalData.date,
+		editModalData.shift,
+	]);
+
 	const loadShiftConfig = async () => {
 		setIsLoading(true);
 		try {
@@ -393,17 +415,92 @@ const SchedulePage = () => {
 	const handleScheduleUpdate = async () => {
 		// Reload the week schedule after assignment/removal
 		await loadWeekSchedule();
+	};
 
-		// Update modal data with fresh data
-		if (editModalData.isOpen && editModalData.date && editModalData.shift) {
-			const day = weekData.find((d) => d.date === editModalData.date);
-			if (day) {
-				const assignments = day.shifts[editModalData.shift] || [];
-				setEditModalData({
-					...editModalData,
-					assignments,
+	const handleAssignStaff = async (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => {
+		try {
+			const result = await scheduleService.assignStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: shiftId,
+				assignedStaffIds: [staffId],
+			});
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã thêm nhân viên vào ca làm việc",
+					status: "success",
+					duration: 2000,
 				});
+				await handleScheduleUpdate();
+				return { success: true };
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể thêm nhân viên",
+					status: "error",
+					duration: 3000,
+				});
+				return { success: false, error: result.error };
 			}
+		} catch (error) {
+			console.error("Error assigning staff:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi thêm nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+			return {
+				success: false,
+				error: "Đã xảy ra lỗi khi thêm nhân viên",
+			};
+		}
+	};
+
+	const handleRemoveStaff = async (
+		staffId: string,
+		date: string,
+		shiftId: string,
+	) => {
+		try {
+			const result = await scheduleService.removeStaff({
+				workDates: [formatDateForAPI(date)],
+				workShiftId: [shiftId],
+				assignedStaffIds: [staffId],
+			});
+
+			if (result.success) {
+				toast({
+					title: "Thành công",
+					description: "Đã xóa nhân viên khỏi ca làm việc",
+					status: "success",
+					duration: 2000,
+				});
+				await handleScheduleUpdate();
+				return { success: true };
+			} else {
+				toast({
+					title: "Lỗi",
+					description: result.error || "Không thể xóa nhân viên",
+					status: "error",
+					duration: 3000,
+				});
+				return { success: false, error: result.error };
+			}
+		} catch (error) {
+			console.error("Error removing staff:", error);
+			toast({
+				title: "Lỗi",
+				description: "Đã xảy ra lỗi khi xóa nhân viên",
+				status: "error",
+				duration: 3000,
+			});
+			return { success: false, error: "Đã xảy ra lỗi khi xóa nhân viên" };
 		}
 	};
 
@@ -532,6 +629,8 @@ const SchedulePage = () => {
 				shift={editModalData.shift}
 				assignments={editModalData.assignments}
 				onUpdate={handleScheduleUpdate}
+				onAssignStaff={handleAssignStaff}
+				onRemoveStaff={handleRemoveStaff}
 			/>
 
 			{/* View Modal */}

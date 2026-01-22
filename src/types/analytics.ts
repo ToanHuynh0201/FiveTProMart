@@ -134,8 +134,9 @@ export interface BundleDataStatus {
 
 export interface AnalyticsHealthResponse {
 	status: "healthy" | "degraded" | "down";
-	database: boolean;
-	timestamp: string;
+	service: string;
+	version: string;
+	timestamp: string; // ISO datetime string
 }
 
 // ==================== AGGREGATE DASHBOARD ====================

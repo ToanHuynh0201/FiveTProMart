@@ -55,9 +55,9 @@ function Sidebar() {
 							};
 						}
 					}
-					return item;
-				})
-		);
+				}
+				return item;
+			});
 	}, [criticalCount, warningCount, hasAccess]);
 
 	return (

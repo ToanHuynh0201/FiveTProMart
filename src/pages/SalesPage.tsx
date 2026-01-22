@@ -143,6 +143,92 @@ const SalesPage = () => {
 			.map((item) => item.reservationId as string);
 	}, [orderItems]);
 
+	// ============================================================================
+	// BUY X GET Y PROMOTION: Auto-add/update free items
+	// When cart has eligible items, automatically add free items
+	// ============================================================================
+	useEffect(() => {
+		// Find all items with Buy X Get Y promotion
+		const buyXGetYItems = orderItems.filter(
+			(item) =>
+				item.promotionType === "Buy X Get Y" &&
+				item.buyQuantity &&
+				item.getQuantity &&
+				!item.isFreeItem // Exclude the free items themselves
+		);
+
+		if (buyXGetYItems.length === 0) return;
+
+		let shouldUpdate = false;
+		let newItems = [...orderItems];
+
+		for (const item of buyXGetYItems) {
+			// Calculate entitled free quantity: floor(bought / buyQty) * getQty
+			const entitledFreeQty =
+				Math.floor(item.quantity / item.buyQuantity!) * item.getQuantity!;
+
+			// Find existing free item for this product+promotion
+			const freeItemIndex = newItems.findIndex(
+				(i) =>
+					i.isFreeItem &&
+					i.product.id === item.product.id &&
+					i.promotionId === item.promotionId
+			);
+
+			if (entitledFreeQty > 0) {
+				if (freeItemIndex === -1) {
+					// Add new free item
+					const freeItem: OrderItem = {
+						id: `free_${Date.now()}_${item.product.id}`,
+						product: item.product,
+						quantity: entitledFreeQty,
+						unitPrice: 0, // Free!
+						totalPrice: 0,
+						batchId: item.batchId,
+						batchNumber: item.batchNumber,
+						promotionId: item.promotionId,
+						promotionName: item.promotionName,
+						promotionType: "Buy X Get Y",
+						isFreeItem: true,
+					};
+					newItems.push(freeItem);
+					shouldUpdate = true;
+				} else if (newItems[freeItemIndex].quantity !== entitledFreeQty) {
+					// Update existing free item quantity
+					newItems[freeItemIndex] = {
+						...newItems[freeItemIndex],
+						quantity: entitledFreeQty,
+					};
+					shouldUpdate = true;
+				}
+			} else if (freeItemIndex !== -1) {
+				// Remove free item (no longer entitled)
+				newItems.splice(freeItemIndex, 1);
+				shouldUpdate = true;
+			}
+		}
+
+		// Also clean up orphaned free items (where parent item was removed)
+		const orphanedFreeItems = newItems.filter(
+			(item) =>
+				item.isFreeItem &&
+				!newItems.some(
+					(parent) =>
+						!parent.isFreeItem &&
+						parent.product.id === item.product.id &&
+						parent.promotionId === item.promotionId
+				)
+		);
+		if (orphanedFreeItems.length > 0) {
+			newItems = newItems.filter((item) => !orphanedFreeItems.includes(item));
+			shouldUpdate = true;
+		}
+
+		if (shouldUpdate) {
+			setOrderItems(newItems);
+		}
+	}, [orderItems]);
+
 	// Cleanup reservations when browser tab/window closes (zombie prevention)
 	// Backend has 15-min TTL as fallback, but this provides faster cleanup
 	useEffect(() => {
@@ -663,6 +749,10 @@ const SalesPage = () => {
 				savings: promotion?.savings,
 				promotionName: promotion?.promotionName,
 				promotionType: promotion?.promotionType,
+				promotionId: promotion?.promotionId, // For backend persistence
+				// Buy X Get Y fields
+				buyQuantity: promotion?.buyQuantity,
+				getQuantity: promotion?.getQuantity,
 			};
 			setOrderItems((prevItems) => [...prevItems, newItem]);
 		}
@@ -914,11 +1004,22 @@ const SalesPage = () => {
 		try {
 			// Convert orderItems to API format
 			// NOTE: batchId IS the lotId (stored from BarcodeScanner)
+			// Include promotional pricing data for backend persistence
 			const apiItems = orderItems
 				.filter((item) => item.batchId) // Only items with lotId
 				.map((item) => ({
 					lotId: item.batchId!,
 					quantity: item.quantity,
+					// Pass promotional price if available, otherwise current unit price
+					// For free items: unitPrice is 0, for promo items: promotionalPrice
+					unitPrice: item.isFreeItem ? 0 : (item.promotionalPrice ?? item.unitPrice),
+					// Original price = product's base price (for financial tracking)
+					// This is the price BEFORE any promotion was applied
+					originalUnitPrice: item.product.price,
+					// Pass promotion ID if item has a promotion applied
+					promotionId: item.promotionId,
+					// Flag for free items (Buy X Get Y)
+					isFreeItem: item.isFreeItem,
 				}));
 
 			if (apiItems.length === 0) {

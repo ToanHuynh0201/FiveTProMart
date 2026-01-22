@@ -77,6 +77,7 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 				page: currentPage - 1, // Convert to zero-based
 				size: pageSize,
 			});
+
 			console.log(result);
 
 			if (result.success) {
@@ -135,8 +136,8 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 	// Convert dd-MM-yyyy to Date object
 	const parseBackendDate = (dateString: string): Date | null => {
 		if (!dateString) return null;
-		const [day, month, year] = dateString.split("-");
-		return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+		const [year, month, day] = dateString.split("-");
+		return new Date(Number(year), Number(month) - 1, Number(day));
 	};
 
 	const formatCurrency = (value: number) => {
@@ -155,6 +156,9 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 		const daysUntilExpiry = Math.ceil(
 			(expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
 		);
+
+		console.log(daysUntilExpiry);
+
 		return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
 	};
 
@@ -192,7 +196,8 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 							color="gray.600"
 							mt={1}>
 							Mã sản phẩm: {product.productId} | Tổng tồn kho:{" "}
-							{product.totalStockQuantity ?? 0} {product.unitOfMeasure}
+							{product.totalStockQuantity ?? 0}{" "}
+							{product.unitOfMeasure}
 						</Text>
 					</ModalHeader>
 					<ModalCloseButton />
@@ -223,7 +228,8 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 									<Thead bg="gray.50">
 										<Tr>
 											<Th>Mã lô</Th>
-											<Th isNumeric>Số lượng</Th>
+											<Th isNumeric>SL trưng bày</Th>
+											<Th isNumeric>SL kho</Th>
 											<Th isNumeric>Giá nhập</Th>
 											<Th>Ngày sản xuất</Th>
 											<Th>Hạn sử dụng</Th>
@@ -254,15 +260,19 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 													}>
 													<Td
 														fontWeight="medium"
-														maxW="200px">
-														<Tooltip label={batch.lotId} placement="top">
+														maxW="50px">
+														<Tooltip
+															label={batch.lotId}
+															placement="top">
 															<Text
 																overflow="hidden"
 																textOverflow="ellipsis"
 																whiteSpace="nowrap"
 																cursor="pointer"
 																onClick={() => {
-																	navigator.clipboard.writeText(batch.lotId);
+																	navigator.clipboard.writeText(
+																		batch.lotId,
+																	);
 																	toast({
 																		title: "Đã copy",
 																		description: `Đã copy mã lô: ${batch.lotId}`,
@@ -274,8 +284,18 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 															</Text>
 														</Tooltip>
 													</Td>
-													<Td isNumeric>
-														{batch.stockQuantity}{" "}
+													<Td
+														isNumeric
+														maxW="50px">
+														{batch.quantityShelf ??
+															0}{" "}
+														{product.unitOfMeasure}
+													</Td>
+													<Td
+														isNumeric
+														maxW="50px">
+														{batch.quantityStorage ??
+															0}{" "}
 														{product.unitOfMeasure}
 													</Td>
 													<Td isNumeric>
@@ -296,23 +316,29 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 														</HStack>
 													</Td>
 													<Td>
-														{expiringSoon &&
-															!expired && (
-																<Badge
-																	colorScheme="yellow"
-																	fontSize="10px"
-																	px={2}
-																	py={1}>
-																	Sắp hết hạn
-																</Badge>
-															)}
-														{expired && (
+														{expired ? (
 															<Badge
 																colorScheme="red"
 																fontSize="10px"
 																px={2}
 																py={1}>
 																Đã hết hạn
+															</Badge>
+														) : expiringSoon ? (
+															<Badge
+																colorScheme="yellow"
+																fontSize="10px"
+																px={2}
+																py={1}>
+																Sắp hết hạn
+															</Badge>
+														) : (
+															<Badge
+																colorScheme="green"
+																fontSize="10px"
+																px={2}
+																py={1}>
+																Còn hạn
 															</Badge>
 														)}
 													</Td>
@@ -346,62 +372,115 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 										mt={4}
 										justify="space-between"
 										align="center">
-										<Text fontSize="sm" color="gray.600">
-											Hiển thị {(currentPage - 1) * pageSize + 1} -{" "}
-											{Math.min(currentPage * pageSize, totalItems)} trong tổng số {totalItems} lô hàng
+										<Text
+											fontSize="sm"
+											color="gray.600">
+											Hiển thị{" "}
+											{(currentPage - 1) * pageSize + 1} -{" "}
+											{Math.min(
+												currentPage * pageSize,
+												totalItems,
+											)}{" "}
+											trong tổng số {totalItems} lô hàng
 										</Text>
 
 										<HStack spacing={2}>
 											<Button
 												size="sm"
 												leftIcon={<ChevronLeftIcon />}
-												onClick={() => handlePageChange(currentPage - 1)}
+												onClick={() =>
+													handlePageChange(
+														currentPage - 1,
+													)
+												}
 												isDisabled={currentPage === 1}
 												variant="outline">
 												Trước
 											</Button>
 
 											<HStack spacing={1}>
-												{Array.from({ length: totalPages }, (_, i) => i + 1)
+												{Array.from(
+													{ length: totalPages },
+													(_, i) => i + 1,
+												)
 													.filter(
 														(page) =>
 															page === 1 ||
-															page === totalPages ||
-															Math.abs(page - currentPage) <= 1,
+															page ===
+																totalPages ||
+															Math.abs(
+																page -
+																	currentPage,
+															) <= 1,
 													)
-													.map((page, index, array) => {
-														const prevPage = array[index - 1];
-														const showEllipsis = prevPage && page - prevPage > 1;
+													.map(
+														(
+															page,
+															index,
+															array,
+														) => {
+															const prevPage =
+																array[
+																	index - 1
+																];
+															const showEllipsis =
+																prevPage &&
+																page -
+																	prevPage >
+																	1;
 
-														return (
-															<>
-																{showEllipsis && (
-																	<Text key={`ellipsis-${page}`} px={2}>
-																		...
-																	</Text>
-																)}
-																<Button
-																	key={page}
-																	size="sm"
-																	onClick={() => handlePageChange(page)}
-																	colorScheme={
-																		currentPage === page ? "blue" : "gray"
-																	}
-																	variant={
-																		currentPage === page ? "solid" : "outline"
-																	}>
-																	{page}
-																</Button>
-															</>
-														);
-													})}
+															return (
+																<>
+																	{showEllipsis && (
+																		<Text
+																			key={`ellipsis-${page}`}
+																			px={
+																				2
+																			}>
+																			...
+																		</Text>
+																	)}
+																	<Button
+																		key={
+																			page
+																		}
+																		size="sm"
+																		onClick={() =>
+																			handlePageChange(
+																				page,
+																			)
+																		}
+																		colorScheme={
+																			currentPage ===
+																			page
+																				? "blue"
+																				: "gray"
+																		}
+																		variant={
+																			currentPage ===
+																			page
+																				? "solid"
+																				: "outline"
+																		}>
+																		{page}
+																	</Button>
+																</>
+															);
+														},
+													)}
 											</HStack>
 
 											<Button
 												size="sm"
 												rightIcon={<ChevronRightIcon />}
-												onClick={() => handlePageChange(currentPage + 1)}
-												isDisabled={currentPage === totalPages}
+												onClick={() =>
+													handlePageChange(
+														currentPage + 1,
+													)
+												}
+												isDisabled={
+													currentPage === totalPages
+												}
 												variant="outline">
 												Sau
 											</Button>

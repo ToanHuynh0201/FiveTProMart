@@ -9,6 +9,8 @@ export interface StockInventoryItem {
 	manufactureDate: string; // Format: dd-MM-yyyy
 	expirationDate: string; // Format: dd-MM-yyyy
 	stockQuantity: number;
+	quantityShelf?: number | null;
+	quantityStorage?: number | null;
 	importPrice: number;
 	status: StockInventoryStatus;
 }
@@ -35,13 +37,15 @@ export interface CreateStockInventoryRequest {
 
 // Update stock inventory request
 export interface UpdateStockInventoryRequest {
-	stockQuantity: number;
+	quantityStorage: number;
+	quantityShelf: number;
 	status: StockInventoryStatus;
 }
 
 // Update stock inventory response
 export interface UpdateStockInventoryResponse {
 	lotId: string;
-	stockQuantity: number;
+	quantityStorage: number;
+	quantityShelf: number;
 	status: StockInventoryStatus;
 }

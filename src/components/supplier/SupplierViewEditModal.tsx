@@ -51,23 +51,21 @@ import type {
 	SupplierType,
 	SupplierProduct,
 } from "@/types/supplier";
-import type { PurchaseListItem } from "@/types/purchase";
+import type { PurchaseListItem, PurchaseDetail } from "@/types/purchase";
 import { supplierService } from "@/services/supplierService";
 import { purchaseService } from "@/services/purchaseService";
 import {
 	FiPhone,
-	FiMail,
-	FiFileText,
 	FiUser,
 	FiCopy,
 	FiCheck,
 	FiEdit2,
 	FiTrash2,
-	FiCreditCard,
 	FiMapPin,
 	FiEye,
 } from "react-icons/fi";
 import { ProductSelector } from "./ProductSelector";
+import { PurchaseDetailModal } from "../purchase/PurchaseDetailModal";
 
 interface SelectedProduct {
 	productId: string;
@@ -80,6 +78,10 @@ interface SupplierViewEditModalProps {
 	supplierId: string | null;
 	mode: "view" | "edit";
 	onSuccess?: () => void;
+	onViewPurchaseDetail?: (
+		purchaseId: string,
+		supplierData: { supplierId: string; mode: "view" | "edit" },
+	) => void;
 }
 
 export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
@@ -88,6 +90,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 	supplierId,
 	mode: initialMode,
 	onSuccess,
+	onViewPurchaseDetail,
 }) => {
 	const toast = useToast();
 	const [mode, setMode] = useState<"view" | "edit">(initialMode);
@@ -111,6 +114,17 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 	// Tab state
 	const [tabIndex, setTabIndex] = useState(0);
 
+	// Purchase detail modal state
+	const [selectedPurchase, setSelectedPurchase] =
+		useState<PurchaseDetail | null>(null);
+	const [isLoadingPurchaseDetail, setIsLoadingPurchaseDetail] =
+		useState(false);
+	const {
+		isOpen: isPurchaseDetailOpen,
+		onOpen: onPurchaseDetailOpen,
+		onClose: onPurchaseDetailClose,
+	} = useDisclosure();
+
 	// Delete confirmation dialog
 	const {
 		isOpen: isDeleteDialogOpen,
@@ -124,10 +138,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		supplierName: "",
 		address: "",
 		phoneNumber: "",
-		email: "",
-		taxCode: "",
-		bankAccount: "",
-		bankName: "",
 		representName: "",
 		representPhoneNumber: "",
 		supplierType: "Doanh nghiệp" as SupplierType,
@@ -168,6 +178,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		if (isOpen && supplierId && mode === "view") {
 			if (tabIndex === 0) {
 				loadProducts();
+				loadPurchaseHistory();
 			} else if (tabIndex === 1) {
 				loadPurchaseHistory();
 			}
@@ -190,10 +201,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					supplierName: result.data.supplierName,
 					address: result.data.address,
 					phoneNumber: result.data.phoneNumber,
-					email: result.data.email || "",
-					taxCode: result.data.taxCode || "",
-					bankAccount: result.data.bankAccount || "",
-					bankName: result.data.bankName || "",
+
 					representName: result.data.representName || "",
 					representPhoneNumber:
 						result.data.representPhoneNumber || "",
@@ -275,6 +283,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 
 			if (result.success) {
 				setPurchaseHistory(result.data || []);
+				console.log(result);
+
 				setHistoryTotalItems(result.pagination?.totalItems || 0);
 			}
 		} catch (error) {
@@ -288,12 +298,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		if (!phone) return true;
 		const phoneRegex = /^0[0-9]{9}$/;
 		return phoneRegex.test(phone);
-	};
-
-	const validateEmail = (email: string): boolean => {
-		if (!email) return true;
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		return emailRegex.test(email);
 	};
 
 	const handleSubmit = async () => {
@@ -316,10 +320,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		} else if (!validatePhone(formData.phoneNumber)) {
 			newErrors.phoneNumber =
 				"Số điện thoại không hợp lệ (phải có 10 chữ số và bắt đầu bằng 0)";
-		}
-
-		if (formData.email && !validateEmail(formData.email)) {
-			newErrors.email = "Email không hợp lệ";
 		}
 
 		if (
@@ -350,10 +350,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 				supplierName: formData.supplierName,
 				address: formData.address,
 				phoneNumber: formData.phoneNumber,
-				email: formData.email || undefined,
-				taxCode: formData.taxCode || undefined,
-				bankAccount: formData.bankAccount || undefined,
-				bankName: formData.bankName || undefined,
 				representName: formData.representName || undefined,
 				representPhoneNumber:
 					formData.representPhoneNumber || undefined,
@@ -467,6 +463,51 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 		} catch {
 			return dateString;
 		}
+	};
+
+	const handleViewPurchaseDetail = async (purchaseId: string) => {
+		// If parent handler is provided, use it to close this modal and open purchase detail in parent
+		if (onViewPurchaseDetail && supplierId) {
+			onViewPurchaseDetail(purchaseId, { supplierId, mode });
+			return;
+		}
+
+		// Fallback: open modal within this component (legacy behavior)
+		setIsLoadingPurchaseDetail(true);
+		onPurchaseDetailOpen();
+
+		try {
+			const result =
+				await purchaseService.getPurchaseOrderById(purchaseId);
+			if (result.success && result.data) {
+				setSelectedPurchase(result.data);
+			} else {
+				toast({
+					title: "Lỗi",
+					description:
+						result.error || "Không thể tải chi tiết đơn nhập hàng",
+					status: "error",
+					duration: 3000,
+					isClosable: true,
+				});
+			}
+		} catch (error) {
+			console.error("Error loading purchase detail:", error);
+			toast({
+				title: "Lỗi",
+				description: "Có lỗi xảy ra khi tải chi tiết đơn nhập hàng",
+				status: "error",
+				duration: 3000,
+				isClosable: true,
+			});
+		} finally {
+			setIsLoadingPurchaseDetail(false);
+		}
+	};
+
+	const handleClosePurchaseDetail = () => {
+		onPurchaseDetailClose();
+		setSelectedPurchase(null);
 	};
 
 	const getStatusColor = (status: string) => {
@@ -690,20 +731,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										</GridItem>
 										<GridItem>
 											<InfoCard
-												icon={FiMail}
-												label="Email"
-												value={supplierData.email}
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoCard
-												icon={FiFileText}
-												label="Mã số thuế"
-												value={supplierData.taxCode}
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoCard
 												icon={FiUser}
 												label="Người liên hệ"
 												value={
@@ -720,22 +747,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 												}
 												canCopy
 												fieldName="representPhone"
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoCard
-												icon={FiCreditCard}
-												label="Số tài khoản"
-												value={supplierData.bankAccount}
-												canCopy
-												fieldName="bankAccount"
-											/>
-										</GridItem>
-										<GridItem>
-											<InfoCard
-												icon={FiCreditCard}
-												label="Ngân hàng"
-												value={supplierData.bankName}
 											/>
 										</GridItem>
 										<GridItem>
@@ -853,8 +864,8 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																			py={
 																				3
 																			}>
-																			Nhóm
-																			hàng
+																			Tổng
+																			SL
 																		</Th>
 																		<Th
 																			fontSize="11px"
@@ -944,7 +955,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																						}
 																						borderRadius="md">
 																						{
-																							product.category
+																							product.totalStockQuantity
 																						}
 																					</Badge>
 																				</Td>
@@ -969,7 +980,7 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																					{product.lastImportPrice
 																						? formatCurrency(
 																								product.lastImportPrice,
-																						  )
+																							)
 																						: "-"}
 																				</Td>
 																				<Td
@@ -1048,6 +1059,17 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																			py={
 																				3
 																			}>
+																			Ngày
+																			kiểm
+																		</Th>
+																		<Th
+																			fontSize="11px"
+																			fontWeight="700"
+																			color="gray.600"
+																			textTransform="uppercase"
+																			py={
+																				3
+																			}>
 																			Người
 																			tạo
 																		</Th>
@@ -1117,9 +1139,19 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																					py={
 																						3
 																					}>
-																					{formatDate(
-																						item.purchaseDate,
-																					)}
+																					{
+																						item.purchaseDate
+																					}
+																				</Td>
+																				<Td
+																					fontSize="13px"
+																					color="gray.700"
+																					py={
+																						3
+																					}>
+																					{
+																						item.checkDate
+																					}
 																				</Td>
 																				<Td
 																					fontSize="13px"
@@ -1181,6 +1213,11 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 																							color: "#161f70",
 																							bg: "gray.100",
 																						}}
+																						onClick={() =>
+																							handleViewPurchaseDetail(
+																								item.id,
+																							)
+																						}
 																					/>
 																				</Td>
 																			</Tr>
@@ -1331,69 +1368,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 										</GridItem>
 
 										<GridItem>
-											<FormControl
-												isInvalid={!!errors.email}>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600"
-													color="gray.700">
-													Email
-												</FormLabel>
-												<Input
-													type="email"
-													value={formData.email}
-													onChange={(e) => {
-														setFormData({
-															...formData,
-															email: e.target
-																.value,
-														});
-														setErrors({
-															...errors,
-															email: "",
-														});
-													}}
-													size="md"
-													borderColor={
-														errors.email
-															? "red.500"
-															: "gray.300"
-													}
-												/>
-												{errors.email && (
-													<Text
-														color="red.500"
-														fontSize="sm"
-														mt={1}>
-														{errors.email}
-													</Text>
-												)}
-											</FormControl>
-										</GridItem>
-
-										<GridItem>
-											<FormControl>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600"
-													color="gray.700">
-													Mã số thuế
-												</FormLabel>
-												<Input
-													value={formData.taxCode}
-													onChange={(e) =>
-														setFormData({
-															...formData,
-															taxCode:
-																e.target.value,
-														})
-													}
-													size="md"
-												/>
-											</FormControl>
-										</GridItem>
-
-										<GridItem>
 											<FormControl>
 												<FormLabel
 													fontSize="14px"
@@ -1461,50 +1435,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 														}
 													</Text>
 												)}
-											</FormControl>
-										</GridItem>
-
-										<GridItem>
-											<FormControl>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600"
-													color="gray.700">
-													Số tài khoản
-												</FormLabel>
-												<Input
-													value={formData.bankAccount}
-													onChange={(e) =>
-														setFormData({
-															...formData,
-															bankAccount:
-																e.target.value,
-														})
-													}
-													size="md"
-												/>
-											</FormControl>
-										</GridItem>
-
-										<GridItem>
-											<FormControl>
-												<FormLabel
-													fontSize="14px"
-													fontWeight="600"
-													color="gray.700">
-													Ngân hàng
-												</FormLabel>
-												<Input
-													value={formData.bankName}
-													onChange={(e) =>
-														setFormData({
-															...formData,
-															bankName:
-																e.target.value,
-														})
-													}
-													size="md"
-												/>
 											</FormControl>
 										</GridItem>
 
@@ -1611,14 +1541,6 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 												address: supplierData.address,
 												phoneNumber:
 													supplierData.phoneNumber,
-												email: supplierData.email || "",
-												taxCode:
-													supplierData.taxCode || "",
-												bankAccount:
-													supplierData.bankAccount ||
-													"",
-												bankName:
-													supplierData.bankName || "",
 												representName:
 													supplierData.representName ||
 													"",
@@ -1750,6 +1672,14 @@ export const SupplierViewEditModal: React.FC<SupplierViewEditModalProps> = ({
 					</AlertDialogContent>
 				</AlertDialogOverlay>
 			</AlertDialog>
+
+			{/* Purchase Detail Modal */}
+			<PurchaseDetailModal
+				isOpen={isPurchaseDetailOpen}
+				onClose={handleClosePurchaseDetail}
+				purchase={selectedPurchase}
+				isLoading={isLoadingPurchaseDetail}
+			/>
 		</Modal>
 	);
 };

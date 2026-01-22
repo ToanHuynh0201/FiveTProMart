@@ -13,7 +13,7 @@ interface ProductRequest {
 	categoryId: string;
 	productName: string;
 	unitOfMeasure: string;
-	sellingPrice: number;
+	sellingPrice: number | null;
 }
 
 /**

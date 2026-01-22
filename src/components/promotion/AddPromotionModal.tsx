@@ -28,8 +28,10 @@ import {
 import type {
 	PromotionType,
 	CreatePromotionRequest,
+	BuyXGetYProductPair,
 } from "../../types/promotion";
 import { ProductSelector } from "../supplier/ProductSelector";
+import { BuyXGetYProductPairSelector } from "./BuyXGetYProductPairSelector";
 
 interface SelectedProduct {
 	productId: string;
@@ -60,6 +62,7 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		buyQuantity: number;
 		getQuantity: number;
 		products: SelectedProduct[];
+		productPairs: BuyXGetYProductPair[];
 		startDate: string;
 		endDate: string;
 	}>({
@@ -70,6 +73,7 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		buyQuantity: 1,
 		getQuantity: 1,
 		products: [],
+		productPairs: [],
 		startDate: "",
 		endDate: "",
 	});
@@ -90,6 +94,7 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 			buyQuantity: 1,
 			getQuantity: 1,
 			products: [],
+			productPairs: [],
 			startDate: "",
 			endDate: "",
 		});
@@ -97,6 +102,10 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 
 	const handleProductsChange = (products: SelectedProduct[]) => {
 		setFormData((prev) => ({ ...prev, products }));
+	};
+
+	const handleProductPairsChange = (productPairs: BuyXGetYProductPair[]) => {
+		setFormData((prev) => ({ ...prev, productPairs }));
 	};
 
 	const handleSubmit = async () => {
@@ -131,14 +140,42 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 			return;
 		}
 
-		if (formData.products.length === 0) {
-			toast({
-				title: "Lỗi",
-				description: "Vui lòng chọn ít nhất 1 sản phẩm áp dụng",
-				status: "error",
-				duration: 3000,
-			});
-			return;
+		// Validate products based on type
+		if (formData.promotionType === "Discount") {
+			if (formData.products.length === 0) {
+				toast({
+					title: "Lỗi",
+					description: "Vui lòng chọn ít nhất 1 sản phẩm áp dụng",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+		} else {
+			// Buy X Get Y
+			if (formData.productPairs.length === 0) {
+				toast({
+					title: "Lỗi",
+					description: "Vui lòng thêm ít nhất 1 cặp sản phẩm",
+					status: "error",
+					duration: 3000,
+				});
+				return;
+			}
+
+			// Validate each pair
+			for (let i = 0; i < formData.productPairs.length; i++) {
+				const pair = formData.productPairs[i];
+				if (!pair.productBuy || !pair.productGet) {
+					toast({
+						title: "Lỗi",
+						description: `Vui lòng chọn đầy đủ sản phẩm cho cặp ${i + 1}`,
+						status: "error",
+						duration: 3000,
+					});
+					return;
+				}
+			}
 		}
 
 		// Validate based on type
@@ -178,11 +215,10 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 		setIsLoading(true);
 
 		try {
-			const productIds = formData.products.map((p) => p.productId);
-
 			let requestData: CreatePromotionRequest;
 
 			if (formData.promotionType === "Discount") {
+				const productIds = formData.products.map((p) => p.productId);
 				requestData = {
 					promotionName: formData.promotionName,
 					promotionDescription: formData.promotionDescription || undefined,
@@ -193,10 +229,11 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 					endDate: formData.endDate, // yyyy-MM-dd format from HTML input
 				};
 			} else {
+				// Buy X Get Y - use product pairs
 				requestData = {
 					promotionName: formData.promotionName,
 					promotionDescription: formData.promotionDescription || undefined,
-					products: productIds,
+					products: formData.productPairs, // Send product pairs directly
 					promotionType: "Buy X Get Y",
 					buyQuantity: formData.buyQuantity,
 					getQuantity: formData.getQuantity,
@@ -297,6 +334,7 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 										...formData,
 										promotionType: e.target.value as PromotionType,
 										products: [], // Reset products when type changes
+										productPairs: [], // Reset product pairs when type changes
 									})
 								}
 								fontSize="15px"
@@ -434,19 +472,41 @@ export const AddPromotionModal: React.FC<AddPromotionModalProps> = ({
 
 						<Divider />
 
-						{/* Sản phẩm áp dụng */}
-						<FormControl isRequired>
-							<FormLabel
-								fontSize="15px"
-								fontWeight="600"
-								color="gray.700">
-								Sản phẩm áp dụng
-							</FormLabel>
-							<ProductSelector
-								selectedProducts={formData.products}
-								onProductsChange={handleProductsChange}
-							/>
-						</FormControl>
+						{/* Sản phẩm áp dụng - hiển thị khác nhau theo loại khuyến mãi */}
+						{formData.promotionType === "Discount" ? (
+							<FormControl isRequired>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Sản phẩm áp dụng
+								</FormLabel>
+								<ProductSelector
+									selectedProducts={formData.products}
+									onProductsChange={handleProductsChange}
+								/>
+							</FormControl>
+						) : (
+							<FormControl isRequired>
+								<FormLabel
+									fontSize="15px"
+									fontWeight="600"
+									color="gray.700">
+									Cặp sản phẩm áp dụng
+								</FormLabel>
+								<Text
+									fontSize="13px"
+									color="gray.600"
+									mb={2}>
+									Chọn cặp sản phẩm: khách mua sản phẩm X sẽ được tặng sản phẩm
+									Y
+								</Text>
+								<BuyXGetYProductPairSelector
+									productPairs={formData.productPairs}
+									onProductPairsChange={handleProductPairsChange}
+								/>
+							</FormControl>
+						)}
 
 						<Divider />
 

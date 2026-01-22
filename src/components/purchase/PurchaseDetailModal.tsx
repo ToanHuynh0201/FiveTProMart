@@ -121,8 +121,8 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 									purchase.status === "Completed"
 										? "green.50"
 										: purchase.status === "Cancelled"
-										? "red.50"
-										: "gray.50"
+											? "red.50"
+											: "gray.50"
 								}
 								p={5}
 								borderRadius="12px"
@@ -131,8 +131,8 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 									purchase.status === "Completed"
 										? "green.500"
 										: purchase.status === "Cancelled"
-										? "red.500"
-										: "gray.400"
+											? "red.500"
+											: "gray.400"
 								}>
 								<HStack
 									justify="space-between"
@@ -162,7 +162,9 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 													as="span"
 													fontWeight="600"
 													color="gray.800">
-													{formatDate(purchase.purchaseDate)}
+													{formatDate(
+														purchase.purchaseDate,
+													)}
 												</Text>
 											</Text>
 											{purchase.checkDate && (
@@ -174,7 +176,9 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 														as="span"
 														fontWeight="600"
 														color="gray.800">
-														{formatDate(purchase.checkDate)}
+														{formatDate(
+															purchase.checkDate,
+														)}
 													</Text>
 												</Text>
 											)}
@@ -191,7 +195,9 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 											fontSize="28px"
 											fontWeight="700"
 											color="brand.500">
-											{formatCurrency(purchase.totalAmount)}
+											{formatCurrency(
+												purchase.totalAmount,
+											)}
 										</Text>
 									</Box>
 								</HStack>
@@ -252,10 +258,14 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 													<Text
 														fontSize="13px"
 														color="gray.700">
-														{purchase.supplier.representName}
+														{
+															purchase.supplier
+																.representName
+														}
 													</Text>
 												</HStack>
-												{purchase.supplier.representPhoneNumber && (
+												{purchase.supplier
+													.representPhoneNumber && (
 													<HStack>
 														<Text
 															fontSize="13px"
@@ -266,7 +276,11 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 														<Text
 															fontSize="13px"
 															color="gray.700">
-															{purchase.supplier.representPhoneNumber}
+															{
+																purchase
+																	.supplier
+																	.representPhoneNumber
+															}
 														</Text>
 													</HStack>
 												)}
@@ -324,7 +338,10 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 														fontSize="12px"
 														px={2}
 														py={1}>
-														ID: {purchase.staffIdChecked}
+														ID:{" "}
+														{
+															purchase.staffIdChecked
+														}
 													</Badge>
 												</HStack>
 											</>
@@ -393,7 +410,10 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 													fontSize="16px"
 													fontWeight="700"
 													color="orange.700">
-													{purchase.invoice.invoiceNumber}
+													{
+														purchase.invoice
+															.invoiceNumber
+													}
 												</Text>
 											</Box>
 											<Box
@@ -411,19 +431,28 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 													fontSize="16px"
 													fontWeight="600"
 													color="gray.700">
-													{formatDate(purchase.invoice.invoiceDate)}
+													{
+														purchase.invoice
+															.invoiceDate
+													}
 												</Text>
 											</Box>
 										</HStack>
 										{purchase.invoice.images &&
-											purchase.invoice.images.length > 0 && (
+											purchase.invoice.images.length >
+												0 && (
 												<Box>
 													<Text
 														fontSize="13px"
 														color="gray.600"
 														fontWeight="600"
 														mb={2}>
-														Ảnh hóa đơn ({purchase.invoice.images.length})
+														Ảnh hóa đơn (
+														{
+															purchase.invoice
+																.images.length
+														}
+														)
 													</Text>
 													<SimpleGrid
 														columns={4}
@@ -441,8 +470,10 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 																	cursor="pointer"
 																	transition="all 0.2s"
 																	_hover={{
-																		borderColor: "orange.400",
-																		transform: "scale(1.05)",
+																		borderColor:
+																			"orange.400",
+																		transform:
+																			"scale(1.05)",
 																	}}
 																	onClick={() =>
 																		window.open(
@@ -451,7 +482,9 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 																		)
 																	}>
 																	<Image
-																		src={img}
+																		src={
+																			img
+																		}
 																		alt={`Invoice ${index + 1}`}
 																		borderRadius="md"
 																		h="120px"
@@ -461,10 +494,14 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 																	<Badge
 																		position="absolute"
 																		top={2}
-																		right={2}
+																		right={
+																			2
+																		}
 																		colorScheme="orange"
 																		fontSize="10px">
-																		#{index + 1}
+																		#
+																		{index +
+																			1}
 																	</Badge>
 																</Box>
 															),
@@ -546,54 +583,65 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 											</Tr>
 										</Thead>
 										<Tbody>
-											{purchase.items.map((item, index) => (
-												<Tr
-													key={item.productId}
-													_hover={{ bg: "gray.50" }}>
-													<Td fontWeight="600">{index + 1}</Td>
-													<Td fontSize="14px">
-														{item.productName}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="14px"
-														color="gray.600">
-														{item.quantityOrdered}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="14px"
-														fontWeight="700"
-														color={
-															item.quantityReceived > 0
-																? "green.600"
-																: "gray.400"
-														}>
-														{item.quantityReceived || "-"}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="14px"
-														color="gray.700">
-														{item.importPrice > 0
-															? formatCurrency(
-																	item.importPrice,
-															  )
-															: "-"}
-													</Td>
-													<Td
-														isNumeric
-														fontSize="14px"
-														fontWeight="700"
-														color="brand.600">
-														{item.subTotal > 0
-															? formatCurrency(
-																	item.subTotal,
-															  )
-															: "-"}
-													</Td>
-												</Tr>
-											))}
+											{purchase.items.map(
+												(item, index) => (
+													<Tr
+														key={item.productId}
+														_hover={{
+															bg: "gray.50",
+														}}>
+														<Td fontWeight="600">
+															{index + 1}
+														</Td>
+														<Td fontSize="14px">
+															{item.productName}
+														</Td>
+														<Td
+															isNumeric
+															fontSize="14px"
+															color="gray.600">
+															{
+																item.quantityOrdered
+															}
+														</Td>
+														<Td
+															isNumeric
+															fontSize="14px"
+															fontWeight="700"
+															color={
+																item.quantityReceived >
+																0
+																	? "green.600"
+																	: "gray.400"
+															}>
+															{item.quantityReceived ||
+																"-"}
+														</Td>
+														<Td
+															isNumeric
+															fontSize="14px"
+															color="gray.700">
+															{item.importPrice >
+															0
+																? formatCurrency(
+																		item.importPrice,
+																	)
+																: "-"}
+														</Td>
+														<Td
+															isNumeric
+															fontSize="14px"
+															fontWeight="700"
+															color="brand.600">
+															{item.subTotal > 0
+																? formatCurrency(
+																		item.subTotal,
+																	)
+																: "-"}
+														</Td>
+													</Tr>
+												),
+											)}
 										</Tbody>
 									</Table>
 								</Box>
@@ -619,7 +667,11 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 												px={3}
 												py={1}
 												borderRadius="full">
-												{purchase.generatedLotIds.length} lô
+												{
+													purchase.generatedLotIds
+														.length
+												}{" "}
+												lô
 											</Badge>
 										</HStack>
 										<Box
@@ -633,7 +685,8 @@ export const PurchaseDetailModal: React.FC<PurchaseDetailModalProps> = ({
 												color="green.700"
 												fontWeight="600"
 												mb={3}>
-												Các sản phẩm đã được phân bổ vào kho theo lô:
+												Các sản phẩm đã được phân bổ vào
+												kho theo lô:
 											</Text>
 											<HStack
 												spacing={2}

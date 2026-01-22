@@ -17,7 +17,7 @@ import {
 	MenuItem,
 	Button,
 } from "@chakra-ui/react";
-import { ViewIcon, CloseIcon, CheckIcon } from "@chakra-ui/icons";
+import { ViewIcon, CloseIcon, CheckIcon, DownloadIcon } from "@chakra-ui/icons";
 import { BsThreeDotsVertical, BsPrinter } from "react-icons/bs";
 import type { PurchaseListItem, PurchaseStatus } from "@/types/purchase";
 
@@ -27,6 +27,7 @@ interface PurchaseTableProps {
 	onConfirmReceipt: (id: string) => void;
 	onCancelOrder: (id: string) => void;
 	onReprintLabels: (id: string) => void;
+	onExportExcel: (id: string) => void;
 }
 
 export const PurchaseTable: React.FC<PurchaseTableProps> = ({
@@ -35,6 +36,7 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 	onConfirmReceipt,
 	onCancelOrder,
 	onReprintLabels,
+	onExportExcel,
 }) => {
 	const tableKey = purchases.map((p) => p.id).join("-");
 
@@ -222,6 +224,20 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 															Nhận hàng
 														</Button>
 													</Tooltip>
+													<Tooltip label="Xuất Excel">
+														<IconButton
+															aria-label="Export to Excel"
+															icon={<DownloadIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="blue"
+															onClick={() =>
+																onExportExcel(
+																	purchase.id,
+																)
+															}
+														/>
+													</Tooltip>
 													<Menu>
 														<MenuButton
 															as={IconButton}
@@ -289,6 +305,20 @@ export const PurchaseTable: React.FC<PurchaseTableProps> = ({
 															colorScheme="green"
 															onClick={() =>
 																onReprintLabels(
+																	purchase.id,
+																)
+															}
+														/>
+													</Tooltip>
+													<Tooltip label="Xuất Excel">
+														<IconButton
+															aria-label="Export to Excel"
+															icon={<DownloadIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="purple"
+															onClick={() =>
+																onExportExcel(
 																	purchase.id,
 																)
 															}

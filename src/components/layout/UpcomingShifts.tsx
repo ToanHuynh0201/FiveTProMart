@@ -12,7 +12,8 @@ import {
 } from "@chakra-ui/react";
 import { LockIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { MdCalendarToday } from "react-icons/md";
-import apiService from "@/lib/api";
+import { scheduleService } from "@/services/scheduleService";
+import { useAuthStore } from "@/store/authStore";
 
 interface UpcomingShift {
 	id: string;
@@ -32,17 +33,106 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 	const [isExpanded, setIsExpanded] = useState(true);
 	const [shifts, setShifts] = useState<UpcomingShift[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const user = useAuthStore((state) => state.user);
+
+	// Helper: Format date to dd-MM-yyyy
+	const formatDateForAPI = (date: Date): string => {
+		const day = date.getDate().toString().padStart(2, "0");
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		const year = date.getFullYear();
+		return `${day}-${month}-${year}`;
+	};
+
+	// Helper: Format date to display format (dd/MM)
+	const formatDateForDisplay = (dateStr: string): string => {
+		const date = new Date(dateStr);
+		const day = date.getDate().toString().padStart(2, "0");
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		return `${day}/${month}`;
+	};
+
+	// Helper: Get day of week in Vietnamese
+	const getDayOfWeek = (dateStr: string): string => {
+		const date = new Date(dateStr);
+		const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+		return days[date.getDay()];
+	};
+
+	// Helper: Parse dd-MM-yyyy to yyyy-MM-dd
+	const parseDateFromAPI = (dateStr: string): string => {
+		// Check if already in ISO format (yyyy-MM-dd)
+		if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+			return dateStr;
+		}
+
+		// Parse dd-MM-yyyy format
+		const parts = dateStr.split("-");
+		if (parts.length === 3) {
+			const [day, month, year] = parts;
+			return `${year}-${month}-${day}`;
+		}
+
+		// Fallback: return as is
+		return dateStr;
+	};
 
 	useEffect(() => {
 		const fetchShifts = async () => {
+			// Only fetch if user is logged in
+			if (!user?.id) {
+				setIsLoading(false);
+				setShifts([]);
+				return;
+			}
+
 			setIsLoading(true);
 			try {
-				// API endpoint for shifts - will fail gracefully if not implemented
-				const response = await apiService.get<{ data: UpcomingShift[] }>(
-					"/shifts/upcoming",
-				);
-				setShifts(response.data || []);
-			} catch {
+				const today = new Date();
+				const endDate = new Date();
+				endDate.setDate(today.getDate() + 7); // Get next 7 days
+
+				const result = await scheduleService.getWorkSchedules({
+					startDate: formatDateForAPI(today),
+					endDate: formatDateForAPI(endDate),
+					profileId: user.id,
+				});
+
+				if (result.success && result.data) {
+					// Transform WorkScheduleResponse[] to UpcomingShift[]
+					const todayStr = today.toISOString().split("T")[0];
+
+					const upcomingShifts: UpcomingShift[] = result.data
+						.map((schedule: any) => {
+							const workDate = parseDateFromAPI(
+								schedule.workDate,
+							);
+							const isToday = workDate === todayStr;
+
+							return {
+								id: schedule.id,
+								date: formatDateForDisplay(workDate),
+								dayOfWeek: getDayOfWeek(workDate),
+								shiftName: schedule.shiftName,
+								startTime: schedule.startTime,
+								endTime: schedule.endTime,
+								status: isToday
+									? ("today" as const)
+									: ("upcoming" as const),
+								_sortDate: workDate, // For sorting
+							};
+						})
+						.sort((a: any, b: any) =>
+							a._sortDate.localeCompare(b._sortDate),
+						)
+						.map(({ _sortDate, ...shift }: any) => shift); // Remove sort field
+
+					setShifts(upcomingShifts);
+				} else {
+					// API call failed - show empty state
+					setShifts([]);
+				}
+			} catch (error) {
+				console.error("Error fetching upcoming shifts:", error);
 				// API not yet available - show empty state
 				setShifts([]);
 			} finally {
@@ -51,7 +141,7 @@ export function UpcomingShifts({ isCollapsed }: UpcomingShiftsProps) {
 		};
 
 		fetchShifts();
-	}, []);
+	}, [user?.id]);
 
 	const nearestShift = shifts[0];
 

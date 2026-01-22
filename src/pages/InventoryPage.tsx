@@ -40,14 +40,10 @@ import type {
 	InventoryProduct,
 	InventoryCategory,
 	InventoryStats,
-	ProductBatch,
 	DisposalItem,
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
-import {
-	inventoryService,
-	type CreateProductDTO,
-} from "@/services/inventoryService";
+import { inventoryService } from "@/services/inventoryService";
 import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
@@ -236,7 +232,7 @@ const InventoryPage = () => {
 		}
 	};
 
-	const handleAddProduct = async (productData: CreateProductDTO) => {
+	const handleAddProduct = async (productData: any) => {
 		try {
 			await inventoryService.createProduct(productData);
 
@@ -274,58 +270,6 @@ const InventoryPage = () => {
 		if (product) {
 			setSelectedProduct(product);
 			onBatchModalOpen();
-		}
-	};
-
-	const handleUpdateBatch = async (
-		batchId: string,
-		updates: Partial<ProductBatch>,
-	) => {
-		if (!selectedProduct) return;
-
-		try {
-			// Call API to update lot
-			if (updates.quantity !== undefined) {
-				await inventoryService.updateLot(
-					batchId,
-					updates.quantity ?? 0,
-					"active",
-				);
-			}
-
-			await fetchProducts(filters);
-
-			// Update selected product for the modal
-			const updatedProduct = products.find(
-				(p) => p.productId === selectedProduct.productId,
-			);
-			if (updatedProduct) {
-				setSelectedProduct(updatedProduct);
-			}
-
-			toast({
-				title: "Thành công",
-				description: "Đã cập nhật lô hàng",
-				status: "success",
-				duration: 3000,
-			});
-
-			// Reload stats after updating
-			try {
-				const statsData = await inventoryService.getStats();
-				setStats(statsData);
-			} catch (statsError) {
-				console.error("Error reloading stats:", statsError);
-			}
-		} catch (error) {
-			console.error("Error updating batch:", error);
-			toast({
-				title: "Lỗi",
-				description: "Không thể cập nhật lô hàng",
-				status: "error",
-				duration: 3000,
-			});
-			throw error;
 		}
 	};
 
@@ -426,15 +370,15 @@ const InventoryPage = () => {
 
 				{/* Critical Alerts Banner - Shows when there are urgent issues */}
 				{stats &&
-					(stats.expiredBatches > 0 ||
-						stats.outOfStockProducts > 0 ||
-						stats.expiringSoonBatches > 0 ||
-						stats.lowStockProducts > 0) && (
+					(stats.expiredCount > 0 ||
+						stats.outOfStockCount > 0 ||
+						stats.expiringSoonCount > 0 ||
+						stats.lowStockCount > 0) && (
 						<CriticalAlertsBanner
-							expiredBatches={stats.expiredBatches}
-							expiringSoonBatches={stats.expiringSoonBatches}
-							outOfStockProducts={stats.outOfStockProducts}
-							lowStockProducts={stats.lowStockProducts}
+							expiredBatches={stats.expiredCount}
+							expiringSoonBatches={stats.expiringSoonCount}
+							outOfStockProducts={stats.outOfStockCount}
+							lowStockProducts={stats.lowStockCount}
 							onFilterByIssue={(issue) =>
 								handleFilterChange("stockLevel", issue)
 							}
@@ -450,7 +394,7 @@ const InventoryPage = () => {
 						mb={6}>
 						<StatsCard
 							title="Sắp hết hàng"
-							value={stats.lowStockProducts}
+							value={stats.lowStockCount}
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #ED8936 0%, #DD6B20 100%)"
@@ -459,7 +403,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Hết hàng"
-							value={stats.outOfStockProducts}
+							value={stats.outOfStockCount}
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #F56565 0%, #E53E3E 100%)"
@@ -468,7 +412,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Lô sắp hết hạn"
-							value={stats.expiringSoonBatches}
+							value={stats.expiringSoonCount}
 							icon={BsExclamationTriangle}
 							color="orange.500"
 							bgGradient="linear(135deg, #F6AD55 0%, #ED8936 100%)"
@@ -477,7 +421,7 @@ const InventoryPage = () => {
 						/>
 						<StatsCard
 							title="Lô đã hết hạn"
-							value={stats.expiredBatches}
+							value={stats.expiredCount}
 							icon={FiPackage}
 							color="red.500"
 							bgGradient="linear(135deg, #FC8181 0%, #F56565 100%)"

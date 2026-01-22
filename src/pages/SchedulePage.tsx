@@ -71,7 +71,10 @@ const SchedulePage = () => {
 	});
 
 	// Helper: Generate weeks for a month
-	const generateWeeksForMonth = (month: number, year: number): WeekRange[] => {
+	const generateWeeksForMonth = (
+		month: number,
+		year: number,
+	): WeekRange[] => {
 		const weeks: WeekRange[] = [];
 		const firstDay = new Date(year, month - 1, 1);
 		const lastDay = new Date(year, month, 0);
@@ -201,6 +204,8 @@ const SchedulePage = () => {
 	): Promise<ShiftConfig> => {
 		// Fetch all role configs first
 		const roleConfigsResult = await scheduleService.getRoleConfigs(true);
+		console.log(roleConfigsResult);
+
 		const roleConfigsMap = new Map();
 
 		if (roleConfigsResult.success && roleConfigsResult.data) {
@@ -218,7 +223,9 @@ const SchedulePage = () => {
 			const startInMinutes = startHour * 60 + startMinute;
 			const endInMinutes = endHour * 60 + endMinute;
 			const durationInMinutes = endInMinutes - startInMinutes;
-			const workingHours = parseFloat((durationInMinutes / 60).toFixed(2));
+			const workingHours = parseFloat(
+				(durationInMinutes / 60).toFixed(2),
+			);
 
 			// Get requirements from role config
 			const roleConfig = roleConfigsMap.get(shift.roleConfig.id);
@@ -271,7 +278,6 @@ const SchedulePage = () => {
 		setIsLoading(true);
 		try {
 			const result = await scheduleService.getWorkShifts(true);
-
 			if (result.success && result.data) {
 				setWorkShifts(result.data);
 				const config = await convertWorkShiftsToTemplates(result.data);
@@ -299,7 +305,10 @@ const SchedulePage = () => {
 	};
 
 	const loadMonthData = () => {
-		const generatedWeeks = generateWeeksForMonth(selectedMonth, selectedYear);
+		const generatedWeeks = generateWeeksForMonth(
+			selectedMonth,
+			selectedYear,
+		);
 		setWeeks(generatedWeeks);
 		setSelectedWeekIndex(0);
 	};

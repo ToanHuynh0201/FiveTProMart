@@ -31,9 +31,9 @@ export const reportService = {
 		message: string;
 		data: DashboardSummary;
 	}> {
-		return apiService.get(
-			`/statistics/summary?startDate=${params.startDate}&endDate=${params.endDate}`
-		);
+		const url = `/statistics/summary?startDate=${encodeURIComponent(params.startDate)}&endDate=${encodeURIComponent(params.endDate)}`;
+		console.log('🌐 API URL:', url);
+		return apiService.get(url);
 	},
 
 	/**

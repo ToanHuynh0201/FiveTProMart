@@ -84,40 +84,7 @@ export const CalculateSalaryModal: React.FC<CalculateSalaryModalProps> = ({
 				if (reportResponse.success && reportResponse.data) {
 					const details = reportResponse.data.staffSalaryDetails || [];
 					console.log("Salary details from API:", details);
-					
-					// Backend returns "Staff {userId}" format, fetch real names
-					if (details.length > 0) {
-						try {
-							const { staffService: staffSvc } = await import("@/services");
-							const enrichedDetails = await Promise.all(
-								details.map(async (detail) => {
-									try {
-										const staffInfo = await staffSvc.getStaffById(detail.userId);
-										if (staffInfo.success && staffInfo.data) {
-											return {
-												...detail,
-												fullName: staffInfo.data.fullName,
-											};
-										}
-									} catch (err) {
-										// Staff might be deleted, keep original fullName
-										console.warn(`Staff ${detail.userId} not found, using fallback name`);
-									}
-									// Fallback: extract just the userId or keep original
-									return {
-										...detail,
-										fullName: detail.userId, // Show userId instead of "Staff {uuid}"
-									};
-								})
-							);
-							setStaffDetails(enrichedDetails);
-						} catch (err) {
-							console.error("Failed to enrich staff details:", err);
-							setStaffDetails(details);
-						}
-					} else {
-						setStaffDetails(details);
-					}
+					setStaffDetails(details);
 				}
 			} catch (err) {
 				console.error("Failed to load salary details:", err);

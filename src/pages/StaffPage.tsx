@@ -223,7 +223,7 @@ const StaffPage = () => {
 			} else {
 				toast({
 					title: "Lỗi",
-					description: result.error || "Tải báo cáo lương thất bại",
+					description: result.message || "Tải báo cáo lương thất bại",
 					status: "error",
 					duration: 3000,
 					isClosable: true,

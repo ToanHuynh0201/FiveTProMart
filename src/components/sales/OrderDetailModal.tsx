@@ -28,12 +28,14 @@ interface OrderDetailModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	order: SalesOrder | null;
+	onPrint?: (order: SalesOrder) => void;
 }
 
 const OrderDetailModal = ({
 	isOpen,
 	onClose,
 	order,
+	onPrint,
 }: OrderDetailModalProps) => {
 	if (!order) return null;
 
@@ -366,7 +368,13 @@ const OrderDetailModal = ({
 						onClick={onClose}>
 						Đóng
 					</Button>
-					<Button colorScheme="blue">In hóa đơn</Button>
+					<Button 
+						colorScheme="blue" 
+						onClick={() => onPrint && order && onPrint(order)}
+						isDisabled={!onPrint}
+					>
+						In hóa đơn
+					</Button>
 				</ModalFooter>
 			</ModalContent>
 		</Modal>

@@ -11,6 +11,13 @@ import {
 	TabPanels,
 	Tab,
 	TabPanel,
+	AlertDialog,
+	AlertDialogBody,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogContent,
+	AlertDialogOverlay,
+	Button,
 } from "@chakra-ui/react";
 import MainLayout from "@/components/layout/MainLayout";
 import {
@@ -126,6 +133,14 @@ const SalesPage = () => {
 		onOpen: onShortcutsHelpOpen,
 		onClose: onShortcutsHelpClose,
 	} = useDisclosure();
+
+	// Clear cart confirmation dialog
+	const {
+		isOpen: isClearCartOpen,
+		onOpen: onClearCartOpen,
+		onClose: onClearCartClose,
+	} = useDisclosure();
+	const clearCartCancelRef = useRef<HTMLButtonElement>(null);
 
 	// Sale celebration hook - triggers confetti on successful payment
 	const { celebrationData, celebrate, closeCelebration } = useSaleCelebration();
@@ -363,8 +378,8 @@ const SalesPage = () => {
 		return () => window.removeEventListener("beforeunload", handleBeforeUnload);
 	}, []);
 
-	// Keyboard shortcut handlers (memoized for stable references)
-	const handleClearCart = useCallback(async () => {
+	// Actual clear cart logic (called after confirmation)
+	const doClearCart = useCallback(async () => {
 		if (orderItems.length > 0) {
 			// Release all reservations
 			const reservationIds = orderItems
@@ -391,7 +406,15 @@ const SalesPage = () => {
 				position: "top",
 			});
 		}
-	}, [orderItems, toast]);
+		onClearCartClose();
+	}, [orderItems, toast, onClearCartClose]);
+
+	// Keyboard shortcut handlers (memoized for stable references)
+	const handleClearCart = useCallback(() => {
+		if (orderItems.length > 0) {
+			onClearCartOpen();
+		}
+	}, [orderItems.length, onClearCartOpen]);
 
 	const handleSelectCash = useCallback(() => {
 		if (activeTabIndex === 0) {
@@ -1102,7 +1125,68 @@ const SalesPage = () => {
 		receiptWindow.document.close();
 		receiptWindow.focus();
 		receiptWindow.print();
-		receiptWindow.close();
+		// Don't auto-close - let user close when ready
+	};
+
+	// Print receipt for historical orders (from order detail modal)
+	const printHistoricalReceipt = (order: SalesOrder) => {
+		const receiptWindow = window.open(
+			"",
+			"_blank",
+			"width=420,height=640,noopener,noreferrer",
+		);
+		if (!receiptWindow) return;
+
+		const itemsHtml = order.items
+			.map((item) => `
+				<tr>
+					<td>${item.product.name}${item.isFreeItem ? " (Tặng)" : ""}</td>
+					<td style="text-align:right;">${item.quantity}</td>
+					<td style="text-align:right;">${item.totalPrice.toLocaleString("vi-VN")}đ</td>
+				</tr>
+			`)
+			.join("");
+
+		const orderDate = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt);
+
+		receiptWindow.document.write(`
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>Hóa đơn #${order.id}</title>
+				<style>
+					body { font-family: monospace; padding: 10px; max-width: 400px; margin: 0 auto; }
+					h1 { text-align: center; font-size: 18px; margin-bottom: 5px; }
+					table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+					td { padding: 5px; border-bottom: 1px dotted #ccc; }
+					.total { font-weight: bold; font-size: 16px; margin-top: 10px; }
+					@media print { body { width: 80mm; } }
+				</style>
+			</head>
+			<body>
+				<h1>🛒 5TProMart</h1>
+				<h1>Hóa đơn #${order.id}</h1>
+				<div>Ngày: ${orderDate.toLocaleDateString("vi-VN")} ${orderDate.toLocaleTimeString("vi-VN")}</div>
+				<div>Khách: ${order.customer?.name || "Khách vãng lai"}</div>
+				<table>
+					<thead>
+						<tr>
+							<td>Sản phẩm</td>
+							<td style="text-align:right;">SL</td>
+							<td style="text-align:right;">Thành tiền</td>
+						</tr>
+					</thead>
+					<tbody>${itemsHtml}</tbody>
+				</table>
+				<div class="total">Tổng: ${order.total.toLocaleString("vi-VN")}đ</div>
+				<div>Thanh toán: ${order.paymentMethod === "cash" ? "Tiền mặt" : order.paymentMethod === "transfer" ? "Chuyển khoản" : order.paymentMethod}</div>
+			</body>
+			</html>
+		`);
+
+		receiptWindow.document.close();
+		receiptWindow.focus();
+		receiptWindow.print();
 	};
 
 	const handlePrint = async () => {
@@ -1463,7 +1547,22 @@ const SalesPage = () => {
 	};
 
 	// Xóa hóa đơn tạm dừng
-	const handleDeletePendingOrder = (orderId: string) => {
+	const handleDeletePendingOrder = async (orderId: string) => {
+		const orderToDelete = pendingOrders.find((o) => o.id === orderId);
+		if (orderToDelete) {
+			// Release any reservations held by this pending order
+			const reservationIds = orderToDelete.items
+				.filter((item) => item.reservationId)
+				.map((item) => item.reservationId as string);
+			
+			if (reservationIds.length > 0) {
+				try {
+					await reservationService.releaseAll(reservationIds, "Pending order deleted");
+				} catch (error) {
+					console.error("Failed to release reservations:", error);
+				}
+			}
+		}
 		setPendingOrders(pendingOrders.filter((order) => order.id !== orderId));
 	};
 
@@ -1676,6 +1775,7 @@ const SalesPage = () => {
 					isOpen={isOpen}
 					onClose={onClose}
 					order={selectedOrder}
+					onPrint={printHistoricalReceipt}
 				/>
 
 				{/* Sale success notification */}
@@ -1689,6 +1789,35 @@ const SalesPage = () => {
 					roundingAdjustment={celebrationData.roundingAdjustment}
 					pointsEarned={celebrationData.pointsEarned}
 				/>
+
+				{/* Clear Cart Confirmation Dialog */}
+				<AlertDialog
+					isOpen={isClearCartOpen}
+					leastDestructiveRef={clearCartCancelRef}
+					onClose={onClearCartClose}
+				>
+					<AlertDialogOverlay>
+						<AlertDialogContent>
+							<AlertDialogHeader fontSize="lg" fontWeight="bold">
+								Xóa giỏ hàng?
+							</AlertDialogHeader>
+
+							<AlertDialogBody>
+								Bạn có chắc muốn xóa {orderItems.length} sản phẩm khỏi giỏ hàng? 
+								Hành động này không thể hoàn tác.
+							</AlertDialogBody>
+
+							<AlertDialogFooter>
+								<Button ref={clearCartCancelRef} onClick={onClearCartClose}>
+									Hủy
+								</Button>
+								<Button colorScheme="red" onClick={doClearCart} ml={3}>
+									Xóa
+								</Button>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialogOverlay>
+				</AlertDialog>
 			</Box>
 		</MainLayout>
 	);

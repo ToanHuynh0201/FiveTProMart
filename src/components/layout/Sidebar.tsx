@@ -29,33 +29,35 @@ function Sidebar() {
 
 	// Filter nav items based on permissions and inject dynamic badges
 	const navItemsWithBadges: NavItem[] = useMemo(() => {
-		return navItems
-			.filter((item) => {
-				// If item has a module requirement, check permission
-				if (item.module) {
-					return hasAccess(item.module);
-				}
-				// Items without module requirement are always visible
-				return true;
-			})
-			.map((item) => {
-				// Add badge to inventory page for critical/warning alerts
-				if (item.path === "/inventory") {
-					const totalAlerts = criticalCount + warningCount;
-					if (totalAlerts > 0) {
-						return {
-							...item,
-							badge: {
-								count: totalAlerts,
-								// Red for critical, orange if only warnings
-								colorScheme:
-									criticalCount > 0 ? "red" : "orange",
-							},
-						};
+		return (
+			navItems
+				.filter((item) => {
+					// If item has a module requirement, check permission
+					if (item.module) {
+						return hasAccess(item.module);
 					}
-				}
-				return item;
-			});
+					// Items without module requirement are always visible
+					return true;
+				})
+				.map((item) => {
+					// Add badge to inventory page for critical/warning alerts
+					if (item.path === "/inventory") {
+						const totalAlerts = criticalCount + warningCount;
+						if (totalAlerts > 0) {
+							return {
+								...item,
+								badge: {
+									count: totalAlerts,
+									// Red for critical, orange if only warnings
+									colorScheme:
+										criticalCount > 0 ? "red" : "orange",
+								},
+							};
+						}
+					}
+					return item;
+				})
+		);
 	}, [criticalCount, warningCount, hasAccess]);
 
 	return (

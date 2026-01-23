@@ -25,7 +25,7 @@ export default function LoginPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const navigate = useNavigate();
 	const { isOpen, onOpen, onClose } = useDisclosure();
-	const { login } = useAuth();
+	const { login, getUserDetail } = useAuth();
 	const toast = useToast();
 
 	const handleTestAccountSelect = (testUsername: string, testPassword: string) => {
@@ -41,6 +41,9 @@ export default function LoginPage() {
 			// Call authentication service
 			await login({ username, password });
 
+			// Get user details after login
+			const userData = await getUserDetail();
+
 			// Show success message
 			toast({
 				title: "Đăng nhập thành công",
@@ -51,8 +54,16 @@ export default function LoginPage() {
 				position: "top-right",
 			});
 
-			// Navigate to home page
-			navigate(ROUTES.SALES);
+			// Navigate based on user role
+			const accountType = userData?.accountType;
+			if (accountType === "WarehouseStaff") {
+				navigate(ROUTES.INVENTORY);
+			} else if (accountType === "SalesStaff") {
+				navigate(ROUTES.SALES);
+			} else {
+				// Admin or default
+				navigate(ROUTES.SALES);
+			}
 		} catch (error: any) {
 			// Show error message
 			toast({

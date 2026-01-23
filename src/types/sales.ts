@@ -231,6 +231,9 @@ export interface OrderDetailItem {
 	quantity: number;
 	unitPrice: number;
 	subTotal: number;
+	originalUnitPrice?: number;
+	promotionId?: string;
+	isFreeItem?: boolean;
 }
 
 /**

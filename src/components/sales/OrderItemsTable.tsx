@@ -174,6 +174,26 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 												}>
 												{item.product.name}
 											</Text>
+												{item.isFreeItem && (
+													<Badge
+														colorScheme="green"
+														fontSize="11px"
+														fontWeight="600"
+														px={2}
+														py={0.5}
+														borderRadius="md"
+														display="inline-flex"
+														alignItems="center"
+														gap={1}
+														mb={
+															item.product.expiryDate ||
+															item.batchNumber
+																? 1
+																: 0
+														}>
+													🎁 Tặng
+												</Badge>
+												)}
 											{item.batchNumber && (
 												<Text
 													fontSize="11px"
@@ -275,10 +295,12 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 											size="md"
 											mx="auto"
 											allowMouseWheel={false}
+													isDisabled={item.isFreeItem}
 											onChange={(
 												valueString,
 												valueAsNumber,
 											) => {
+														if (item.isFreeItem) return;
 												// Nếu rỗng, set về 1
 												if (
 													valueString === "" ||
@@ -304,6 +326,7 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 												}
 											}}
 											onBlur={(e) => {
+													if (item.isFreeItem) return;
 												// Khi blur, nếu rỗng hoặc < 1 thì set về 1
 												const val = parseInt(
 													e.target.value,
@@ -348,7 +371,11 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 										color="gray.700"
 										textAlign="right"
 										isNumeric>
-										{item.promotionalPrice ? (
+											{item.isFreeItem ? (
+												<Text fontWeight="600" color="green.600">
+													MIỄN PHÍ
+												</Text>
+											) : item.promotionalPrice ? (
 											<Box>
 												<Text
 													as="span"
@@ -379,31 +406,41 @@ export const OrderItemsTable: React.FC<OrderItemsTableProps> = ({
 										color="#161f70"
 										textAlign="right"
 										isNumeric>
-										{item.totalPrice.toLocaleString(
-											"vi-VN",
-										)}
-										đ
+											{item.isFreeItem ? (
+												"0đ"
+											) : (
+												`${item.totalPrice.toLocaleString("vi-VN")}đ`
+											)}
 									</Td>
 									<Td
 										py={5}
 										textAlign="center">
-										<IconButton
-											aria-label="Xóa sản phẩm"
-											icon={<DeleteIcon />}
-											size="sm"
-											variant="ghost"
-											colorScheme="red"
-											onClick={() =>
-												onRemoveItem(item.id)
-											}
-											_hover={{
-												bg: "red.50",
-												color: "red.600",
-											}}
-											_active={{
-												bg: "red.100",
-											}}
-										/>
+													<Tooltip
+														label={
+															item.isFreeItem
+																? "Sản phẩm tặng sẽ tự động điều chỉnh"
+																: "Xóa sản phẩm"
+														}
+														hasArrow>
+														<IconButton
+															aria-label="Xóa sản phẩm"
+															icon={<DeleteIcon />}
+															size="sm"
+															variant="ghost"
+															colorScheme="red"
+															isDisabled={item.isFreeItem}
+															onClick={() =>
+																!item.isFreeItem && onRemoveItem(item.id)
+															}
+															_hover={{
+																bg: "red.50",
+																color: "red.600",
+															}}
+															_active={{
+																bg: "red.100",
+															}}
+														/>
+													</Tooltip>
 									</Td>
 								</Tr>
 							);

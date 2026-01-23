@@ -91,11 +91,22 @@ export const isToday = (date: Date | string | number) => {
  * @param {Date|string} expiryDate - Expiry date of the product
  * @returns {boolean} Is expired
  */
+const isDdMmYyyy = (value: string) => /^\d{2}-\d{2}-\d{4}$/.test(value);
+
+const parseExpiryDate = (value?: Date | string | number) => {
+	if (!value) return null;
+	if (value instanceof Date) return value;
+	if (typeof value === "string" && isDdMmYyyy(value)) {
+		return parseDateDDMMYYYY(value);
+	}
+	const parsed = new Date(value);
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export const isExpired = (expiryDate?: Date | string | number) => {
-	if (!expiryDate) return false;
+	const expiry = parseExpiryDate(expiryDate);
+	if (!expiry) return false;
 	try {
-		const expiry =
-			expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		expiry.setHours(0, 0, 0, 0);
@@ -115,10 +126,9 @@ export const isExpiringSoon = (
 	expiryDate?: Date | string | number,
 	days: number = 7,
 ) => {
-	if (!expiryDate) return false;
+	const expiry = parseExpiryDate(expiryDate);
+	if (!expiry) return false;
 	try {
-		const expiry =
-			expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		expiry.setHours(0, 0, 0, 0);
@@ -139,10 +149,9 @@ export const isExpiringSoon = (
  * @returns {number} Days until expiry (negative if expired)
  */
 export const getDaysUntilExpiry = (expiryDate?: Date | string | number) => {
-	if (!expiryDate) return Infinity;
+	const expiry = parseExpiryDate(expiryDate);
+	if (!expiry) return Infinity;
 	try {
-		const expiry =
-			expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		expiry.setHours(0, 0, 0, 0);

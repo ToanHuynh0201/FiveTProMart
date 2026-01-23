@@ -15,7 +15,7 @@ import {
 import { SearchIcon } from "@chakra-ui/icons";
 import { FiCamera } from "react-icons/fi";
 import type { Product } from "../../types/sales";
-import { getExpiryStatus, isExpired } from "../../utils/date";
+import { getExpiryStatus, isExpired, parseDateDDMMYYYY } from "../../utils/date";
 import { inventoryService } from "@/services/inventoryService";
 
 interface ProductSearchBarProps {
@@ -71,7 +71,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 					// Fetch batches for each product in parallel
 					const productsWithBatches = await Promise.all(
 						products.map(async (p) => {
-							let batches: { id: string; batchNumber: string; quantity: number; expiryDate: string }[] = [];
+							let batches: { id: string; batchNumber: string; quantity: number; expiryDate: Date }[] = [];
 							try {
 								const batchData = await inventoryService.getBatchesByProductId(p.productId);
 								batches = batchData
@@ -80,7 +80,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 										id: b.lotId,
 										batchNumber: b.lotId, // lotId serves as batch identifier
 										quantity: b.stockQuantity,
-										expiryDate: b.expirationDate || '',
+										expiryDate: b.expirationDate
+											? parseDateDDMMYYYY(b.expirationDate)
+											: new Date(0),
 									}));
 							} catch {
 								// If batch fetch fails, continue with empty batches
@@ -118,14 +120,14 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 		batchId: string,
 		batchNumber: string,
 	) => {
-		// Th�m s?n ph?m v?i l� d� ch?n v�o gi?
+		// Thêm sản phẩm với lô đã chọn vào giỏ
 		onProductSelect(product, batchId, batchNumber);
 		setSearchQuery("");
 		setSearchResults([]);
 		setShowResults(false);
 		toast({
-			title: "�� th�m v�o gi? h�ng",
-			description: `${product.name} - L� ${batchNumber}`,
+			title: "Đã thêm vào giỏ hàng",
+			description: `${product.name} - Lô ${batchNumber}`,
 			status: "success",
 			duration: 2000,
 			position: "top",
@@ -227,7 +229,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 							borderBottom="1px solid"
 							borderColor="gray.100"
 							_last={{ borderBottom: "none" }}>
-							{/* Th�ng tin s?n ph?m */}
+								{/* Thông tin sản phẩm */}
 							<Box
 								p={3.5}
 								bg="gray.50"
@@ -249,16 +251,16 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 									color="gray.600"
 									gap={4}
 									flexWrap="wrap">
-									<Text>M�: {product.code}</Text>
+									<Text>Mã: {product.code}</Text>
 									<Text>
-										Gi�:{" "}
-										{product.price.toLocaleString("vi-VN")}d
+										Giá:{" "}
+										{product.price.toLocaleString("vi-VN")}đ
 									</Text>
-									<Text>T?n: {product.stock}</Text>
+									<Text>Tồn: {product.stock}</Text>
 								</Flex>
 							</Box>
 
-							{/* Danh s�ch l� h�ng */}
+								{/* Danh sách lô hàng */}
 							{product.batches && product.batches.length > 0 ? (
 								<Box bg="white">
 									<Text
@@ -269,7 +271,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 										fontWeight="600"
 										color="gray.600"
 										textTransform="uppercase">
-										Ch?n l� h�ng:
+										Chọn lô hàng:
 									</Text>
 									{product.batches.map((batch) => {
 										const batchExpired = isExpired(
@@ -312,7 +314,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																fontSize="14px"
 																fontWeight="600"
 																color="gray.800">
-																L�{" "}
+																	Lô{" "}
 																{
 																	batch.batchNumber
 																}
@@ -321,7 +323,7 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 																<Badge
 																	colorScheme="red"
 																	fontSize="10px">
-																	H?t h?n
+																	Hết hạn
 																</Badge>
 															)}
 														</Flex>
@@ -330,10 +332,10 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 															color="gray.600"
 															gap={3}
 															flexWrap="wrap">
-															<Text>
-																T?n:{" "}
-																{batch.quantity}
-															</Text>
+																<Text>
+																	Tồn:{" "}
+																	{batch.quantity}
+																</Text>
 															<Text>
 																HSD:{" "}
 																{new Date(
@@ -361,9 +363,9 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 														py={1}
 														borderRadius="md"
 														flexShrink={0}>
-														{batchExpired
-															? "H?t h?n"
-															: expiryStatus.text}
+																	{batchExpired
+																		? "Hết hạn"
+																		: expiryStatus.text}
 													</Badge>
 												</Flex>
 											</Box>

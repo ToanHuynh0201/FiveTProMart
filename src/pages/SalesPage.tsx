@@ -148,86 +148,182 @@ const SalesPage = () => {
 	// When cart has eligible items, automatically add free items
 	// ============================================================================
 	useEffect(() => {
-		// Find all items with Buy X Get Y promotion
-		const buyXGetYItems = orderItems.filter(
-			(item) =>
-				item.promotionType === "Buy X Get Y" &&
-				item.buyQuantity &&
-				item.getQuantity &&
-				!item.isFreeItem // Exclude the free items themselves
-		);
+		let cancelled = false;
 
-		if (buyXGetYItems.length === 0) return;
-
-		let shouldUpdate = false;
-		let newItems = [...orderItems];
-
-		for (const item of buyXGetYItems) {
-			// Calculate entitled free quantity: floor(bought / buyQty) * getQty
-			const entitledFreeQty =
-				Math.floor(item.quantity / item.buyQuantity!) * item.getQuantity!;
-
-			// Find existing free item for this product+promotion
-			const freeItemIndex = newItems.findIndex(
-				(i) =>
-					i.isFreeItem &&
-					i.product.id === item.product.id &&
-					i.promotionId === item.promotionId
+		const syncFreeItems = async () => {
+			const buyXGetYItems = orderItems.filter(
+				(item) =>
+					item.promotionType === "Buy X Get Y" &&
+					item.buyQuantity &&
+					item.getQuantity &&
+					!item.isFreeItem,
 			);
 
-			if (entitledFreeQty > 0) {
-				if (freeItemIndex === -1) {
-					// Add new free item
-					const freeItem: OrderItem = {
-						id: `free_${Date.now()}_${item.product.id}`,
-						product: item.product,
-						quantity: entitledFreeQty,
-						unitPrice: 0, // Free!
-						totalPrice: 0,
-						batchId: item.batchId,
-						batchNumber: item.batchNumber,
-						promotionId: item.promotionId,
-						promotionName: item.promotionName,
-						promotionType: "Buy X Get Y",
-						isFreeItem: true,
-					};
-					newItems.push(freeItem);
-					shouldUpdate = true;
-				} else if (newItems[freeItemIndex].quantity !== entitledFreeQty) {
-					// Update existing free item quantity
-					newItems[freeItemIndex] = {
-						...newItems[freeItemIndex],
-						quantity: entitledFreeQty,
-					};
+			if (buyXGetYItems.length === 0) return;
+
+			let shouldUpdate = false;
+			let newItems = [...orderItems];
+
+			for (const item of buyXGetYItems) {
+				const entitledFreeQty =
+					Math.floor(item.quantity / item.buyQuantity!) *
+					item.getQuantity!;
+
+				const freeItemIndex = newItems.findIndex(
+					(i) =>
+						i.isFreeItem &&
+						i.product.id === item.product.id &&
+						i.promotionId === item.promotionId,
+				);
+
+				const canReserve = Boolean(item.batchId && user?.userId);
+
+				const reserveForFreeItem = async (
+					quantity: number,
+					existingReservationId?: string,
+				) => {
+					if (!canReserve) return existingReservationId;
+					if (existingReservationId) {
+						await reservationService.release({
+							reservationId: existingReservationId,
+							reason: "Promo quantity adjustment",
+						});
+					}
+					const reservation = await reservationService.reserve({
+						lotId: item.batchId!,
+						quantity,
+						reservedBy: user!.userId,
+					});
+					return reservation.reservationId;
+				};
+
+				if (entitledFreeQty > 0) {
+					if (freeItemIndex === -1) {
+						let reservationId: string | undefined;
+						if (canReserve) {
+							try {
+								const reservation = await reservationService.reserve({
+									lotId: item.batchId!,
+									quantity: entitledFreeQty,
+									reservedBy: user!.userId,
+								});
+								reservationId = reservation.reservationId;
+							} catch {
+								toast({
+									title: "Không thể áp dụng khuyến mãi",
+									description:
+										"Không đủ tồn kho để tặng sản phẩm miễn phí.",
+									status: "warning",
+									duration: 3000,
+									position: "top",
+								});
+								continue;
+							}
+						}
+
+						const freeItem: OrderItem = {
+							id: `free_${Date.now()}_${item.product.id}`,
+							product: item.product,
+							quantity: entitledFreeQty,
+							unitPrice: 0,
+							totalPrice: 0,
+							batchId: item.batchId,
+							batchNumber: item.batchNumber,
+							promotionId: item.promotionId,
+							promotionName: item.promotionName,
+							promotionType: "Buy X Get Y",
+							isFreeItem: true,
+							reservationId,
+						};
+						newItems.push(freeItem);
+						shouldUpdate = true;
+					} else if (newItems[freeItemIndex].quantity !== entitledFreeQty) {
+						let reservationId = newItems[freeItemIndex].reservationId;
+						if (canReserve) {
+							try {
+								reservationId = await reserveForFreeItem(
+									entitledFreeQty,
+									reservationId,
+								);
+							} catch {
+								toast({
+									title: "Không thể cập nhật khuyến mãi",
+									description:
+										"Không đủ tồn kho để cập nhật số lượng tặng.",
+									status: "warning",
+									duration: 3000,
+									position: "top",
+								});
+								continue;
+							}
+						}
+
+						newItems[freeItemIndex] = {
+							...newItems[freeItemIndex],
+							quantity: entitledFreeQty,
+							reservationId,
+						};
+						shouldUpdate = true;
+					}
+				} else if (freeItemIndex !== -1) {
+					const freeItem = newItems[freeItemIndex];
+					if (freeItem.reservationId) {
+						try {
+							await reservationService.release({
+								reservationId: freeItem.reservationId,
+								reason: "Promo removed",
+							});
+						} catch {
+							// Ignore release failure; reservation TTL will recover
+						}
+					}
+					newItems.splice(freeItemIndex, 1);
 					shouldUpdate = true;
 				}
-			} else if (freeItemIndex !== -1) {
-				// Remove free item (no longer entitled)
-				newItems.splice(freeItemIndex, 1);
+			}
+
+			const orphanedFreeItems = newItems.filter(
+				(item) =>
+					item.isFreeItem &&
+					!newItems.some(
+						(parent) =>
+							!parent.isFreeItem &&
+							parent.product.id === item.product.id &&
+							parent.promotionId === item.promotionId,
+					),
+			);
+
+			for (const orphan of orphanedFreeItems) {
+				if (orphan.reservationId) {
+					try {
+						await reservationService.release({
+							reservationId: orphan.reservationId,
+							reason: "Promo orphan cleanup",
+						});
+					} catch {
+						// Ignore release failure; reservation TTL will recover
+					}
+				}
+			}
+
+			if (orphanedFreeItems.length > 0) {
+				newItems = newItems.filter(
+					(item) => !orphanedFreeItems.includes(item),
+				);
 				shouldUpdate = true;
 			}
-		}
 
-		// Also clean up orphaned free items (where parent item was removed)
-		const orphanedFreeItems = newItems.filter(
-			(item) =>
-				item.isFreeItem &&
-				!newItems.some(
-					(parent) =>
-						!parent.isFreeItem &&
-						parent.product.id === item.product.id &&
-						parent.promotionId === item.promotionId
-				)
-		);
-		if (orphanedFreeItems.length > 0) {
-			newItems = newItems.filter((item) => !orphanedFreeItems.includes(item));
-			shouldUpdate = true;
-		}
+			if (shouldUpdate && !cancelled) {
+				setOrderItems(newItems);
+			}
+		};
 
-		if (shouldUpdate) {
-			setOrderItems(newItems);
-		}
-	}, [orderItems]);
+		void syncFreeItems();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [orderItems, user?.userId, toast]);
 
 	// Cleanup reservations when browser tab/window closes (zombie prevention)
 	// Backend has 15-min TTL as fallback, but this provides faster cleanup
@@ -312,6 +408,7 @@ const SalesPage = () => {
 	const handleSelectTransfer = useCallback(() => {
 		if (activeTabIndex === 0) {
 			setPaymentMethod("transfer");
+			setCashReceived(0);
 			toast({
 				title: "🏦 Chuyển khoản",
 				status: "info",
@@ -579,11 +676,17 @@ const SalesPage = () => {
 						id: item.productId,
 						code: item.productId,
 						name: item.productName,
-						price: item.unitPrice,
+						price: item.originalUnitPrice ?? item.unitPrice,
 						stock: 0, // Not relevant for completed order
 					},
 					quantity: item.quantity,
-					unitPrice: item.unitPrice,
+					unitPrice: item.originalUnitPrice ?? item.unitPrice,
+					promotionalPrice:
+						item.originalUnitPrice && item.originalUnitPrice > item.unitPrice
+							? item.unitPrice
+							: undefined,
+					promotionId: item.promotionId,
+					isFreeItem: item.isFreeItem,
 					totalPrice: item.subTotal,
 				})),
 				subtotal: orderDetail.subTotal,
@@ -911,9 +1014,14 @@ const SalesPage = () => {
 		return Math.floor(calculateFinalTotal() / 100);
 	};
 
+	const finalTotal = calculateFinalTotal();
+	const roundedCashTotal = calculateRoundedCashTotal();
+	const roundingAdjustment = roundedCashTotal - finalTotal;
+
 	const printReceipt = (
 		response: CreateOrderResponse,
-		localData: { subTotal: number; discountAmount: number; amountGiven: number }
+		localData: { subTotal: number; discountAmount: number; amountGiven: number },
+		lineItems: OrderItem[],
 	) => {
 		const receiptWindow = window.open(
 			"",
@@ -923,16 +1031,34 @@ const SalesPage = () => {
 
 		if (!receiptWindow) return;
 
-		const itemsHtml = response.items
-			.map(
-				(item) => `
+		const itemsHtml = lineItems
+			.map((item) => {
+				const isFree = item.isFreeItem;
+				const unitPrice = isFree
+					? 0
+					: item.promotionalPrice ?? item.unitPrice;
+				const originalUnitPrice = isFree
+					? item.product.price
+					: item.unitPrice;
+				const hasDiscount = originalUnitPrice > unitPrice;
+
+				return `
 					<tr>
-						<td>${item.productName}</td>
+						<td>${item.product.name}${isFree ? " (Tặng)" : ""}</td>
 						<td style="text-align:right;">${item.quantity}</td>
-						<td style="text-align:right;">${item.subTotal.toLocaleString("vi-VN")}</td>
+						<td style="text-align:right;">
+							${isFree ? "MIỄN PHÍ" : unitPrice.toLocaleString("vi-VN")}
+						</td>
 					</tr>
-				`,
-			)
+					${hasDiscount ? `
+					<tr>
+						<td colspan="3" style="text-align:right;font-size:11px;color:#888;">
+							Giá gốc: ${originalUnitPrice.toLocaleString("vi-VN")}đ
+						</td>
+					</tr>
+				` : ""}
+				`;
+			})
 			.join("");
 
 		receiptWindow.document.write(`
@@ -965,6 +1091,7 @@ const SalesPage = () => {
 					<div class="total">Tạm tính: ${localData.subTotal.toLocaleString("vi-VN")}đ</div>
 					<div>Giảm giá: ${localData.discountAmount.toLocaleString("vi-VN")}đ</div>
 					<div class="total">Tổng: ${response.totalAmount.toLocaleString("vi-VN")}đ</div>
+					${response.roundingAdjustment ? `<div>Điều chỉnh làm tròn: ${response.roundingAdjustment.toLocaleString("vi-VN")}đ</div>` : ""}
 					<div>Tiền khách đưa: ${localData.amountGiven.toLocaleString("vi-VN")}đ</div>
 					<div>Tiền thối: ${response.changeReturned.toLocaleString("vi-VN")}đ</div>
 					${response.pointsEarned > 0 ? `<div style="margin-top:8px;color:#dd6b20;">⭐ Điểm tích lũy: +${response.pointsEarned.toLocaleString("vi-VN")} điểm</div>` : ""}
@@ -999,6 +1126,36 @@ const SalesPage = () => {
 				isClosable: true,
 			});
 			return;
+		}
+
+		const missingLotItems = orderItems.filter((item) => !item.batchId);
+		if (missingLotItems.length > 0) {
+			toast({
+				title: "Thiếu mã lô",
+				description:
+					"Có sản phẩm chưa có mã lô. Vui lòng quét mã lô trước khi thanh toán.",
+				status: "error",
+				duration: 4000,
+				isClosable: true,
+			});
+			return;
+		}
+
+		if (user?.userId) {
+			const unreservedItems = orderItems.filter(
+				(item) => item.batchId && !item.reservationId,
+			);
+			if (unreservedItems.length > 0) {
+				toast({
+					title: "Chưa đặt trước đủ hàng",
+					description:
+						"Một số sản phẩm chưa được giữ chỗ. Vui lòng kiểm tra lại tồn kho.",
+					status: "error",
+					duration: 4000,
+					isClosable: true,
+				});
+				return;
+			}
 		}
 
 		try {
@@ -1041,8 +1198,11 @@ const SalesPage = () => {
 			// Get staffId from auth store
 			const staffId = user?.userId ?? "guest_staff";
 
+			const payableTotal =
+				paymentMethod === "cash"
+					? calculateRoundedCashTotal()
+					: calculateFinalTotal();
 			if (paymentMethod === "cash") {
-				const roundedCashTotal = calculateRoundedCashTotal();
 				if (cashReceived <= 0) {
 					toast({
 						title: "Chưa nhập tiền khách đưa",
@@ -1053,10 +1213,10 @@ const SalesPage = () => {
 					});
 					return;
 				}
-				if (cashReceived < roundedCashTotal) {
+				if (cashReceived < payableTotal) {
 					toast({
 						title: "Tiền khách đưa không đủ",
-						description: `Số tiền tối thiểu cần thu: ${roundedCashTotal.toLocaleString("vi-VN")}đ`,
+						description: `Số tiền tối thiểu cần thu: ${payableTotal.toLocaleString("vi-VN")}đ`,
 						status: "warning",
 						duration: 3000,
 						isClosable: true,
@@ -1067,7 +1227,7 @@ const SalesPage = () => {
 
 			// Use cashReceived if provided, otherwise use total (for transfer payments)
 			const amountGiven =
-				cashReceived > 0 ? cashReceived : calculateFinalTotal();
+				paymentMethod === "cash" ? cashReceived : payableTotal;
 
 			// Calculate local values for receipt (BE doesn't return these)
 			const subTotal = calculateSubtotal();
@@ -1083,7 +1243,7 @@ const SalesPage = () => {
 				discount: discount || undefined,
 			});
 
-			printReceipt(response, { subTotal, discountAmount, amountGiven });
+			printReceipt(response, { subTotal, discountAmount, amountGiven }, orderItems);
 
 			// Success notification - brief, professional confirmation
 			celebrate({
@@ -1432,14 +1592,21 @@ const SalesPage = () => {
 								{/* Floating Payment Footer */}
 								<PaymentFooter
 									subtotal={calculateSubtotal()}
-									total={calculateFinalTotal()}
+											total={finalTotal}
+											roundedTotal={roundedCashTotal}
+											roundingAdjustment={roundingAdjustment}
 									loyaltyPoints={
 										customer?.phone
 											? calculateLoyaltyPoints()
 											: undefined
 									}
 									paymentMethod={paymentMethod}
-									onPaymentMethodChange={setPaymentMethod}
+											onPaymentMethodChange={(method) => {
+												setPaymentMethod(method);
+												if (method !== "cash") {
+													setCashReceived(0);
+												}
+											}}
 									onPrint={handlePrint}
 									isDisabled={orderItems.length === 0}
 									customer={customer}

@@ -55,8 +55,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 
 	const getStatusBadge = (status: string) => {
 		const statusConfig = {
-			active: { color: "green", label: "Đang kinh doanh" },
-			inactive: { color: "gray", label: "Ngừng kinh doanh" },
+			"in-stock": { color: "green", label: "Còn hàng" },
 			"out-of-stock": { color: "red", label: "Hết hàng" },
 		};
 
@@ -107,7 +106,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 	// Helper to derive status from stock quantity
 	const getProductStatus = (product: InventoryProduct): string => {
 		if (product.totalStockQuantity === 0) return "out-of-stock";
-		return "active";
+		return "in-stock";
 	};
 
 	return (
@@ -146,7 +145,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
 								textTransform="none"
 								py={4}
 								width="200px">
-								Thêm hàng hóa
+								Tên hàng hóa
 							</Th>
 							<Th
 								fontSize="13px"

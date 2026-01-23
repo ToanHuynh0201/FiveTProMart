@@ -90,29 +90,6 @@ export const ProductSearchBar: React.FC<ProductSearchBarProps> = ({
 				))}
 			</Select>
 
-			{/* Status Filter */}
-			<Select
-				value={filters.status}
-				onChange={(e) => handleFilterChange("status", e.target.value)}
-				bg="white"
-				border="2px solid"
-				borderColor="gray.200"
-				borderRadius="12px"
-				fontSize="16px"
-				h="56px"
-				flex={{ base: "1 1 48%", sm: "1 1 32%", lg: "1" }}
-				_hover={{ borderColor: "gray.300" }}
-				_focus={{
-					bg: "white",
-					borderColor: "brand.500",
-					boxShadow: "0 0 0 3px rgba(22, 31, 112, 0.1)",
-				}}>
-				<option value="all">Tất cả trạng thái</option>
-				<option value="active">Đang kinh doanh</option>
-				<option value="inactive">Ngừng kinh doanh</option>
-				<option value="out-of-stock">Hết hàng</option>
-			</Select>
-
 			{/* Stock Level Filter */}
 			<Select
 				value={filters.stockLevel}

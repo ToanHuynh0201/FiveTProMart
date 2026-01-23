@@ -27,6 +27,8 @@ interface Customer {
 interface PaymentFooterProps {
 	subtotal: number;
 	total: number;
+	roundedTotal?: number;
+	roundingAdjustment?: number;
 	loyaltyPoints?: number;
 	paymentMethod: PaymentMethod | undefined;
 	onPaymentMethodChange: (method: PaymentMethod) => void;
@@ -45,6 +47,8 @@ interface PaymentFooterProps {
 export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	subtotal,
 	total,
+	roundedTotal,
+	roundingAdjustment,
 	loyaltyPoints,
 	paymentMethod,
 	onPaymentMethodChange,
@@ -63,6 +67,14 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	// Calculate final total after discount (passed from parent)
 	const discountAmount = Math.max(0, subtotal - total);
 	const finalTotal = total;
+	const payableTotal =
+		paymentMethod === "cash" && roundedTotal !== undefined
+			? roundedTotal
+			: finalTotal;
+	const roundingDelta =
+		paymentMethod === "cash" && roundedTotal !== undefined
+			? roundingAdjustment ?? roundedTotal - finalTotal
+			: 0;
 
 	const [phoneInput, setPhoneInput] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
@@ -163,6 +175,18 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 			setCashInput(cashReceived.toString());
 		}
 	}, [cashReceived, cashInput]);
+
+	React.useEffect(() => {
+		if (cashReceived === 0) {
+			setCashInput("");
+		}
+	}, [cashReceived]);
+
+	React.useEffect(() => {
+		if (paymentMethod !== "cash") {
+			setCashInput("");
+		}
+	}, [paymentMethod]);
 	
 	// Recalculate discount when subtotal changes (in case points > new subtotal)
 	React.useEffect(() => {
@@ -183,8 +207,8 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 	};
 
 	// Calculate change from prop (source of truth)
-	const change = cashReceived - finalTotal;
-	const hasEnoughCash = cashReceived >= finalTotal;
+	const change = cashReceived - payableTotal;
+	const hasEnoughCash = cashReceived >= payableTotal;
 
 	return (
 		<Box
@@ -232,7 +256,6 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 									onKeyPress={(e) =>
 										e.key === "Enter" && handlePhoneSearch()
 									}
-									onBlur={handlePhoneSearch}
 									size="md"
 									fontSize="sm"
 									isDisabled={isSearching}
@@ -452,7 +475,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 											color={discountAmount > 0 ? "red.500" : "#161f70"}
 											lineHeight="1"
 											letterSpacing="tight">
-											{finalTotal.toLocaleString("vi-VN")}
+											{payableTotal.toLocaleString("vi-VN")}
 										</Text>
 										<Text
 											fontSize="lg"
@@ -569,7 +592,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										fontWeight="800"
 										color="#161f70"
 										lineHeight="1">
-										{finalTotal.toLocaleString("vi-VN")}
+										{payableTotal.toLocaleString("vi-VN")}
 									</Text>
 									<Text
 										fontSize="lg"
@@ -578,6 +601,12 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										đ
 									</Text>
 								</HStack>
+								{roundingDelta !== 0 && paymentMethod === "cash" && (
+									<Text fontSize="xs" color="gray.500">
+										Làm tròn: {roundingDelta > 0 ? "+" : ""}
+										{roundingDelta.toLocaleString("vi-VN")}đ
+									</Text>
+								)}
 							</VStack>
 						</Grid>
 
@@ -868,7 +897,7 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										fontWeight="800"
 										color="#161f70"
 										lineHeight="1">
-										{finalTotal.toLocaleString("vi-VN")}
+										{payableTotal.toLocaleString("vi-VN")}
 									</Text>
 									<Text
 										fontSize="md"
@@ -877,6 +906,12 @@ export const PaymentFooter: React.FC<PaymentFooterProps> = ({
 										đ
 									</Text>
 								</HStack>
+								{roundingDelta !== 0 && paymentMethod === "cash" && (
+									<Text fontSize="xs" color="gray.500">
+										Làm tròn: {roundingDelta > 0 ? "+" : ""}
+										{roundingDelta.toLocaleString("vi-VN")}đ
+									</Text>
+								)}
 							</VStack>
 							<Button
 								h="56px"

@@ -44,6 +44,28 @@ interface DisposeResponse {
 }
 
 /**
+ * Batch disposal request matching StockInventoryController /disposal
+ */
+interface DisposalBatchRequest {
+	reason: DisposeRequest["reason"];
+	note?: string;
+	items: Array<{
+		lotId: string;
+		quantity: number;
+	}>;
+}
+
+/**
+ * Batch disposal response matching DisposalBatchResponse
+ */
+interface DisposalBatchResponse {
+	disposalId: string;
+	staffId: string;
+	date: string;
+	totalItems: number;
+}
+
+/**
  * Category DTO types
  */
 export interface CategoryDTO {
@@ -270,6 +292,20 @@ export const inventoryService = {
 			staffId,
 		} as DisposeRequest);
 
+		return response.data;
+	},
+
+	/**
+	 * Dispose multiple lots in a single batch.
+	 */
+	async disposeBatch(
+		payload: DisposalBatchRequest,
+	): Promise<DisposalBatchResponse> {
+		const response = await apiService.post<{
+			success: boolean;
+			message: string;
+			data: DisposalBatchResponse;
+		}>("/stock_inventories/disposal", payload);
 		return response.data;
 	},
 

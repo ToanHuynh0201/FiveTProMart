@@ -29,7 +29,7 @@ import {
 import { FiTrash2, FiAlertTriangle } from "react-icons/fi";
 import type { DisposalItem, InventoryProduct, ProductBatch } from "@/types/inventory";
 import { inventoryService } from "@/services/inventoryService";
-import { getExpiryStatus } from "@/utils/date";
+import { getExpiryStatus, isExpired } from "@/utils/date";
 
 interface DisposalModalProps {
 	isOpen: boolean;
@@ -89,9 +89,7 @@ const DisposalModal = ({
 					.filter(b => b.stockQuantity > 0 && b.status !== "DISPOSED")
 					.map(b => {
 						// Check if physically expired (expirationDate < today)
-						const isPhysicallyExpired = b.expirationDate 
-							? new Date(b.expirationDate) < new Date() 
-							: false;
+						const isPhysicallyExpired = isExpired(b.expirationDate ?? undefined);
 						
 						return {
 							...b,

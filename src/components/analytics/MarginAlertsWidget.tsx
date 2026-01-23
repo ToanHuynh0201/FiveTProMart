@@ -142,6 +142,7 @@ export const MarginAlertsWidget: React.FC<MarginWidgetProps> = ({ maxAlerts = 5 
 	}
 
 	const alerts = data.alerts.slice(0, maxAlerts);
+	const issueCount = (data.summary?.thinMargins ?? 0) + (data.summary?.negativeMargins ?? 0);
 
 	return (
 		<Box bg="white" p={5} borderRadius="xl" boxShadow="sm">
@@ -156,7 +157,7 @@ export const MarginAlertsWidget: React.FC<MarginWidgetProps> = ({ maxAlerts = 5 
 					</HStack>
 					{data.summary && (
 						<Badge colorScheme="blue" variant="subtle">
-							{data.summary.thinMargins + data.summary.negativeMargins} vấn đề
+							{Number.isFinite(issueCount) ? issueCount : 0} vấn đề
 						</Badge>
 					)}
 				</HStack>
@@ -220,9 +221,11 @@ export const MarginAlertsWidget: React.FC<MarginWidgetProps> = ({ maxAlerts = 5 
 								<HStack justify="space-between" mb={1}>
 									<HStack spacing={2} flex={1}>
 										<Text fontWeight="medium" fontSize="sm" noOfLines={1}>
-											{alert.productName}
+											{alert.productName?.trim() || "Sản phẩm chưa đặt tên"}
 										</Text>
-										<Icon as={MdChevronRight} boxSize={4} color="gray.400" />
+										{alert.productId && (
+											<Icon as={MdChevronRight} boxSize={4} color="gray.400" />
+										)}
 									</HStack>
 									<Badge
 										colorScheme={getSeverityColor(alert.severity)}

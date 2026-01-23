@@ -230,23 +230,35 @@ const OrderDetailModal = ({
 												<Td>{item.product.code}</Td>
 												<Td>
 													{item.product.name}
-													{item.product.promotion && (
+													{item.isFreeItem && (
 														<Badge
 															ml={2}
-															colorScheme="orange"
+															colorScheme="green"
 															fontSize="xs">
-															{
-																item.product
-																	.promotion
-															}
+															Tặng
 														</Badge>
 													)}
 												</Td>
 												<Td isNumeric>
-													{item.unitPrice.toLocaleString(
-														"vi-VN",
+													{item.isFreeItem ? (
+														<Text fontWeight="700" color="green.600">
+															MIỄN PHÍ
+														</Text>
+													) : item.promotionalPrice ? (
+														<VStack align="flex-end" spacing={0}>
+															<Text
+																fontSize="xs"
+																color="gray.400"
+																textDecoration="line-through">
+																{item.unitPrice.toLocaleString("vi-VN")}đ
+															</Text>
+															<Text fontWeight="600" color="red.500">
+																{item.promotionalPrice.toLocaleString("vi-VN")}đ
+															</Text>
+														</VStack>
+													) : (
+														`${item.unitPrice.toLocaleString("vi-VN")}đ`
 													)}
-													đ
 												</Td>
 												<Td isNumeric>
 													{item.quantity}

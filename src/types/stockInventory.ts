@@ -10,6 +10,7 @@ export interface StockInventoryItem {
 	manufactureDate: string; // Format: dd-MM-yyyy
 	expirationDate: string; // Format: dd-MM-yyyy
 	stockQuantity: number;
+	reservedQuantity?: number; // Amount currently reserved for pending orders
 	quantityShelf?: number | null;
 	quantityStorage?: number | null;
 	importPrice: number;

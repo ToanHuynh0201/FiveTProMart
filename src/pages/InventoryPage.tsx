@@ -44,15 +44,12 @@ import type {
 } from "@/types";
 import type { InventoryFilters } from "@/types/filters";
 import { inventoryService, type ProductRequest } from "@/services/inventoryService";
-import { useAuthStore } from "@/store/authStore";
 
 const ITEMS_PER_PAGE = 10;
 
 const InventoryPage = () => {
 	const navigate = useNavigate();
 	const toast = useToast();
-	const { user } = useAuthStore();
-
 	// State for data from API
 	const [products, setProducts] = useState<InventoryProduct[]>([]);
 	const [totalItems, setTotalItems] = useState(0);
@@ -291,16 +288,36 @@ const InventoryPage = () => {
 		note: string,
 	) => {
 		try {
-			// Process each disposal item
-			const staffId = user?.userId ?? "guest_staff";
+			// Group items by reason to keep disposal semantics honest
+			const itemsByReason = items.reduce<Record<string, DisposalItem[]>>(
+				(acc, item) => {
+					const reasonKey = item.reason || "other";
+					if (!acc[reasonKey]) acc[reasonKey] = [];
+					acc[reasonKey].push(item);
+					return acc;
+				},
+				{},
+			);
 
-			for (const item of items) {
-				await inventoryService.disposeLot(
-					item.batchId,
-					item.quantity,
-					item.reason as "expired" | "damaged" | "lost" | "other",
-					staffId,
-					note,
+			const failures: string[] = [];
+			for (const [reason, group] of Object.entries(itemsByReason)) {
+				try {
+					await inventoryService.disposeBatch({
+						reason: reason as "expired" | "damaged" | "lost" | "other",
+						note,
+						items: group.map((item) => ({
+							lotId: item.batchId,
+							quantity: item.quantity,
+						})),
+					});
+				} catch {
+					failures.push(reason);
+				}
+			}
+
+			if (failures.length > 0) {
+				throw new Error(
+					`Không thể hủy lô hàng cho lý do: ${failures.join(", ")}`,
 				);
 			}
 
@@ -436,10 +453,6 @@ const InventoryPage = () => {
 					filters={{
 						searchQuery: filters.searchQuery || "",
 						category: (filters.category || "all") as "all" | string,
-						status: (filters.status || "all") as
-							| "all"
-							| "active"
-							| "inactive",
 						stockLevel: (filters.stockLevel || "all") as
 							| "all"
 							| "normal"
@@ -455,7 +468,6 @@ const InventoryPage = () => {
 							newFilters.searchQuery,
 						);
 						handleFilterChange("category", newFilters.category);
-						handleFilterChange("status", newFilters.status);
 						handleFilterChange("stockLevel", newFilters.stockLevel);
 					}}
 				/>

@@ -44,16 +44,22 @@ const EditBatchModal = ({
 
 	// Form state - use backend enum values
 	const [formData, setFormData] = useState({
-		quantityStorage: 0,
 		quantityShelf: 0,
 		status: "AVAILABLE" as StockInventoryStatus,
 	});
+
+	// Business rule: shelf + storage = availableQuantity
+	// availableQuantity = stockQuantity - reservedQuantity (items not yet sold)
+	// User only edits shelf; storage = availableQuantity - shelf
+	const availableQuantity = batch
+		? batch.stockQuantity - (batch.reservedQuantity ?? 0)
+		: 0;
+	const computedStorage = availableQuantity - formData.quantityShelf;
 
 	// Populate form when batch changes
 	useEffect(() => {
 		if (batch) {
 			setFormData({
-				quantityStorage: batch.quantityStorage ?? 0,
 				quantityShelf: batch.quantityShelf ?? 0,
 				status: batch.status || "AVAILABLE",
 			});
@@ -63,10 +69,15 @@ const EditBatchModal = ({
 	const handleSubmit = async () => {
 		if (!batch) return;
 
+		// Validate: shelf cannot exceed available
+		if (formData.quantityShelf > availableQuantity) {
+			return; // Button is disabled, but guard anyway
+		}
+
 		setLoading(true);
 		try {
 			await onUpdate(batch.lotId, {
-				quantityStorage: formData.quantityStorage,
+				quantityStorage: computedStorage,
 				quantityShelf: formData.quantityShelf,
 				status: formData.status,
 			});
@@ -109,40 +120,41 @@ const EditBatchModal = ({
 						<HStack
 							spacing={4}
 							width="full">
-							<FormControl
-								isRequired
-								flex={1}>
+							<FormControl flex={1}>
 								<FormLabel>Số lượng trong kho</FormLabel>
 								<Input
 									type="number"
-									value={formData.quantityStorage}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											quantityStorage:
-												parseInt(e.target.value) || 0,
-										})
-									}
-									min={0}
+									value={computedStorage}
+									isReadOnly
+									bg="gray.100"
+									title="Tự động tính: Tổng tồn - Số lượng trưng bày"
 								/>
+								<Text fontSize="xs" color="gray.500" mt={1}>
+									Tự động tính từ tổng tồn
+								</Text>
 							</FormControl>
 
 							<FormControl
 								isRequired
-								flex={1}>
+								flex={1}
+								isInvalid={formData.quantityShelf > availableQuantity}>
 								<FormLabel>Số lượng trưng bày</FormLabel>
 								<Input
 									type="number"
 									value={formData.quantityShelf}
-									onChange={(e) =>
+									onChange={(e) => {
+										const value = parseInt(e.target.value) || 0;
 										setFormData({
 											...formData,
-											quantityShelf:
-												parseInt(e.target.value) || 0,
-										})
-									}
+											quantityShelf: Math.max(0, Math.min(value, availableQuantity)),
+										});
+									}}
 									min={0}
+									max={availableQuantity}
 								/>
+								<Text fontSize="xs" color="gray.500" mt={1}>
+									Tối đa: {availableQuantity} (tổng tồn khả dụng)
+								</Text>
 							</FormControl>
 						</HStack>
 
@@ -150,8 +162,9 @@ const EditBatchModal = ({
 							fontSize="sm"
 							color="gray.600"
 							alignSelf="flex-start">
-							Tổng số lượng:{" "}
-							{formData.quantityStorage + formData.quantityShelf}
+							Tổng số lượng khả dụng:{" "}
+							<Text as="span" fontWeight="bold">{availableQuantity}</Text>
+							{" "}= Trưng bày ({formData.quantityShelf}) + Trong kho ({computedStorage})
 						</Text>
 
 						<FormControl isRequired>

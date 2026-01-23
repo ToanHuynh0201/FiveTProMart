@@ -31,6 +31,7 @@ import type {
 	UpdateStockInventoryRequest,
 } from "@/types/stockInventory";
 import { stockInventoryService } from "@/services/stockInventoryService";
+import { isExpired, isExpiringSoon } from "@/utils/date";
 import EditBatchModal from "./EditBatchModal";
 
 interface BatchListModalProps {
@@ -133,40 +134,11 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 
 	if (!product) return null;
 
-	// Convert dd-MM-yyyy to Date object
-	const parseBackendDate = (dateString: string): Date | null => {
-		if (!dateString) return null;
-		const [year, month, day] = dateString.split("-");
-		return new Date(Number(year), Number(month) - 1, Number(day));
-	};
-
 	const formatCurrency = (value: number) => {
 		return new Intl.NumberFormat("vi-VN", {
 			style: "currency",
 			currency: "VND",
 		}).format(value);
-	};
-
-	const isExpiringSoon = (dateString: string | undefined) => {
-		if (!dateString) return false;
-		const expiryDate = parseBackendDate(dateString);
-		if (!expiryDate) return false;
-
-		const now = new Date();
-		const daysUntilExpiry = Math.ceil(
-			(expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-		);
-
-		console.log(daysUntilExpiry);
-
-		return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
-	};
-
-	const isExpired = (dateString: string | undefined) => {
-		if (!dateString) return false;
-		const expiryDate = parseBackendDate(dateString);
-		if (!expiryDate) return false;
-		return expiryDate < new Date();
 	};
 
 	const handlePageChange = (newPage: number) => {
@@ -241,12 +213,8 @@ const BatchListModal = ({ isOpen, onClose, product }: BatchListModalProps) => {
 									</Thead>
 									<Tbody>
 										{batches.map((batch) => {
-											const expiringSoon = isExpiringSoon(
-												batch.expirationDate,
-											);
-											const expired = isExpired(
-												batch.expirationDate,
-											);
+											const expiringSoon = isExpiringSoon(batch.expirationDate, 7);
+											const expired = isExpired(batch.expirationDate);
 
 											return (
 												<Tr

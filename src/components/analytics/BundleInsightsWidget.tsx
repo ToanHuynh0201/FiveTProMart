@@ -64,7 +64,8 @@ export const BundleInsightsWidget: React.FC = () => {
 		enabled: !isLoading && !error,
 	});
 
-	const formatConfidence = (confidence: number) => {
+	const formatConfidence = (confidence: number | undefined | null) => {
+		if (confidence === undefined || confidence === null) return "N/A";
 		return `${(confidence * 100).toFixed(0)}%`;
 	};
 
@@ -154,7 +155,7 @@ export const BundleInsightsWidget: React.FC = () => {
 							color="brand.500"
 						>
 							<CircularProgressLabel fontSize="lg" fontWeight="bold">
-								{progress.toFixed(0)}%
+							{(progress ?? 0).toFixed(0)}%
 							</CircularProgressLabel>
 						</CircularProgress>
 
@@ -242,7 +243,7 @@ export const BundleInsightsWidget: React.FC = () => {
 									{formatConfidence(rule.confidence)} khả năng
 								</Badge>
 								<Text fontSize="xs" color="gray.500">
-									Lift: {rule.lift.toFixed(2)}x
+									Lift: {rule.lift?.toFixed(2) ?? "N/A"}x
 								</Text>
 							</HStack>
 							<Text fontSize="sm">

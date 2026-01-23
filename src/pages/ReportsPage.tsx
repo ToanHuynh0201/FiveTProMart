@@ -318,16 +318,21 @@ export const ReportsPage: React.FC = () => {
 	}, [dateRange]); // Only re-run when dateRange changes
 
 	const formatCurrency = (value: number) => {
-		if (value >= 1000000000) {
-			return `${(value / 1000000000).toFixed(1)}B`;
+		const isNegative = value < 0;
+		const absValue = Math.abs(value);
+
+		let formatted: string;
+		if (absValue >= 1000000000) {
+			formatted = `${(absValue / 1000000000).toFixed(1)}B`;
+		} else if (absValue >= 1000000) {
+			formatted = `${(absValue / 1000000).toFixed(1)}M`;
+		} else if (absValue >= 1000) {
+			formatted = `${(absValue / 1000).toFixed(0)}K`;
+		} else {
+			formatted = absValue.toString();
 		}
-		if (value >= 1000000) {
-			return `${(value / 1000000).toFixed(1)}M`;
-		}
-		if (value >= 1000) {
-			return `${(value / 1000).toFixed(0)}K`;
-		}
-		return value.toString();
+
+		return isNegative ? `-${formatted}` : formatted;
 	};
 
 	return (
@@ -440,12 +445,6 @@ export const ReportsPage: React.FC = () => {
 							suffix=" đ"
 							icon={FiCreditCard}
 							bgGradient="linear(to-br, teal.500, teal.600)"
-						/>
-						<MetricCard
-							title="Tổng khách hàng"
-							value={dashboardData?.totalCustomers || 0}
-							icon={FiUsers}
-							bgGradient="linear(to-br, pink.500, pink.600)"
 						/>
 						<MetricCard
 							title="Khách hàng mới"
